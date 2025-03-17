@@ -8,8 +8,8 @@ public class DashBoardApiOvpnFileService
     private readonly ILogger<DashBoardApiOvpnFileService> _logger;
     private readonly IHttpRequestService _httpRequestService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
-    private const string EndpointGetAll = "http://localhost:5581/api/GetAllByExternalIdOvpnFiles";
-    private const string EndpointDownloadOpenVpnFiles = "http://localhost:5581/api/OpenVpnFiles/DownloadOvpnFile";
+    private const string EndpointGetAll = "api/GetAllByExternalIdOvpnFiles";
+    private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadOvpnFile";
     
     public DashBoardApiOvpnFileService(ILogger<DashBoardApiOvpnFileService> logger,
         IHttpRequestService httpRequestService,

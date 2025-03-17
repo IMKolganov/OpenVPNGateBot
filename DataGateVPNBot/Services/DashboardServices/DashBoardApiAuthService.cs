@@ -45,7 +45,7 @@ public class DashBoardApiAuthService
             ClientSecret = _clientSecret
         };
 
-        var response = await _httpRequestService.PostAsync<JsonElement>("api/token", requestBody);
+        var response = await _httpRequestService.PostAsync<JsonElement>("api/Auth/token", requestBody);
 
         if (response.TryGetProperty("token", out var tokenProperty))
         {
