@@ -30,16 +30,22 @@ public class ErrorService : IErrorService
             using var scope = _serviceProvider.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var errorLogRepository = unitOfWork.GetRepository<ErrorLog>();
-            var source = "Unknown";
-            if (context is { Request: not null })
-            {
-                source = context?.Request?.Path.Value ?? "Unknown";
-            }
+        
+            var source = context?.Request?.Path.Value ?? "Unknown";
+
+            const int maxLength = 4000;
+            string message = exception.Message.Length > maxLength 
+                ? exception.Message.Substring(0, maxLength - 3) + "..." 
+                : exception.Message;
+
+            string stackTrace = (exception.StackTrace?.Length ?? 0) > maxLength 
+                ? exception.StackTrace?.Substring(0, maxLength - 3) + "..." 
+                : exception.StackTrace ?? string.Empty;
 
             var errorLog = new ErrorLog
             {
-                Message = exception.Message,
-                StackTrace = exception.StackTrace ?? string.Empty,
+                Message = message,
+                StackTrace = stackTrace,
                 Timestamp = DateTime.UtcNow,
                 Source = source
             };
