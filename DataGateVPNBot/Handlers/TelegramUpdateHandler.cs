@@ -21,7 +21,6 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly IOpenVpnClientService _openVpnClientService;
     private readonly ITelegramSettingsService _telegramSettingsService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
-    private readonly DashBoardApiOvpnFileService _dashBoardApiOvpnFileService;
     
     private readonly string _pathBotLog;
     private readonly string _pathBotPhoto;
@@ -33,7 +32,6 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         IOpenVpnClientService openVpnClientService,
         ITelegramSettingsService telegramSettingsService,
         DashBoardApiAuthService dashBoardApiAuthService,
-        DashBoardApiOvpnFileService dashBoardApiOvpnFileService,
         IConfiguration configuration)
     {
         _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
@@ -41,7 +39,6 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         _openVpnClientService = openVpnClientService ?? throw new ArgumentNullException(nameof(openVpnClientService));
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
         _dashBoardApiAuthService = dashBoardApiAuthService;
-        _dashBoardApiOvpnFileService = dashBoardApiOvpnFileService;
         
         _pathBotLog = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.LogFile ?? throw new InvalidOperationException();
         _pathBotPhoto = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.BotPhotoPath ?? throw new InvalidOperationException();
@@ -57,7 +54,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
 
         await errorService.LogErrorToDatabase(exception);
-        await errorService.NotifyAdminsAsync(exception);
+        await errorService.NotifyAdminsAsync(exception, null, cancellationToken);
         if (exception is RequestException)
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
     }
@@ -103,7 +100,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     {
         var commandParts = messageText.Split(' ', 2);
         var command = commandParts[0].ToLower();
-        // var argument = commandParts.Length > 1 ? commandParts[1] : null;
+        var argument = commandParts.Length > 1 ? commandParts[1] : null;
         if (!await IsExistLocalizationSettings(msg.From!.Id, cancellationToken) && 
             (command != "/start"
              ||command != "/change_language"
@@ -126,7 +123,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/about_bot" => AboutBot(msg, cancellationToken),
             "/how_to_use" => HowToUseVpn(msg, cancellationToken),
             "/register" => RegisterForVpn(msg, cancellationToken),
-            "/get_my_files" => GetMyFiles(msg, cancellationToken),
+            "/get_my_files" => GetMyFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/make_new_file" => MakeNewVpnFile(msg, cancellationToken),
             "/delete_selected_file" => DeleteSelectedFile(msg, cancellationToken),
             "/delete_all_files" => DeleteAllFiles(msg,  cancellationToken),

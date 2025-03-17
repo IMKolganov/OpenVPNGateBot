@@ -54,13 +54,13 @@ public class ErrorService : IErrorService
         }
     }
 
-    public async Task NotifyAdminsAsync(Exception exception, HttpContext? context = null)
+    public async Task NotifyAdminsAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default)
     {
         using var scope = _serviceProvider.CreateScope();
         var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramUsersService>();
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
-        var admins = await telegramUsersService.GetAdminsAsync();
+        var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
 
         if (admins is { Count: 0 })
         {
@@ -95,11 +95,11 @@ public class ErrorService : IErrorService
         }
     }
     
-    public async Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken = default)
+    public async Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramUsersService>();
-        var admins = await telegramUsersService.GetAdminsAsync();
+        var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
         if (admins is { Count: 0 })

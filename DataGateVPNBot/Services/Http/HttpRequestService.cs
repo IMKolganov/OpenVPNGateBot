@@ -52,6 +52,19 @@ public class HttpRequestService : IHttpRequestService
         var client = CreateClient(token);
         return await SendRequestAsync<bool>(() => client.DeleteAsync(url, cancellationToken), cancellationToken);
     }
+    
+    public async Task<Stream> GetStreamAsync(string url, string? token = null, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient(token);
+        var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+    
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Failed to download stream. Status code: {response.StatusCode}");
+        }
+
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
+    }
 
     private async Task<T?> SendRequestAsync<T>(Func<Task<HttpResponseMessage>> httpRequest, CancellationToken cancellationToken)
     {

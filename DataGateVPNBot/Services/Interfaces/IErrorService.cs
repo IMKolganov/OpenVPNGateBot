@@ -3,6 +3,6 @@
 public interface IErrorService
 {
     Task LogErrorToDatabase(Exception exception, HttpContext? context = null);
-    Task NotifyAdminsAsync(Exception exception, HttpContext? context = null);
+    Task NotifyAdminsAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default);
     Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken = default);
 }
