@@ -8,7 +8,7 @@ public class DashBoardApiOvpnFileService
     private readonly ILogger<DashBoardApiOvpnFileService> _logger;
     private readonly IHttpRequestService _httpRequestService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
-    private const string EndpointGetAll = "api/GetAllByExternalIdOvpnFiles";
+    private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadOvpnFile";
     
     public DashBoardApiOvpnFileService(ILogger<DashBoardApiOvpnFileService> logger,
@@ -43,7 +43,7 @@ public class DashBoardApiOvpnFileService
             return null;
         }
 
-        var url = $"{EndpointGetAll}?vpnServerId={vpnServerId}&externalId={externalId}";
+        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={vpnServerId}&externalId={externalId}";
 
         _logger.LogInformation($"Requesting OVPN files for Server ID: {vpnServerId}, External ID: {externalId}");
         
