@@ -24,17 +24,11 @@ public class DashBoardApiOvpnFileService
     public async Task<List<IssuedOvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
         int vpnServerId, string externalId, CancellationToken cancellationToken)
     {
-        if (vpnServerId == 0)
-        {
-            _logger.LogWarning("Invalid request: vpnServerId is required.");
+        if (vpnServerId <= 0) 
             throw new ArgumentException("vpnServerId is required.");
-        }
 
         if (string.IsNullOrEmpty(externalId))
-        {
-            _logger.LogWarning("Invalid request: externalId is required.");
             throw new ArgumentException("externalId is required.");
-        }
         
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
@@ -60,11 +54,11 @@ public class DashBoardApiOvpnFileService
     public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(
         int issuedOvpnFileId, int vpnServerId, CancellationToken cancellationToken)
     {
-        if (vpnServerId == 0 || issuedOvpnFileId == 0)
-        {
-            _logger.LogWarning("Invalid request: vpnServerId & issuedOvpnFileId is required.");
-            throw new ArgumentException("vpnServerId & issuedOvpnFileId is required.");
-        }
+        if (vpnServerId <= 0)
+            throw new ArgumentException($"Invalid vpnServerId: {vpnServerId}. Must be greater than zero.", nameof(vpnServerId));
+
+        if (issuedOvpnFileId <= 0)
+            throw new ArgumentException($"Invalid issuedOvpnFileId: {issuedOvpnFileId}. Must be greater than zero.", nameof(issuedOvpnFileId));
 
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))

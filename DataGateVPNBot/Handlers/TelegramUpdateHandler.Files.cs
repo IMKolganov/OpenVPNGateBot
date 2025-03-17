@@ -1,4 +1,5 @@
-﻿using DataGateVPNBot.Services.DashboardServices;
+﻿using DataGateVPNBot.Models.DashBoardApi;
+using DataGateVPNBot.Services.DashboardServices;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -41,12 +42,15 @@ public partial class TelegramUpdateHandler
         }
         
         await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
-        _logger.LogInformation("GetMyFiles started for user: {TelegramId}", msg.From?.Id);
+        _logger.LogInformation($"GetMyFiles started for user: {msg.From?.Id}, ServerId: {vpnServerId}");
 
         var issuedOvpnFileResponses = await dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
             vpnServerId, msg.From!.Id.ToString(), cancellationToken);
 
-        if (issuedOvpnFileResponses == null || issuedOvpnFileResponses.Count == 0)
+        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
+                                  new List<IssuedOvpnFileResponse>();
+
+        if (issuedOvpnFileResponses is not { Count: > 0 })
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
