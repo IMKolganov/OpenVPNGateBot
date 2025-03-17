@@ -80,12 +80,23 @@ public class ErrorService : IErrorService
                     source = context?.Request?.Path.Value ?? "Unknown";
                 }
                 
+                var stackTrace = exception.StackTrace ?? "No stack trace available.";
+                if (stackTrace.Length > 3000)
+                {
+                    stackTrace = stackTrace.Substring(0, 3000) + "... (truncated)";
+                }
+                
                 var errorMessage = $"🚨 *Error Notification*\n" +
                                    $"Path: `{source}`\n" +
                                    $"Message: `{exception.Message}`\n" +
                                    $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
-                                   $"Stack Trace:\n```{exception.StackTrace}```";
+                                   $"Stack Trace:\n```{stackTrace}```";
 
+                if (errorMessage.Length > 4096)
+                {
+                    errorMessage = errorMessage.Substring(0, 4093) + "...";
+                }
+                
                 await botClient.SendMessage(admin.TelegramId, errorMessage,
                     parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown, cancellationToken: cancellationToken);
             }
