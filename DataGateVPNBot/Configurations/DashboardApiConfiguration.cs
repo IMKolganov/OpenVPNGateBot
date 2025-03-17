@@ -18,7 +18,19 @@ public static class DashboardApiConfiguration
         services.AddSingleton<IConnectionMultiplexer>(provider =>
         {
             var redisConfig = provider.GetRequiredService<IOptions<RedisConfig>>().Value;
-            return ConnectionMultiplexer.Connect(redisConfig.ConnectionString);
+            var logger = provider.GetRequiredService<ILogger<IConnectionMultiplexer>>();
+            
+            try
+            {
+                var redis = ConnectionMultiplexer.Connect(redisConfig.ConnectionString);
+                logger.LogInformation($"Successfully connected to Redis at {redisConfig.ConnectionString}");
+                return redis;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Failed to connect to Redis at {redisConfig.ConnectionString}");
+                throw;
+            }
         });
 
         services.AddSingleton<RedisCacheService>();
