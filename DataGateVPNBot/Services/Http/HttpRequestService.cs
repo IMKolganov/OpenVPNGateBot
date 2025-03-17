@@ -8,7 +8,7 @@ public class HttpRequestService : IHttpRequestService
 {
     private readonly IHttpClientFactoryService _httpClientFactoryService;
     private readonly ILogger<HttpRequestService> _logger;
-    private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30); // 30 секунд на запрос
+    private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
 
     public HttpRequestService(IHttpClientFactoryService httpClientFactoryService, ILogger<HttpRequestService> logger)
     {
@@ -30,7 +30,23 @@ public class HttpRequestService : IHttpRequestService
     public async Task<T?> GetAsync<T>(string url, string? token = null, CancellationToken cancellationToken = default)
     {
         var client = CreateClient(token);
-        return await SendRequestAsync<T>(() => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
+        var response = await SendRequestAsync<HttpResponseMessage>(
+            () => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
+    
+        if (response == null || !response.IsSuccessStatusCode)
+        {
+            _logger.LogError("Failed to fetch data. StatusCode: {StatusCode}", response?.StatusCode);
+            return default;
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+    
+        _logger.LogInformation("Received JSON: {Json}", json);
+
+        return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
     }
 
     public async Task<T?> PostAsync<T>(string url, object data, string? token = null, CancellationToken cancellationToken = default)
