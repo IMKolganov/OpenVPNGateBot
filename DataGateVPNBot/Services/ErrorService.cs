@@ -86,7 +86,8 @@ public class ErrorService : IErrorService
                                    $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
                                    $"Stack Trace:\n```{exception.StackTrace}```";
 
-                await botClient.SendMessage(admin.TelegramId, errorMessage, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
+                await botClient.SendMessage(admin.TelegramId, errorMessage,
+                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown, cancellationToken: cancellationToken);
             }
             catch (Exception ex)
             {

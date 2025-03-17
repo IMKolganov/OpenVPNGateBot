@@ -48,7 +48,7 @@ public class TelegramUsersService : ITelegramUsersService
         // var telegramUserRepository = _unitOfWork.GetRepository<TelegramUser>();
         // var existingUser = await telegramUserRepository.Query
         //     .Where(u => u.TelegramId == 5767006971).ToListAsync();
-        if (existingUser == null)
+        if (existingUser is { Count: 0 })
         {
             throw new Exception("User not found");
         }
