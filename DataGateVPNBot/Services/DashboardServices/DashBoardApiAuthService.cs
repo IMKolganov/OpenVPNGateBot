@@ -1,7 +1,4 @@
-using System;
 using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using DataGateVPNBot.Services.Http;
 
 namespace DataGateVPNBot.Services.DashboardServices;
