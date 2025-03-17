@@ -54,11 +54,11 @@ public class DashBoardApiOvpnFileService
     public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(
         int issuedOvpnFileId, int vpnServerId, CancellationToken cancellationToken)
     {
-        if (vpnServerId <= 0)
-            throw new ArgumentException($"Invalid vpnServerId: {vpnServerId}. Must be greater than zero.", nameof(vpnServerId));
-
         if (issuedOvpnFileId <= 0)
             throw new ArgumentException($"Invalid issuedOvpnFileId: {issuedOvpnFileId}. Must be greater than zero.", nameof(issuedOvpnFileId));
+        
+        if (vpnServerId <= 0)
+            throw new ArgumentException($"Invalid vpnServerId: {vpnServerId}. Must be greater than zero.", nameof(vpnServerId));
 
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))

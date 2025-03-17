@@ -66,6 +66,9 @@ public partial class TelegramUpdateHandler
         {
             foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses)
             {
+                _logger.LogInformation(
+                    $"Processing file: {issuedOvpnFileResponse.FileName}, " +
+                    $"ServerId: {issuedOvpnFileResponse.ServerId}, FileId: {issuedOvpnFileResponse.Id}");
                 var issuedOvpnFileStream = await dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                     issuedOvpnFileResponse.Id, issuedOvpnFileResponse.ServerId, cancellationToken);
 
