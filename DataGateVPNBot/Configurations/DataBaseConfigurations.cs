@@ -2,7 +2,6 @@
 using DataGateVPNBot.DataBase.Repositories;
 using DataGateVPNBot.DataBase.Repositories.Interfaces;
 using DataGateVPNBot.DataBase.Repositories.Queries;
-using DataGateVPNBot.DataBase.Repositories.Queries.Interfaces;
 using DataGateVPNBot.DataBase.UnitOfWork;
 using DataGateVPNBot.Models.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,7 @@ public static class DataBaseConfigurations
         var dbSettings = configuration.GetSection("DataBaseSettings").Get<DataBaseSettings>() 
                          ?? throw new InvalidOperationException("DataBaseSettings section is missing in configuration.");
 
-        services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
+        services.AddDbContextFactory<ApplicationDbContext>((serviceProvider, options) =>
         {
             var config = serviceProvider.GetRequiredService<IConfiguration>();
             options.UseNpgsql(
@@ -33,6 +32,5 @@ public static class DataBaseConfigurations
         services.AddScoped<IQueryFactory, QueryFactory>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
-        services.AddScoped<ITelegramUserQuery, TelegramUserQuery>();
     }
 }

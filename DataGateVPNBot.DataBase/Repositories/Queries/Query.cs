@@ -1,5 +1,5 @@
 using DataGateVPNBot.DataBase.Contexts;
-using DataGateVPNBot.DataBase.Repositories.Interfaces;
+using DataGateVPNBot.DataBase.Repositories.Queries.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataGateVPNBot.DataBase.Repositories.Queries;

@@ -5,5 +5,5 @@ namespace DataGateVPNBot.Services.DataServices.Interfaces;
 
 public interface IIncomingMessageLogService
 {
-    Task Log(ITelegramBotClient botClient, Message msg);
+    Task Log(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken);
 }

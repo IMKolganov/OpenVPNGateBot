@@ -15,7 +15,7 @@ public class IncomingMessageLogService : IIncomingMessageLogService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task Log(ITelegramBotClient botClient, Message msg)
+    public async Task Log(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         var repository = _unitOfWork.GetRepository<IncomingMessageLog>();
         
@@ -33,12 +33,12 @@ public class IncomingMessageLogService : IIncomingMessageLogService
         {
             if (msg.Document != null)
             {
-                await ProcessFileAsync(botClient, msg.Document.FileId, msg.Document.FileName, msg.Document.FileSize, "Document", log);
+                await ProcessFileAsync(botClient, msg.Document.FileId, msg.Document.FileName, msg.Document.FileSize, "Document", log, cancellationToken);
             }
             else if (msg.Photo?.Any() == true)
             {
                 var largestPhoto = msg.Photo.OrderByDescending(p => p.FileSize).First();
-                await ProcessFileAsync(botClient, largestPhoto.FileId, $"photo_{log.TelegramId}_{DateTime.UtcNow.Ticks}.jpg", largestPhoto.FileSize, "Photo", log);
+                await ProcessFileAsync(botClient, largestPhoto.FileId, $"photo_{log.TelegramId}_{DateTime.UtcNow.Ticks}.jpg", largestPhoto.FileSize, "Photo", log, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -46,8 +46,8 @@ public class IncomingMessageLogService : IIncomingMessageLogService
             log.MessageText += $"\n[Error processing file: {ex.Message}]";
         }
 
-        await repository.AddAsync(log);
-        await _unitOfWork.SaveChangesAsync();
+        await repository.AddAsync(log, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private async Task ProcessFileAsync(
@@ -56,7 +56,8 @@ public class IncomingMessageLogService : IIncomingMessageLogService
         string? fileName, 
         long? fileSize, 
         string fileType, 
-        IncomingMessageLog log)
+        IncomingMessageLog log,
+        CancellationToken cancellationToken)
     {
         if (fileSize > 10 * 1024 * 1024)
             throw new Exception("File size exceeds the 10MB limit.");
@@ -66,7 +67,7 @@ public class IncomingMessageLogService : IIncomingMessageLogService
 
         await using (var fileStream = new FileStream(filePath, FileMode.Create))
         {
-            await botClient.GetInfoAndDownloadFile(fileId, fileStream);
+            await botClient.GetInfoAndDownloadFile(fileId, fileStream, cancellationToken);
         }
 
         log.FileType = fileType;

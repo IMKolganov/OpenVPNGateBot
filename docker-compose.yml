@@ -25,3 +25,9 @@ services:
       - /etc/openvpn/clients:/etc/openvpn/clients
       - /etc/openvpn/crl.pem:/etc/openvpn/crl.pem
       - /var/log/openvpn-status.log:/var/log/openvpn-status.log
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"

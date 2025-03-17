@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using DataGateVPNBot.DataBase.Contexts;
 using DataGateVPNBot.DataBase.Repositories.Interfaces;
+using DataGateVPNBot.DataBase.Repositories.Queries.Interfaces;
 
 namespace DataGateVPNBot.DataBase.Repositories.Queries;
 

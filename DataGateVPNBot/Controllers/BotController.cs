@@ -21,15 +21,15 @@ public class BotController : ControllerBase
     
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] Update update, [FromServices] ITelegramBotClient bot, 
-        [FromServices] TelegramUpdateHandler handleTelegramUpdateService, CancellationToken ct)
+        [FromServices] TelegramUpdateHandler handleTelegramUpdateService, CancellationToken cancellationToken =  default)
     {
         try
         {
-            await handleTelegramUpdateService.HandleUpdateAsync(bot, update, ct);
+            await handleTelegramUpdateService.HandleUpdateAsync(bot, update, cancellationToken);
         }
         catch (Exception exception)
         {
-            await handleTelegramUpdateService.HandleErrorAsync(bot, exception, Telegram.Bot.Polling.HandleErrorSource.HandleUpdateError, ct);
+            await handleTelegramUpdateService.HandleErrorAsync(bot, exception, Telegram.Bot.Polling.HandleErrorSource.HandleUpdateError, cancellationToken);
         }
         return Ok();
     }

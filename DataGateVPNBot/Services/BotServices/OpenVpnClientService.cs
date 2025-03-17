@@ -39,7 +39,8 @@ public class OpenVpnClientService : IOpenVpnClientService
         _revokedDirPath = Path.Combine(_openVpnSettings.OutputDir, "revoked");
     }
 
-    public async Task<GetAllFilesResult> GetAllClientConfigurations(long telegramId)
+    public async Task<GetAllFilesResult> GetAllClientConfigurations(long telegramId, 
+        CancellationToken  cancellationToken)
     {
         var issuedOvpnFiles = await GetIssuedOvpnFilesByTelegramIdAsync(telegramId);
         _logger.LogInformation("Found {Count} issued files in database.", issuedOvpnFiles.Count);
@@ -63,7 +64,7 @@ public class OpenVpnClientService : IOpenVpnClientService
             }
         }
 
-        var responseMessage = await GetResponseText(telegramId, "HereIsConfig");
+        var responseMessage = await GetResponseText(telegramId, "HereIsConfig", cancellationToken);
         _logger.LogInformation("Generated response message for user: {TelegramId}", telegramId);
 
         return new GetAllFilesResult
@@ -73,14 +74,15 @@ public class OpenVpnClientService : IOpenVpnClientService
         };
     }
 
-    public async Task<FileCreationResult> CreateClientConfiguration(long telegramId)
+    public async Task<FileCreationResult> CreateClientConfiguration(long telegramId, CancellationToken cancellationToken)
     {
         try
         {
             var issuedOvpnFiles = await GetIssuedOvpnFilesByTelegramIdAsync(telegramId);
             if (issuedOvpnFiles.Count >= _maxAttempts)
             {
-                return new FileCreationResult { FileInfo = null, Message = await GetResponseText(telegramId, "MaxConfigError") };
+                return new FileCreationResult { FileInfo = null, Message = 
+                    await GetResponseText(telegramId, "MaxConfigError", cancellationToken) };
             }
 
             _logger.LogInformation("Step 1.1: Checking if configuration already exists for this client with TelegramId: {TelegramId}.", telegramId);
@@ -121,20 +123,20 @@ public class OpenVpnClientService : IOpenVpnClientService
             string caCertContent = _easyRsaService.ReadPemContent(_caCetrPath);
 
             string clientCertContent = _easyRsaService.ReadPemContent(certificateResult.CertificatePath);
-            string clientKeyContent = await File.ReadAllTextAsync(certificateResult.KeyPath);
+            string clientKeyContent = await File.ReadAllTextAsync(certificateResult.KeyPath, cancellationToken);
 
             _logger.LogInformation("Step 4: Generating .ovpn configuration file...");
             string ovpnContent = GenerateOvpnFile(_openVpnSettings.ServerIp, caCertContent,
                 clientCertContent, clientKeyContent, _openVpnSettings.TlsAuthKey);
 
             _logger.LogInformation("Step 5: Writing .ovpn file...");
-            await File.WriteAllTextAsync(ovpnFilePath, ovpnContent);
+            await File.WriteAllTextAsync(ovpnFilePath, ovpnContent, cancellationToken);
 
             _logger.LogInformation($"Client configuration file created: {ovpnFilePath}");
             var fileInfo = new FileInfo(ovpnFilePath);
             await SaveInfoInDataBase(telegramId, fileInfo, certificateResult);
             return new FileCreationResult { FileInfo = fileInfo, Message = await GetResponseText(telegramId,
-                "HereIsConfig") };
+                "HereIsConfig", cancellationToken) };
 
         }
         catch (Exception ex)
@@ -261,11 +263,11 @@ public class OpenVpnClientService : IOpenVpnClientService
     }
 
 
-    private async Task<string> GetResponseText(long telegramId, string key)
+    private async Task<string> GetResponseText(long telegramId, string key, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var localizationService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
-        return await localizationService.GetTextAsync(key, telegramId);
+        return await localizationService.GetTextAsync(key, telegramId, cancellationToken);
     }
 
     private async Task SaveInfoInDataBase(long telegramId, FileInfo fileInfo, CertificateResult certificateResult)
