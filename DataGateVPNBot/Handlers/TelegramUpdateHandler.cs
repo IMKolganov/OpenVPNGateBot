@@ -119,7 +119,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/how_to_use" => HowToUseVpn(msg, cancellationToken),
             "/register" => RegisterForVpn(msg, cancellationToken),
             "/get_my_files" => GetMyFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
-            "/make_new_file" => MakeNewVpnFile(msg, cancellationToken),
+            "/make_new_file" => MakeNewVpnFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/delete_selected_file" => DeleteSelectedFile(msg, cancellationToken),
             "/delete_all_files" => DeleteAllFiles(msg,  cancellationToken),
             "/install_client" => InstallClient(msg, cancellationToken),
