@@ -22,7 +22,6 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly ITelegramSettingsService _telegramSettingsService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
     
-    private readonly string _pathBotLog;
     private readonly string _pathBotPhoto;
     
     public TelegramUpdateHandler(
@@ -40,7 +39,6 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
         _dashBoardApiAuthService = dashBoardApiAuthService;
         
-        _pathBotLog = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.LogFile ?? throw new InvalidOperationException();
         _pathBotPhoto = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.BotPhotoPath ?? throw new InvalidOperationException();
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -133,10 +131,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/change_language" => SelectLanguage(msg, cancellationToken),
             
             "/register_commands" => RegisterCommandsAsync(msg, cancellationToken),
-            
-            "/get_logs" => GetLogs(msg),
-            "/get_file_log" => SendFileLog(msg),
-            
+
             "/english" => ChangeLanguage(msg, command, cancellationToken),
             "/русский" => ChangeLanguage(msg, command, cancellationToken),
             "/ελληνικά" => ChangeLanguage(msg, command, cancellationToken),

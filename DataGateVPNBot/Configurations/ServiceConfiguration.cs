@@ -24,7 +24,6 @@ public static class ServiceConfiguration
         services.AddSingleton<ITelegramSettingsService, TelegramSettingsService>();
         services.AddSingleton<IOpenVpnClientService, OpenVpnClientService>();
         services.AddSingleton<IEasyRsaService, EasyRsaService>();
-        services.AddHostedService<StartupNotificationHandler>();
 
         services.AddHostedService<OpenVpnBackgroundService>();
         

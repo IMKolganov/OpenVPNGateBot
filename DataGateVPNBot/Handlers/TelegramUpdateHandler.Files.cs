@@ -66,20 +66,44 @@ public partial class TelegramUpdateHandler
         {
             foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses)
             {
-                _logger.LogInformation(
-                    $"Processing file: {issuedOvpnFileResponse.FileName}, " +
-                    $"ServerId: {issuedOvpnFileResponse.ServerId}, FileId: {issuedOvpnFileResponse.Id}");
-                var issuedOvpnFileStream = await dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-                    issuedOvpnFileResponse.Id, issuedOvpnFileResponse.ServerId, cancellationToken);
-
-                _logger.LogInformation("Processing file: {FileName}", issuedOvpnFileResponse.FileName);
-
-                var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFileResponse.FileName);
-                var media = new InputMediaDocument(inputFile)
+                try
                 {
-                    Caption = issuedOvpnFileResponse.FileName
-                };
-                mediaGroupOpenVpnFiles.Add(media);
+                    _logger.LogInformation(
+                        $"Processing file: {issuedOvpnFileResponse.FileName}, " +
+                        $"ServerId: {issuedOvpnFileResponse.ServerId}, FileId: {issuedOvpnFileResponse.Id}");
+
+                    var issuedOvpnFileStream = await dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                        issuedOvpnFileResponse.Id, issuedOvpnFileResponse.ServerId, cancellationToken);
+
+                    _logger.LogInformation("Processing file: {FileName}", issuedOvpnFileResponse.FileName);
+
+                    var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFileResponse.FileName);
+                    var media = new InputMediaDocument(inputFile)
+                    {
+                        Caption = issuedOvpnFileResponse.FileName
+                    };
+                    mediaGroupOpenVpnFiles.Add(media);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedOvpnFileResponse.FileName, ex.Message);
+
+                    var errorMessage = $"Error processing file: {issuedOvpnFileResponse.FileName}\n" +
+                                       $"ServerId: {issuedOvpnFileResponse.ServerId}\n" +
+                                       $"FileId: {issuedOvpnFileResponse.Id}\n" +
+                                       $"Error: {ex.Message}\n" +
+                                       $"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+
+                    var errorStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(errorMessage));
+                    var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFileResponse.FileName}.error.txt");
+
+                    var errorMedia = new InputMediaDocument(errorFile)
+                    {
+                        Caption = $"Error file: {issuedOvpnFileResponse.FileName}"
+                    };
+
+                    mediaGroupOpenVpnFiles.Add(errorMedia);
+                }
             }
 
             if (mediaGroupOpenVpnFiles.Count == 0)

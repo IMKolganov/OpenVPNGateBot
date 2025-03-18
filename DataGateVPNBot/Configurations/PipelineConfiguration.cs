@@ -7,7 +7,7 @@ public static class PipelineConfiguration
 {
     public static void ConfigurePipeline(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
         {
             app.UseSwagger();
             app.UseSwaggerUI();

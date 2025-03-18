@@ -106,7 +106,8 @@ public class HttpRequestService : IHttpRequestService
             try
             {
                 _logger.LogInformation("Attempt {Attempt}: Sending HTTP request to {Url}...", attempt, url);
-                using var response = await httpRequest();
+
+                var response = await httpRequest(); // Убираем using, чтобы вручную управлять жизненным циклом объекта
 
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("Response from {Url} (Attempt {Attempt}): {StatusCode} - {ResponseContent}",
@@ -118,9 +119,11 @@ public class HttpRequestService : IHttpRequestService
                         url, attempt, response.StatusCode, response.ReasonPhrase);
                     if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                     {
+                        response.Dispose();
                         return default;
                     }
 
+                    response.Dispose();
                     await Task.Delay(1000 * attempt, cancellationToken);
                     continue;
                 }
@@ -130,10 +133,13 @@ public class HttpRequestService : IHttpRequestService
                     return (T)(object)response;
                 }
 
-                return JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
+
+                response.Dispose();
+                return result;
             }
             catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
             {
@@ -150,12 +156,9 @@ public class HttpRequestService : IHttpRequestService
                 _logger.LogError("Unexpected error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
             }
-
-            await Task.Delay(1000 * attempt, cancellationToken);
         }
 
         _logger.LogError("Failed to complete HTTP request to {Url} after 3 attempts.", url);
         return default;
     }
-
 }
