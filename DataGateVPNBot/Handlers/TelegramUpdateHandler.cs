@@ -18,7 +18,6 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly ILogger<TelegramUpdateHandler> _logger;
     private readonly ITelegramBotClient _botClient;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IOpenVpnClientService _openVpnClientService;
     private readonly ITelegramSettingsService _telegramSettingsService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
     
@@ -28,14 +27,12 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         ILogger<TelegramUpdateHandler> logger,
         ITelegramBotClient botClient,
         IServiceProvider serviceProvider,
-        IOpenVpnClientService openVpnClientService,
         ITelegramSettingsService telegramSettingsService,
         DashBoardApiAuthService dashBoardApiAuthService,
         IConfiguration configuration)
     {
         _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _openVpnClientService = openVpnClientService ?? throw new ArgumentNullException(nameof(openVpnClientService));
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
         _dashBoardApiAuthService = dashBoardApiAuthService;
         

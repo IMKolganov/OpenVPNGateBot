@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using DataGateVPNBot.Services.UntilsServices;
 
 namespace DataGateVPNBot.Configurations;
 
@@ -26,7 +25,7 @@ public static class PipelineConfiguration
         var environmentName = app.Environment.EnvironmentName;
         
         app.MapGet("/",
-            (ILogger<EasyRsaService> logger) => Results.Text(statusCode: 200, 
+            () => Results.Text(statusCode: 200, 
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
 
         app.Logger.LogInformation($"Application version: {version}; Environment: {environmentName};");

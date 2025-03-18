@@ -133,88 +133,94 @@ public partial class TelegramUpdateHandler
 
     private async Task<Message> MakeNewVpnFile(Message msg, CancellationToken cancellationToken)
     {
+        throw new NotImplementedException();
+
         // if (check )//todo: need check
         //throw
         
         // Generate the client configuration file
-        if (!_openVpnClientService.CheckHealthFileSystem()) 
-            return await InformationClientAboutCertCriticalError(msg, cancellationToken);
-        var clientConfigFile = await _openVpnClientService.CreateClientConfiguration(msg.Chat.Id, cancellationToken);
-        if (clientConfigFile.FileInfo != null)
-        {
-            _logger.LogInformation("Client configuration created successfully in UpdateHandler.");
-            await _botClient.SendChatAction(msg.Chat.Id, ChatAction.UploadDocument, cancellationToken: cancellationToken);
-            // Send the .ovpn file to the user
-            await using var fileStream = new FileStream(clientConfigFile.FileInfo.FullName, FileMode.Open, FileAccess.Read,
-                FileShare.Read);
-            return await _botClient.SendDocument(
-                chatId: msg.Chat.Id,
-                document: InputFile.FromStream(fileStream, clientConfigFile.FileInfo.Name),
-                caption: clientConfigFile.Message, 
-                cancellationToken: cancellationToken);
-        }
-        else
-        {
-            return await _botClient.SendMessage(
-                chatId: msg.Chat.Id,
-                text: clientConfigFile.Message,
-                replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
-        }
+        // if (!_openVpnClientService.CheckHealthFileSystem()) 
+        //     return await InformationClientAboutCertCriticalError(msg, cancellationToken);
+        // var clientConfigFile = await _openVpnClientService.CreateClientConfiguration(msg.Chat.Id, cancellationToken);
+        // if (clientConfigFile.FileInfo != null)
+        // {
+        //     _logger.LogInformation("Client configuration created successfully in UpdateHandler.");
+        //     await _botClient.SendChatAction(msg.Chat.Id, ChatAction.UploadDocument, cancellationToken: cancellationToken);
+        //     // Send the .ovpn file to the user
+        //     await using var fileStream = new FileStream(clientConfigFile.FileInfo.FullName, FileMode.Open, FileAccess.Read,
+        //         FileShare.Read);
+        //     return await _botClient.SendDocument(
+        //         chatId: msg.Chat.Id,
+        //         document: InputFile.FromStream(fileStream, clientConfigFile.FileInfo.Name),
+        //         caption: clientConfigFile.Message, 
+        //         cancellationToken: cancellationToken);
+        // }
+        // else
+        // {
+        //     return await _botClient.SendMessage(
+        //         chatId: msg.Chat.Id,
+        //         text: clientConfigFile.Message,
+        //         replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
+        // }
     }
     
     private async Task<Message> DeleteAllFiles(Message msg, CancellationToken cancellationToken)
     {
-        if (!_openVpnClientService.CheckHealthFileSystem()) 
-            return await InformationClientAboutCertCriticalError(msg, cancellationToken);
-        await _openVpnClientService.DeleteAllClientConfigurations(msg.From!.Id);
-        return await _botClient.SendMessage(
-            chatId: msg.Chat.Id,
-            text: await GetLocalizationTextAsync("SuccessfullyDeletedAllFile", msg.From!.Id, cancellationToken),
-            replyMarkup: new ReplyKeyboardRemove(), 
-            cancellationToken: cancellationToken);
+        throw new NotImplementedException();
+        // if (!_openVpnClientService.CheckHealthFileSystem()) 
+        //     return await InformationClientAboutCertCriticalError(msg, cancellationToken);
+        // await _openVpnClientService.DeleteAllClientConfigurations(msg.From!.Id);
+        // return await _botClient.SendMessage(
+        //     chatId: msg.Chat.Id,
+        //     text: await GetLocalizationTextAsync("SuccessfullyDeletedAllFile", msg.From!.Id, cancellationToken),
+        //     replyMarkup: new ReplyKeyboardRemove(), 
+        //     cancellationToken: cancellationToken);
     }
 
     private async Task<Message> DeleteSelectedFile(Message msg, CancellationToken cancellationToken)
     {
-        if (!_openVpnClientService.CheckHealthFileSystem()) 
-            return await InformationClientAboutCertCriticalError(msg, cancellationToken);
-        var clientConfigFiles = await _openVpnClientService.GetAllClientConfigurations(msg.From!.Id, cancellationToken);
-        var rows = new List<InlineKeyboardButton[]>();
-
-        var currentRow = new List<InlineKeyboardButton>();
-        foreach (var fileInfo in clientConfigFiles.FileInfo)
-        {
-            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.Name, $"/delete_file {fileInfo.Name}"));
-
-            if (currentRow.Count == 2)
-            {
-                rows.Add(currentRow.ToArray());
-                currentRow.Clear();
-            }
-        }
-        
-        if (currentRow.Count > 0)
-        {
-            rows.Add(currentRow.ToArray());
-        }
-
-        var inlineMarkup = new InlineKeyboardMarkup(rows);
-        return await _botClient.SendMessage(
-            msg.Chat,
-            await GetLocalizationTextAsync("ChooseFileForDelete", msg.From!.Id, cancellationToken),
-            replyMarkup: inlineMarkup, 
-            cancellationToken: cancellationToken);
+        throw new NotImplementedException();
+        // if (!_openVpnClientService.CheckHealthFileSystem()) 
+        //     return await InformationClientAboutCertCriticalError(msg, cancellationToken);
+        // var clientConfigFiles = await _openVpnClientService.GetAllClientConfigurations(msg.From!.Id, cancellationToken);
+        // var rows = new List<InlineKeyboardButton[]>();
+        //
+        // var currentRow = new List<InlineKeyboardButton>();
+        // foreach (var fileInfo in clientConfigFiles.FileInfo)
+        // {
+        //     currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.Name, $"/delete_file {fileInfo.Name}"));
+        //
+        //     if (currentRow.Count == 2)
+        //     {
+        //         rows.Add(currentRow.ToArray());
+        //         currentRow.Clear();
+        //     }
+        // }
+        //
+        // if (currentRow.Count > 0)
+        // {
+        //     rows.Add(currentRow.ToArray());
+        // }
+        //
+        // var inlineMarkup = new InlineKeyboardMarkup(rows);
+        // return await _botClient.SendMessage(
+        //     msg.Chat,
+        //     await GetLocalizationTextAsync("ChooseFileForDelete", msg.From!.Id, cancellationToken),
+        //     replyMarkup: inlineMarkup, 
+        //     cancellationToken: cancellationToken);
     }
 
     private async Task DeleteFile(long telegramId, string fileName, CancellationToken cancellationToken)
     {
-        if (!_openVpnClientService.CheckHealthFileSystem()) throw new Exception("Unable to delete file");
-        await _openVpnClientService.DeleteClientConfiguration(telegramId, fileName);
-        await _botClient.SendMessage(
-            chatId: telegramId,
-            text: await GetLocalizationTextAsync("SuccessfullyDeletedFile", telegramId, cancellationToken),
-            replyMarkup: new ReplyKeyboardRemove(), 
-            cancellationToken: cancellationToken);
+        throw new NotImplementedException();
+
+        // if (!_openVpnClientService.CheckHealthFileSystem()) throw new Exception("Unable to delete file");
+        // await _openVpnClientService.DeleteClientConfiguration(telegramId, fileName);
+        // await _botClient.SendMessage(
+        //     chatId: telegramId,
+        //     text: await GetLocalizationTextAsync("SuccessfullyDeletedFile", telegramId, cancellationToken),
+        //     replyMarkup: new ReplyKeyboardRemove(), 
+        //     cancellationToken: cancellationToken);
     }
 
     private async Task<Message>  InformationClientAboutCertCriticalError(Message msg, 
