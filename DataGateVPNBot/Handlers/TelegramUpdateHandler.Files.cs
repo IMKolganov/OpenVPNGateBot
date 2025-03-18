@@ -100,71 +100,110 @@ public partial class TelegramUpdateHandler
         }
     }
     
-    private async Task<Message> DeleteAllFiles(Message msg, CancellationToken cancellationToken)
+    private async Task<Message> DeleteAllFiles(Message msg, string vpnServerIdArg, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
-        // if (!_openVpnClientService.CheckHealthFileSystem()) 
-        //     return await InformationClientAboutCertCriticalError(msg, cancellationToken);
-        // await _openVpnClientService.DeleteAllClientConfigurations(msg.From!.Id);
-        // return await _botClient.SendMessage(
-        //     chatId: msg.Chat.Id,
-        //     text: await GetLocalizationTextAsync("SuccessfullyDeletedAllFile", msg.From!.Id, cancellationToken),
-        //     replyMarkup: new ReplyKeyboardRemove(), 
-        //     cancellationToken: cancellationToken);
-    }
+        await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
+        using var scope = _serviceProvider.CreateScope();
+        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+        
+        if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("InvalidServerId", msg.From!.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
 
-    private async Task<Message> DeleteSelectedFile(Message msg, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-        // if (!_openVpnClientService.CheckHealthFileSystem()) 
-        //     return await InformationClientAboutCertCriticalError(msg, cancellationToken);
-        // var clientConfigFiles = await _openVpnClientService.GetAllClientConfigurations(msg.From!.Id, cancellationToken);
-        // var rows = new List<InlineKeyboardButton[]>();
-        //
-        // var currentRow = new List<InlineKeyboardButton>();
-        // foreach (var fileInfo in clientConfigFiles.FileInfo)
-        // {
-        //     currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.Name, $"/delete_file {fileInfo.Name}"));
-        //
-        //     if (currentRow.Count == 2)
-        //     {
-        //         rows.Add(currentRow.ToArray());
-        //         currentRow.Clear();
-        //     }
-        // }
-        //
-        // if (currentRow.Count > 0)
-        // {
-        //     rows.Add(currentRow.ToArray());
-        // }
-        //
-        // var inlineMarkup = new InlineKeyboardMarkup(rows);
-        // return await _botClient.SendMessage(
-        //     msg.Chat,
-        //     await GetLocalizationTextAsync("ChooseFileForDelete", msg.From!.Id, cancellationToken),
-        //     replyMarkup: inlineMarkup, 
-        //     cancellationToken: cancellationToken);
-    }
+        if (await ovpnFileService.RevokeAllOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken))
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("SuccessfullyDeletedAllFile", msg.From!.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(), 
+                cancellationToken: cancellationToken);
+        }
 
-    private async Task DeleteFile(long telegramId, string fileName, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-
-        // if (!_openVpnClientService.CheckHealthFileSystem()) throw new Exception("Unable to delete file");
-        // await _openVpnClientService.DeleteClientConfiguration(telegramId, fileName);
-        // await _botClient.SendMessage(
-        //     chatId: telegramId,
-        //     text: await GetLocalizationTextAsync("SuccessfullyDeletedFile", telegramId, cancellationToken),
-        //     replyMarkup: new ReplyKeyboardRemove(), 
-        //     cancellationToken: cancellationToken);
-    }
-
-    private async Task<Message>  InformationClientAboutCertCriticalError(Message msg, 
-        CancellationToken cancellationToken)
-    {
         return await _botClient.SendMessage(
             chatId: msg.Chat.Id,
-            text: await GetLocalizationTextAsync("CertCriticalError", msg.From!.Id, cancellationToken),
+            text: await GetLocalizationTextAsync("ErrorDeletedAllFile", msg.From!.Id, cancellationToken),
+            replyMarkup: new ReplyKeyboardRemove(), 
+            cancellationToken: cancellationToken);
+    }
+
+    private async Task<Message> DeleteSelectedFile(Message msg, string vpnServerIdArg, 
+        CancellationToken cancellationToken)
+    {
+        await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
+        using var scope = _serviceProvider.CreateScope();
+        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+        
+        if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("InvalidServerId", msg.From!.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+        
+        var clientConfigFiles = await ovpnFileService.GetAllOvpnFilesListAsync(vpnServerId,
+            msg.From!.Id, cancellationToken);
+        
+        var rows = new List<InlineKeyboardButton[]>();
+        
+        var currentRow = new List<InlineKeyboardButton>();
+        foreach (var fileInfo in clientConfigFiles)
+        {
+            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, $"/delete_file {fileInfo.FileName}"));
+        
+            if (currentRow.Count == 2)
+            {
+                rows.Add(currentRow.ToArray());
+                currentRow.Clear();
+            }
+        }
+        
+        if (currentRow.Count > 0)
+        {
+            rows.Add(currentRow.ToArray());
+        }
+        
+        var inlineMarkup = new InlineKeyboardMarkup(rows);
+        return await _botClient.SendMessage(
+            msg.Chat,
+            await GetLocalizationTextAsync("ChooseFileForDelete", msg.From!.Id, cancellationToken),
+            replyMarkup: inlineMarkup, 
+            cancellationToken: cancellationToken);
+    }
+
+    private async Task DeleteFile(long telegramId, string vpnServerIdArg, string fileName, CancellationToken cancellationToken)
+    {
+        await _botClient.SendChatAction(telegramId, ChatAction.Typing, cancellationToken: cancellationToken);
+        using var scope = _serviceProvider.CreateScope();
+        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+        
+        if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+        {
+            await _botClient.SendMessage(
+                chatId: telegramId,
+                text: await GetLocalizationTextAsync("InvalidServerId", telegramId, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+
+        if (await ovpnFileService.RevokeOvpnFileAsync(vpnServerId, telegramId, fileName, cancellationToken))
+        {
+            await _botClient.SendMessage(
+                chatId: telegramId,
+                text: await GetLocalizationTextAsync("SuccessfullyDeletedFile", telegramId, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(), 
+                cancellationToken: cancellationToken);
+        }
+
+        await _botClient.SendMessage(
+            chatId: telegramId,
+            text: await GetLocalizationTextAsync("ErrorDeletedFile",telegramId, cancellationToken),
             replyMarkup: new ReplyKeyboardRemove(), 
             cancellationToken: cancellationToken);
     }

@@ -18,6 +18,17 @@ public class OvpnFileService : IOvpnFileService
         _logger = logger;
     }
 
+    public async Task<List<IssuedOvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long userId,
+        CancellationToken cancellationToken)
+    {
+        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+            vpnServerId, userId.ToString(), cancellationToken);
+        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
+                                  new List<IssuedOvpnFileResponse>();
+        
+        return issuedOvpnFileResponses;
+    }
+
     public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long userId,
         CancellationToken cancellationToken)
     {
@@ -92,17 +103,20 @@ public class OvpnFileService : IOvpnFileService
 
         if (!success)
         {
-            _logger.LogWarning("Failed to request OVPN file creation for user {UserId} on server {VpnServerId}.", userId, vpnServerId);
+            _logger.LogWarning("Failed to request OVPN file creation for user {UserId} on server {VpnServerId}.",
+                userId, vpnServerId);
             return null;
         }
 
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+        var issuedOvpnFileResponses = 
+            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
             vpnServerId, userId.ToString(), cancellationToken);
 
         var issuedOvpnFile = issuedOvpnFileResponses?.FirstOrDefault(x => !x.IsRevoked);
         if (issuedOvpnFile == null)
         {
-            _logger.LogWarning("No valid OVPN file found for user {UserId} on server {VpnServerId} after creation.", userId, vpnServerId);
+            _logger.LogWarning("No valid OVPN file found for user {UserId} on server {VpnServerId} after creation.",
+                userId, vpnServerId);
             return null;
         }
 
@@ -114,4 +128,53 @@ public class OvpnFileService : IOvpnFileService
         var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
         return inputFile;
     }
+
+    public async Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Revoking all OVPN files for user: {UserId}, ServerId: {VpnServerId}", telegramId, vpnServerId);
+
+        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+            vpnServerId, telegramId.ToString(), cancellationToken);
+
+        if (issuedOvpnFileResponses == null || !issuedOvpnFileResponses.Any())
+        {
+            _logger.LogWarning("No OVPN files found to revoke for user {UserId} on server {VpnServerId}.", telegramId, vpnServerId);
+            return false;
+        }
+
+        var success = true;
+        foreach (var file in issuedOvpnFileResponses)
+        {
+            var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), file.CommonName, vpnServerId, cancellationToken);
+            if (!revoked)
+            {
+                _logger.LogError("Failed to revoke OVPN file: {FileName} for user {UserId} on server {VpnServerId}", 
+                    file.FileName, telegramId, vpnServerId);
+                success = false;
+            }
+        }
+
+        return success;
+    }
+    
+    public async Task<bool> RevokeOvpnFileAsync(int vpnServerId, long telegramId, string fileName, 
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Revoking OVPN file {FileName} for user {UserId}, ServerId: {VpnServerId}", 
+            fileName, telegramId, vpnServerId);
+
+        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+            vpnServerId, telegramId.ToString(), cancellationToken);
+
+        var fileToRevoke = issuedOvpnFileResponses?.FirstOrDefault(f => f.FileName == fileName);
+        if (fileToRevoke == null)
+        {
+            _logger.LogWarning("OVPN file {FileName} not found for user {telegramId} on server {VpnServerId}.", 
+                fileName, telegramId, vpnServerId);
+            return false;
+        }
+
+        return await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), fileToRevoke.CommonName, vpnServerId, cancellationToken);
+    }
+
 }

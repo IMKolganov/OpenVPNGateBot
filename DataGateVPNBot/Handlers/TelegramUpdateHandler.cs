@@ -120,8 +120,8 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/register" => RegisterForVpn(msg, cancellationToken),
             "/get_my_files" => GetMyFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/make_new_file" => MakeNewVpnFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
-            "/delete_selected_file" => DeleteSelectedFile(msg, cancellationToken),
-            "/delete_all_files" => DeleteAllFiles(msg,  cancellationToken),
+            "/delete_selected_file" => DeleteSelectedFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
+            "/delete_all_files" => DeleteAllFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/install_client" => InstallClient(msg, cancellationToken),
             "/about_project" => AboutProject(msg, cancellationToken),
             "/contacts" => Contacts(msg, cancellationToken),
@@ -176,7 +176,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         {
             var fileName = callbackQuery.Data.Substring("/delete_file ".Length);
             _logger.LogInformation("Deleting file: {FileName}", fileName);
-            await DeleteFile(callbackQuery.From.Id, fileName, cancellationToken);
+            await DeleteFile(callbackQuery.From.Id,  "8", fileName, cancellationToken);//todo: FIX IT!
         }
         else if (callbackQuery.Data != null && (callbackQuery.Data.ToLower() == "/english" || 
                                                 callbackQuery.Data.ToLower() == "/русский" ||
