@@ -12,7 +12,8 @@ public class ApplicationDbContext : DbContext
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
         : base(options)
     {
-        _defaultSchema = configuration["DataBaseSettings:DefaultSchema"] ?? throw new InvalidOperationException();
+        _defaultSchema = (Environment.GetEnvironmentVariable("DB_DEFAULT_SCHEMA") 
+                          ?? configuration["DataBaseSettings:DefaultSchema"]) ?? "public";
     }
     
     public DbSet<TelegramUser> TelegramUsers { get; set; } = null!;
