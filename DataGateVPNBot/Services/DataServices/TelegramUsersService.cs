@@ -8,12 +8,15 @@ namespace DataGateVPNBot.Services.DataServices;
 
 public class TelegramUsersService : ITelegramUsersService
 {
+    private readonly ILogger<TelegramUsersService> _logger;
     private readonly IUnitOfWork _unitOfWork;
-    public TelegramUsersService(IUnitOfWork unitOfWork)
+
+    public TelegramUsersService(ILogger<TelegramUsersService> logger, IUnitOfWork unitOfWork)
     {
+        _logger = logger;
         _unitOfWork = unitOfWork;
     }
-
+    
     public async Task RegisterUserAsync(long telegramId, string? username, string? firstName, string? lastName,
         CancellationToken cancellationToken)
     {
@@ -50,7 +53,8 @@ public class TelegramUsersService : ITelegramUsersService
         //     .Where(u => u.TelegramId == 5767006971).ToListAsync();
         if (existingUser is { Count: 0 })
         {
-            throw new Exception("User not found");
+            _logger.LogError("Admins for telegram bot not found, returning empty list");
+            return new List<TelegramUser>();
         }
         
         return existingUser;
