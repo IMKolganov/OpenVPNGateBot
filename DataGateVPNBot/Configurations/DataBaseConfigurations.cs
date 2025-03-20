@@ -12,15 +12,25 @@ public static class DataBaseConfigurations
 {
     public static void DataBaseServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var dbSettings = configuration.GetSection("DataBaseSettings").Get<DataBaseSettings>() 
-                         ?? throw new InvalidOperationException("DataBaseSettings section is missing in configuration.");
+        var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
+                               ?? configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrEmpty(connectionString))
+            throw new InvalidOperationException("Database connection string is missing.");
+
+        var dbSettings = new DataBaseSettings
+        {
+            DefaultSchema = Environment.GetEnvironmentVariable("DB_DEFAULT_SCHEMA") 
+                            ?? configuration["DataBaseSettings:DefaultSchema"],
+
+            MigrationTable = Environment.GetEnvironmentVariable("DB_MIGRATION_TABLE") 
+                             ?? configuration["DataBaseSettings:MigrationTable"]
+        };
 
         services.AddDbContextFactory<ApplicationDbContext>((serviceProvider, options) =>
         {
-            var config = serviceProvider.GetRequiredService<IConfiguration>();
             options.UseNpgsql(
-                config.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string not found."),
+                connectionString,
                 npgsqlOptions => npgsqlOptions.MigrationsHistoryTable(
                     dbSettings.MigrationTable ?? "__EFMigrationsHistory",
                     dbSettings.DefaultSchema ?? "public"
