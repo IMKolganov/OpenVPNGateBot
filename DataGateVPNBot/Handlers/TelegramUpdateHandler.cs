@@ -18,29 +18,24 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly ILogger<TelegramUpdateHandler> _logger;
     private readonly ITelegramBotClient _botClient;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IOpenVpnClientService _openVpnClientService;
     private readonly ITelegramSettingsService _telegramSettingsService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
     
-    private readonly string _pathBotLog;
     private readonly string _pathBotPhoto;
     
     public TelegramUpdateHandler(
         ILogger<TelegramUpdateHandler> logger,
         ITelegramBotClient botClient,
         IServiceProvider serviceProvider,
-        IOpenVpnClientService openVpnClientService,
         ITelegramSettingsService telegramSettingsService,
         DashBoardApiAuthService dashBoardApiAuthService,
         IConfiguration configuration)
     {
         _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _openVpnClientService = openVpnClientService ?? throw new ArgumentNullException(nameof(openVpnClientService));
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
         _dashBoardApiAuthService = dashBoardApiAuthService;
         
-        _pathBotLog = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.LogFile ?? throw new InvalidOperationException();
         _pathBotPhoto = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.BotPhotoPath ?? throw new InvalidOperationException();
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -124,19 +119,16 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/how_to_use" => HowToUseVpn(msg, cancellationToken),
             "/register" => RegisterForVpn(msg, cancellationToken),
             "/get_my_files" => GetMyFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
-            "/make_new_file" => MakeNewVpnFile(msg, cancellationToken),
-            "/delete_selected_file" => DeleteSelectedFile(msg, cancellationToken),
-            "/delete_all_files" => DeleteAllFiles(msg,  cancellationToken),
+            "/make_new_file" => MakeNewVpnFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
+            "/delete_selected_file" => DeleteSelectedFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
+            "/delete_all_files" => DeleteAllFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/install_client" => InstallClient(msg, cancellationToken),
             "/about_project" => AboutProject(msg, cancellationToken),
             "/contacts" => Contacts(msg, cancellationToken),
             "/change_language" => SelectLanguage(msg, cancellationToken),
             
             "/register_commands" => RegisterCommandsAsync(msg, cancellationToken),
-            
-            "/get_logs" => GetLogs(msg),
-            "/get_file_log" => SendFileLog(msg),
-            
+
             "/english" => ChangeLanguage(msg, command, cancellationToken),
             "/русский" => ChangeLanguage(msg, command, cancellationToken),
             "/ελληνικά" => ChangeLanguage(msg, command, cancellationToken),
@@ -184,7 +176,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         {
             var fileName = callbackQuery.Data.Substring("/delete_file ".Length);
             _logger.LogInformation("Deleting file: {FileName}", fileName);
-            await DeleteFile(callbackQuery.From.Id, fileName, cancellationToken);
+            await DeleteFile(callbackQuery.From.Id,  "8", fileName, cancellationToken);//todo: FIX IT!
         }
         else if (callbackQuery.Data != null && (callbackQuery.Data.ToLower() == "/english" || 
                                                 callbackQuery.Data.ToLower() == "/русский" ||

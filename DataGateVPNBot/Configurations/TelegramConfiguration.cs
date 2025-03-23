@@ -1,4 +1,6 @@
-﻿using DataGateVPNBot.Models.Configurations;
+﻿using DataGateVPNBot.Handlers;
+using DataGateVPNBot.Models.Configurations;
+using DataGateVPNBot.Services.TelegramApi;
 using Telegram.Bot;
 
 namespace DataGateVPNBot.Configurations;
@@ -7,11 +9,15 @@ public static class TelegramConfiguration
 {
     public static void ConfigureTelegram(this IServiceCollection services, IConfiguration configuration)
     {
-        var botConfigSection = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
+        var botConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()
+                        ?? throw new NullReferenceException("BotConfiguration section is missing in configuration.");
 
-        if (botConfigSection == null) throw new NullReferenceException();
-        services.AddHttpClient(botConfigSection.TelegramWebHook).AddTypedClient<ITelegramBotClient>(
-            httpClient => new TelegramBotClient(botConfigSection.BotToken, httpClient)
-        );
+        services.AddSingleton(botConfig);
+
+        services.AddHttpClient(botConfig.TelegramWebHook)
+            .AddTypedClient<ITelegramBotClient>(httpClient => new TelegramBotClient(botConfig.BotToken, httpClient));
+            
+        services.AddHttpClient<WebhookService>();
+        services.AddHostedService<StartupNotificationHandler>();
     }
 }

@@ -28,7 +28,9 @@ public partial class TelegramUpdateHandler
             [
                 InlineKeyboardButton.WithUrl("🖥 Windows", "https://openvpn.net/client-connect-vpn-for-windows/"),
                 InlineKeyboardButton.WithUrl("📱 Android", "https://play.google.com/store/apps/details?id=net.openvpn.openvpn"),
-                InlineKeyboardButton.WithUrl("🍎 iPhone", "https://apps.apple.com/app/openvpn-connect/id590379981")
+                InlineKeyboardButton.WithUrl("🍎 iPhone", "https://apps.apple.com/app/openvpn-connect/id590379981"),
+                InlineKeyboardButton.WithUrl("🖥🍏 MacBook", "https://openvpn.net/client-connect-vpn-for-mac-os"),
+                InlineKeyboardButton.WithUrl("🐧 Linux", "https://openvpn.net/client-connect-vpn-for-linux/"),
             ],
             [
                 InlineKeyboardButton.WithUrl(

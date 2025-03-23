@@ -53,7 +53,7 @@ public partial class TelegramUpdateHandler
             replyMarkup: new ReplyKeyboardRemove(), 
             cancellationToken: cancellationToken);
         
-        await MakeNewVpnFile(msg, cancellationToken);
+        await MakeNewVpnFile(msg, "8", cancellationToken);//todo: FIX IT!
         await InstallClient(msg, cancellationToken);
         await Usage(msg, cancellationToken);
 

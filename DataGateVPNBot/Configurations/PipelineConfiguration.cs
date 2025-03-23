@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
-using DataGateVPNBot.Services.UntilsServices;
+using DataGateVPNBot.DataBase.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataGateVPNBot.Configurations;
 
@@ -7,7 +8,7 @@ public static class PipelineConfiguration
 {
     public static void ConfigurePipeline(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
@@ -16,6 +17,23 @@ public static class PipelineConfiguration
         app.UseHttpsRedirection();
         app.UseAuthorization();
         app.MapControllers();
+        
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+
+            if (pendingMigrations.Any())
+            {
+                app.Logger.LogInformation("Applying {Count} pending migrations: {Migrations}", pendingMigrations.Count, string.Join(", ", pendingMigrations));
+                dbContext.Database.Migrate();
+                app.Logger.LogInformation("Migrations applied successfully.");
+            }
+            else
+            {
+                app.Logger.LogInformation("Database is up-to-date. No pending migrations.");
+            }
+        }
         
         app.UseStatusCodePagesWithReExecute("/error/{0}");
         app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found", 
@@ -26,7 +44,7 @@ public static class PipelineConfiguration
         var environmentName = app.Environment.EnvironmentName;
         
         app.MapGet("/",
-            (ILogger<EasyRsaService> logger) => Results.Text(statusCode: 200, 
+            () => Results.Text(statusCode: 200, 
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
 
         app.Logger.LogInformation($"Application version: {version}; Environment: {environmentName};");

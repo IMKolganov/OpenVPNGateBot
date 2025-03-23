@@ -95,9 +95,5 @@ COPY --from=publish /app/publish .
 # Debug: Display the contents before running
 RUN echo "Contents before execution:" && ls -la
 
-# Copy configuration files
-COPY appsettings.json .
-COPY appsettings.Development.json .
-
 # Set the entry point
 ENTRYPOINT ["dotnet", "DataGateVPNBot.dll"]

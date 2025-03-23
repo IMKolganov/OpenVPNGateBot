@@ -10,6 +10,8 @@ public class DashBoardApiOvpnFileService
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadOvpnFile";
+    private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddOvpnFile";
+    private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeOvpnFile";
     
     public DashBoardApiOvpnFileService(ILogger<DashBoardApiOvpnFileService> logger,
         IHttpRequestService httpRequestService,
@@ -76,5 +78,88 @@ public class DashBoardApiOvpnFileService
         _logger.LogInformation("OVPN file stream retrieved successfully.");
 
         return stream;
+    }
+
+    public async Task<bool> AddOvpnFileAsync(string telegramId, string commonName, int vpnServerId,
+        CancellationToken cancellationToken, string issuedTo = "TelegramBot")
+    {
+        if (vpnServerId <= 0)
+            throw new ArgumentException("vpnServerId is required.");
+
+        if (string.IsNullOrEmpty(telegramId))
+            throw new ArgumentException("telegramId is required.");
+
+        if (string.IsNullOrEmpty(commonName))
+            throw new ArgumentException("commonName is required.");
+
+        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _logger.LogError("Failed to retrieve Bearer token.");
+            return false;
+        }
+
+        var requestBody = new AddOvpnFileRequest
+        {
+            ExternalId = telegramId,
+            CommonName = commonName,
+            VpnServerId = vpnServerId,
+            IssuedTo = issuedTo
+        };
+
+        _logger.LogInformation("Sending request to create OVPN file for " +
+                               $"TelegramId: {telegramId}, ServerId: {vpnServerId}");
+
+        var response =
+            await _httpRequestService.PostAsync<bool>(EndpointAddOpenVpnFile, requestBody, token, cancellationToken);
+
+        if (!response)
+        {
+            _logger.LogError($"Failed to create OVPN file for User: {telegramId}, ServerId: {vpnServerId}");
+        }
+        else
+        {
+            _logger.LogInformation("Successfully created OVPN file for " +
+                                   $"TelegramId: {telegramId}, VpnServerId: {vpnServerId}");
+        }
+
+        return response;
+    }
+    
+    public async Task<bool> RevokeOvpnFileAsync(string telegramId, string commonName, int vpnServerId, 
+        CancellationToken cancellationToken)
+    {
+        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _logger.LogError("Failed to retrieve Bearer token.");
+            return false;
+        }
+
+        var requestBody = new RevokeOvpnFileRequest
+        {
+            ExternalId = telegramId,
+            CommonName = commonName,
+            ServerId = vpnServerId
+        };
+
+        _logger.LogInformation("Sending request to revoke OVPN file for " +
+                               $"TelegramId: {telegramId}, ServerId: {vpnServerId}");
+
+        var response =
+            await _httpRequestService.PostAsync<bool>(EndpointRevokeOvpnFile, requestBody, token, cancellationToken);
+
+        if (!response)
+        {
+            _logger.LogError("Failed to revoke OVPN file for " +
+                             $"TelegramId: {telegramId}, ServerId: {vpnServerId}, Response: {response}");
+        }
+        else
+        {
+            _logger.LogInformation("Successfully revoked OVPN file for " +
+                                   $"TelegramId: {telegramId}, ServerId: {vpnServerId}, Response: {response}");
+        }
+
+        return response;
     }
 }
