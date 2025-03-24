@@ -2,7 +2,7 @@
 ARG TARGETARCH
 
 # Use the .NET SDK for building
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 # Check if the argument is passed
 ARG TARGETARCH
@@ -64,7 +64,7 @@ RUN dotnet publish DataGateVPNBot/DataGateVPNBot.csproj \
     -o /app/publish
 
 # Final image with .NET runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 
 # Check if TARGETARCH is still available
 ARG TARGETARCH
