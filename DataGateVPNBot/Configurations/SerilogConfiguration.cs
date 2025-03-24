@@ -9,14 +9,22 @@ public static class SerilogConfiguration
 {
     public static void ConfigureSerilog(this IHostBuilder host, IConfiguration configuration)
     {
-        var elasticsearchSettings = configuration.GetSection("Elasticsearch").Get<ElasticsearchSettings>();
-        if (elasticsearchSettings == null) throw new NullReferenceException(nameof(elasticsearchSettings));
-        
-        Log.Logger = new LoggerConfiguration()
+        var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(elasticsearchSettings.Uri))
+            .Enrich.FromLogContext()
+            .MinimumLevel.Information();
+
+        var elasticSection = configuration.GetSection("Elasticsearch");
+        var elasticsearchSettings = elasticSection.Exists()
+            ? elasticSection.Get<ElasticsearchSettings>()
+            : null;
+
+        if (elasticsearchSettings != null &&
+            !string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
+        {
+            loggerConfig = loggerConfig.WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(elasticsearchSettings.Uri))
             {
-                IndexFormat = elasticsearchSettings.IndexFormat,
+                IndexFormat = elasticsearchSettings.IndexFormat ?? "default-index",
                 AutoRegisterTemplate = true,
                 AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv8,
                 NumberOfShards = 1,
@@ -31,13 +39,16 @@ public static class SerilogConfiguration
                         Console.WriteLine($"Exception: {exception.Message}");
                 },
                 EmitEventFailure = EmitEventFailureHandling.WriteToSelfLog
+            });
 
-            })
-            .Enrich.FromLogContext()
-            .MinimumLevel.Information()
-            .CreateLogger();
-;
+            Console.WriteLine("Elasticsearch logging is enabled.");
+        }
+        else
+        {
+            Console.WriteLine("Elasticsearch settings not found. Logging to console only.");
+        }
 
+        Log.Logger = loggerConfig.CreateLogger();
         host.UseSerilog();
     }
 }
