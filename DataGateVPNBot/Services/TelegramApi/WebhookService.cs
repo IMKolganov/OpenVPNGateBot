@@ -19,24 +19,17 @@ public class WebhookService
     public async Task<bool> IsWebhookSetAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(_botConfig.BotToken))
-        {
             throw new NullReferenceException("BotToken is missing in configuration.");
-        }
+
         if (string.IsNullOrEmpty(_botConfig.TelegramWebHook))
-        {
             throw new NullReferenceException("TelegramWebHook is missing in configuration.");
-        }
-        if (string.IsNullOrEmpty(_botConfig.CertificatePath))
-        {
-            throw new NullReferenceException("CertificatePath is missing in configuration.");
-        }
-        
+
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/getWebhookInfo";
         var response = await _httpClient.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("Failed to fetch webhook info: {StatusCode}", response.StatusCode);
+            _logger.LogError($"Failed to fetch webhook info: {response.StatusCode}");
             return false;
         }
 
@@ -51,11 +44,8 @@ public class WebhookService
             var currentUrl = result.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
             var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) &&
                                        certElement.GetBoolean();
-            var configuredCertificate =
-                !string.IsNullOrEmpty(_botConfig.CertificatePath);
 
-            _logger.LogInformation("Current webhook URL: {CurrentUrl}, Custom Certificate: {HasCertificate}",
-                currentUrl, hasCustomCertificate);
+            _logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
 
             if (currentUrl != _botConfig.TelegramWebHook)
             {
@@ -64,10 +54,10 @@ public class WebhookService
                 return false;
             }
 
-            if (configuredCertificate != hasCustomCertificate)
+            if (_botConfig.UseCertificate != hasCustomCertificate)
             {
-                _logger.LogWarning("Webhook certificate mismatch! Expected custom cert: {Expected}, Got: {Actual}",
-                    configuredCertificate, hasCustomCertificate);
+                _logger.LogWarning($"Webhook certificate mismatch! Expected custom cert: {_botConfig.UseCertificate}, " +
+                                   $"Got: {hasCustomCertificate}");
                 return false;
             }
 
@@ -82,30 +72,29 @@ public class WebhookService
     public async Task SetWebhookAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(_botConfig.BotToken))
-        {
             throw new NullReferenceException("BotToken is missing in configuration.");
-        }
+
         if (string.IsNullOrEmpty(_botConfig.TelegramWebHook))
-        {
             throw new NullReferenceException("TelegramWebHook is missing in configuration.");
-        }
-        if (string.IsNullOrEmpty(_botConfig.CertificatePath))
-        {
-            throw new NullReferenceException("CertificatePath is missing in configuration.");
-        }
-        
+
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
         using var form = new MultipartFormDataContent();
-        
-        form.Add(new StringContent(_botConfig.TelegramWebHook), "url");
-        
-        var certificatePath = _botConfig.CertificatePath;
-        var certificateFileName = Path.GetFileName(certificatePath);
 
-        form.Add(new ByteArrayContent(
-                await File.ReadAllBytesAsync(certificatePath, cancellationToken)), 
-            "certificate", 
-            certificateFileName);
+        form.Add(new StringContent(_botConfig.TelegramWebHook), "url");
+
+        if (_botConfig.UseCertificate)
+        {
+            if (string.IsNullOrEmpty(_botConfig.CertificatePath))
+                throw new NullReferenceException("CertificatePath is missing in configuration but UseCertificate is true.");
+
+            var certificatePath = _botConfig.CertificatePath;
+            var certificateFileName = Path.GetFileName(certificatePath);
+
+            form.Add(new ByteArrayContent(
+                    await File.ReadAllBytesAsync(certificatePath, cancellationToken)),
+                "certificate",
+                certificateFileName);
+        }
 
         var response = await _httpClient.PostAsync(url, form, cancellationToken);
         var result = await response.Content.ReadAsStringAsync(cancellationToken);

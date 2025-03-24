@@ -21,22 +21,18 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly ITelegramSettingsService _telegramSettingsService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
     
-    private readonly string _pathBotPhoto;
-    
     public TelegramUpdateHandler(
         ILogger<TelegramUpdateHandler> logger,
         ITelegramBotClient botClient,
         IServiceProvider serviceProvider,
         ITelegramSettingsService telegramSettingsService,
-        DashBoardApiAuthService dashBoardApiAuthService,
-        IConfiguration configuration)
+        DashBoardApiAuthService dashBoardApiAuthService)
     {
         _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
         _dashBoardApiAuthService = dashBoardApiAuthService;
         
-        _pathBotPhoto = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.BotPhotoPath ?? throw new InvalidOperationException();
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
