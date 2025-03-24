@@ -18,6 +18,19 @@ public class WebhookService
 
     public async Task<bool> IsWebhookSetAsync(CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(_botConfig.BotToken))
+        {
+            throw new NullReferenceException("BotToken is missing in configuration.");
+        }
+        if (string.IsNullOrEmpty(_botConfig.TelegramWebHook))
+        {
+            throw new NullReferenceException("TelegramWebHook is missing in configuration.");
+        }
+        if (string.IsNullOrEmpty(_botConfig.CertificatePath))
+        {
+            throw new NullReferenceException("CertificatePath is missing in configuration.");
+        }
+        
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/getWebhookInfo";
         var response = await _httpClient.GetAsync(url, cancellationToken);
 
@@ -68,11 +81,24 @@ public class WebhookService
 
     public async Task SetWebhookAsync(CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(_botConfig.BotToken))
+        {
+            throw new NullReferenceException("BotToken is missing in configuration.");
+        }
+        if (string.IsNullOrEmpty(_botConfig.TelegramWebHook))
+        {
+            throw new NullReferenceException("TelegramWebHook is missing in configuration.");
+        }
+        if (string.IsNullOrEmpty(_botConfig.CertificatePath))
+        {
+            throw new NullReferenceException("CertificatePath is missing in configuration.");
+        }
+        
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
         using var form = new MultipartFormDataContent();
-    
+        
         form.Add(new StringContent(_botConfig.TelegramWebHook), "url");
-
+        
         var certificatePath = _botConfig.CertificatePath;
         var certificateFileName = Path.GetFileName(certificatePath);
 
