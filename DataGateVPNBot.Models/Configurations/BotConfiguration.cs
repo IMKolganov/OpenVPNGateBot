@@ -2,8 +2,8 @@
 
 public class BotConfiguration
 {
-    public string BotToken { get; init; } = null!;
-    public string TelegramWebHook { get; init; } = "TelegramWebHook";
-    public string CertificatePath { get; init; } = null!;
-    public string BotPhotoPath { get; init; } = "Photo/bot.gif";
+    public string BotToken { get; set; } = null!;
+    public string TelegramWebHook { get; set; } = "TelegramWebHook";
+    public bool UseCertificate { get; set; } = false;
+    public string CertificatePath { get; set; } = null!;
 }

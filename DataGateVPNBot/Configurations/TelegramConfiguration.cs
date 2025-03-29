@@ -9,14 +9,36 @@ public static class TelegramConfiguration
 {
     public static void ConfigureTelegram(this IServiceCollection services, IConfiguration configuration)
     {
-        var botConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()
-                        ?? throw new NullReferenceException("BotConfiguration section is missing in configuration.");
+        var botConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>() ?? new BotConfiguration();
+
+        var envBotToken = Environment.GetEnvironmentVariable("BOT_TOKEN");
+        var envWebHook = Environment.GetEnvironmentVariable("TELEGRAM_WEBHOOK");
+        var envCertPath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
+        var envUseCert = Environment.GetEnvironmentVariable("USE_CERTIFICATE");
+
+        if (!string.IsNullOrEmpty(envBotToken))
+            botConfig.BotToken = envBotToken;
+
+        if (!string.IsNullOrEmpty(envWebHook))
+            botConfig.TelegramWebHook = envWebHook;
+
+        if (!string.IsNullOrEmpty(envCertPath))
+            botConfig.CertificatePath = envCertPath;
+
+        if (!string.IsNullOrEmpty(envUseCert) && bool.TryParse(envUseCert, out var useCert))
+            botConfig.UseCertificate = useCert;
+
+        if (string.IsNullOrEmpty(botConfig.BotToken))
+            throw new NullReferenceException("BotToken is missing in configuration or environment variables.");
+
+        if (string.IsNullOrEmpty(botConfig.TelegramWebHook))
+            throw new NullReferenceException("TelegramWebHook is missing in configuration or environment variables.");
 
         services.AddSingleton(botConfig);
 
         services.AddHttpClient(botConfig.TelegramWebHook)
             .AddTypedClient<ITelegramBotClient>(httpClient => new TelegramBotClient(botConfig.BotToken, httpClient));
-            
+
         services.AddHttpClient<WebhookService>();
         services.AddHostedService<StartupNotificationHandler>();
     }
