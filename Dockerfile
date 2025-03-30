@@ -13,9 +13,9 @@ RUN echo "BUILD STAGE: TARGETARCH=${TARGETARCH}"
 WORKDIR /src
 
 # Copy the project file and restore dependencies
-COPY ["OpenVPNGateMonitor/OpenVPNGateMonitor.csproj", "OpenVPNGateMonitor/"]
-WORKDIR /src/OpenVPNGateMonitor
-RUN dotnet restore "OpenVPNGateMonitor.csproj"
+COPY ["DataGateVPNBot/DataGateVPNBot.csproj", "DataGateVPNBot/"]
+WORKDIR /src/DataGateVPNBot
+RUN dotnet restore "DataGateVPNBot.csproj"
 
 # Copy the rest of the application source code
 WORKDIR /src
@@ -25,7 +25,7 @@ COPY . .
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN echo "Using build configuration: $BUILD_CONFIGURATION" && \
-    dotnet publish "OpenVPNGateMonitor/OpenVPNGateMonitor.csproj" \
+    dotnet publish "DataGateVPNBot/DataGateVPNBot.csproj" \
       -c $BUILD_CONFIGURATION \
       -o /app/publish
 
@@ -35,11 +35,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 # Switch to the default 'app' user (already exists in aspnet image)
 USER app
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
 # Copy the published application from the previous stage
 COPY --from=publish /app/publish .
 
 # Run via dotnet runtime
-ENTRYPOINT ["dotnet", "OpenVPNGateMonitor.dll"]
+ENTRYPOINT ["dotnet", "DataGateVPNBot.dll"]
