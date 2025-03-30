@@ -11,7 +11,7 @@ public static class TelegramConfiguration
     {
         var botConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>() ?? new BotConfiguration();
 
-        var envBotToken = Environment.GetEnvironmentVariable("BOT_TOKEN");
+        var envBotToken = Environment.GetEnvironmentVariable("TELEGRAMBOT_BOT_TOKEN");
         var envWebHook = Environment.GetEnvironmentVariable("TELEGRAM_WEBHOOK");
         var envCertPath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
         var envUseCert = Environment.GetEnvironmentVariable("USE_CERTIFICATE");
