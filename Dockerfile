@@ -1,31 +1,45 @@
-# Base build stage
+# Define the TARGETARCH argument
+ARG TARGETARCH
+
+# Use the .NET SDK for building
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
+# Check if the argument is passed
 ARG TARGETARCH
-ARG BUILD_CONFIGURATION=Release
-
 RUN if [ -z "$TARGETARCH" ]; then echo "ERROR: TARGETARCH is not set!"; exit 1; fi
-RUN echo "Building for runtime: linux-${TARGETARCH}, configuration: ${BUILD_CONFIGURATION}"
+RUN echo "BUILD STAGE: TARGETARCH=${TARGETARCH}"
 
+# Set the working directory
 WORKDIR /src
 
+# Copy the project file and restore dependencies
 COPY ["DataGateVPNBot/DataGateVPNBot.csproj", "DataGateVPNBot/"]
 WORKDIR /src/DataGateVPNBot
 RUN dotnet restore "DataGateVPNBot.csproj"
 
+# Copy the rest of the application source code
 WORKDIR /src
 COPY . .
 
-# Use dotnet publish with -r (runtime) argument for cross-targeting
-RUN dotnet publish "DataGateVPNBot/DataGateVPNBot.csproj" \
+# Publish the application (framework-dependent)
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN echo "Using build configuration: $BUILD_CONFIGURATION" && \
+    dotnet publish "DataGateVPNBot/DataGateVPNBot.csproj" \
       -c $BUILD_CONFIGURATION \
-      -r linux-${TARGETARCH} \
-      --self-contained false \
       -o /app/publish
 
-# Final runtime image
+# Use the ASP.NET runtime for the final image (framework-dependent)
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+
+# Switch to the default 'app' user (already exists in aspnet image)
 USER app
+
+# Set the working directory
 WORKDIR /app
-COPY --from=build /app/publish .
+
+# Copy the published application from the previous stage
+COPY --from=publish /app/publish .
+
+# Run via dotnet runtime
 ENTRYPOINT ["dotnet", "DataGateVPNBot.dll"]
