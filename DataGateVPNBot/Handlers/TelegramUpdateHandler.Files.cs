@@ -27,6 +27,18 @@ public partial class TelegramUpdateHandler
             replyMarkup: new ReplyKeyboardRemove());
     }
 
+    private async Task<Message> GetOpenVpnServers(Message msg, CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+        
+        return await _botClient.SendMessage(
+            chatId: msg.Chat.Id,
+            text: await GetLocalizationTextAsync("InvalidServerId", msg.From.Id, cancellationToken),
+            replyMarkup: new ReplyKeyboardRemove(),
+            cancellationToken: cancellationToken);
+    }
+
     private async Task<Message> GetMyFiles(Message msg, string vpnServerIdArg, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
