@@ -1,5 +1,6 @@
-using DataGateVPNBot.Models.DashBoardApi;
 using DataGateVPNBot.Services.Http;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -23,9 +24,10 @@ public class DashBoardApiOvpnFileService
         _dashBoardApiAuthService = dashBoardApiAuthService;
     }
 
-    public async Task<List<IssuedOvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
+    public async Task<List<OvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
         int vpnServerId, string externalId, CancellationToken cancellationToken)
     {
+        //GetAllByExternalIdOvpnFilesRequest
         if (vpnServerId <= 0) 
             throw new ArgumentException("vpnServerId is required.");
 
@@ -43,7 +45,7 @@ public class DashBoardApiOvpnFileService
 
         _logger.LogInformation($"Requesting OVPN files for Server ID: {vpnServerId}, External ID: {externalId}");
         
-        var response = await _httpRequestService.GetAsync<List<IssuedOvpnFileResponse>>(url, token, cancellationToken);
+        var response = await _httpRequestService.GetAsync<List<OvpnFileResponse>>(url, token, cancellationToken);
 
         if (response == null)
         {
@@ -53,14 +55,16 @@ public class DashBoardApiOvpnFileService
         return response;
     }
     
-    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(
-        int issuedOvpnFileId, int vpnServerId, CancellationToken cancellationToken)
+    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadOvpnFileRequest request, CancellationToken cancellationToken)
     {
-        if (issuedOvpnFileId <= 0)
-            throw new ArgumentException($"Invalid issuedOvpnFileId: {issuedOvpnFileId}. Must be greater than zero.", nameof(issuedOvpnFileId));
+        //DownloadOvpnFileResponse
+        if (request.IssuedOvpnFileId <= 0)
+            throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
+                                        $"Must be greater than zero.", nameof(request.IssuedOvpnFileId));
         
-        if (vpnServerId <= 0)
-            throw new ArgumentException($"Invalid vpnServerId: {vpnServerId}. Must be greater than zero.", nameof(vpnServerId));
+        if (request.VpnServerId <= 0)
+            throw new ArgumentException($"Invalid vpnServerId: {request.VpnServerId}. " +
+                                        $"Must be greater than zero.", nameof(request.VpnServerId));
 
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
@@ -69,11 +73,12 @@ public class DashBoardApiOvpnFileService
             throw new InvalidOperationException("Authentication token is required.");
         }
 
-        var url = $"{EndpointDownloadOpenVpnFiles}/{issuedOvpnFileId}/{vpnServerId}";
+        var url = $"{EndpointDownloadOpenVpnFiles}/{request.IssuedOvpnFileId}/{request.VpnServerId}";
 
-        _logger.LogInformation($"Requesting OVPN file stream for Issued Ovpn File Id: {issuedOvpnFileId}, Server ID: {vpnServerId}");
+        _logger.LogInformation($"Requesting OVPN file stream for " +
+                               $"Issued Ovpn File Id: {request.IssuedOvpnFileId}, Server ID: {request.VpnServerId}");
 
-        var stream = await _httpRequestService.GetStreamAsync(url, token, cancellationToken);
+        var stream = await _httpRequestService.GetStreamAsync(url, token, cancellationToken);//todo:fix
 
         _logger.LogInformation("OVPN file stream retrieved successfully.");
 
@@ -126,7 +131,7 @@ public class DashBoardApiOvpnFileService
         return response;
     }
     
-    public async Task<bool> RevokeOvpnFileAsync(string telegramId, string commonName, int vpnServerId, 
+    public async Task<bool> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, int telegramId,
         CancellationToken cancellationToken)
     {
         var token = await _dashBoardApiAuthService.GetTokenAsync();
@@ -136,28 +141,21 @@ public class DashBoardApiOvpnFileService
             return false;
         }
 
-        var requestBody = new RevokeOvpnFileRequest
-        {
-            ExternalId = telegramId,
-            CommonName = commonName,
-            ServerId = vpnServerId
-        };
-
         _logger.LogInformation("Sending request to revoke OVPN file for " +
-                               $"TelegramId: {telegramId}, ServerId: {vpnServerId}");
+                               $"TelegramId: {telegramId}, ServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<bool>(EndpointRevokeOvpnFile, requestBody, token, cancellationToken);
+            await _httpRequestService.PostAsync<bool>(EndpointRevokeOvpnFile, request, token, cancellationToken);
 
         if (!response)
         {
             _logger.LogError("Failed to revoke OVPN file for " +
-                             $"TelegramId: {telegramId}, ServerId: {vpnServerId}, Response: {response}");
+                             $"TelegramId: {telegramId}, ServerId: {request.VpnServerId}, Response: {response}");
         }
         else
         {
             _logger.LogInformation("Successfully revoked OVPN file for " +
-                                   $"TelegramId: {telegramId}, ServerId: {vpnServerId}, Response: {response}");
+                                   $"TelegramId: {telegramId}, ServerId: {request.VpnServerId}, Response: {response}");
         }
 
         return response;

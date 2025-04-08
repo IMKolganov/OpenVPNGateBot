@@ -1,31 +1,23 @@
-
-using System.Text;
-using Telegram.Bot.Types;
-using DataGateVPNBot.Models.DashBoardApi;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
+using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
 
 namespace DataGateVPNBot.Services.BotServices;
 
 public class OpenVpnServersService : IOpenVpnServersService
 {
-    private readonly DashBoardApiOvpnFileService _dashBoardApiOvpnFileService;
+    private readonly DashBoardApiServerService _dashBoardApiServerService;
     private readonly ILogger<OvpnFileService> _logger;
 
-    public OpenVpnServersService(DashBoardApiOvpnFileService dashBoardApiOvpnFileService, ILogger<OvpnFileService> logger)
+    public OpenVpnServersService(DashBoardApiServerService dashBoardApiServerService, ILogger<OvpnFileService> logger)
     {
-        _dashBoardApiOvpnFileService = dashBoardApiOvpnFileService;
+        _dashBoardApiServerService = dashBoardApiServerService;
         _logger = logger;
     }
 
-    public async Task<List<IssuedOvpnFileResponse>> GetAllOpenVpnServersListAsync(int vpnServerId, long userId,
-        CancellationToken cancellationToken)
+    public async Task<List<OpenVpnServerResponse>> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, userId.ToString(), cancellationToken);
-        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
-                                  new List<IssuedOvpnFileResponse>();
-        
-        return issuedOvpnFileResponses;
+        return await _dashBoardApiServerService.GetOpenVpnServersListAsync(cancellationToken) 
+               ?? throw new NullReferenceException("OpenVPN servers list is null");
     }
 }

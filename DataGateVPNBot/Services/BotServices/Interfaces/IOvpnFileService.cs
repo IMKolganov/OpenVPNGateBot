@@ -1,11 +1,11 @@
-using DataGateVPNBot.Models.DashBoardApi;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices.Interfaces;
 
 public interface IOvpnFileService
 {
-    Task<List<IssuedOvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long userId,
+    Task<List<OvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long userId,
         CancellationToken cancellationToken);
     Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long userId,
         CancellationToken cancellationToken);

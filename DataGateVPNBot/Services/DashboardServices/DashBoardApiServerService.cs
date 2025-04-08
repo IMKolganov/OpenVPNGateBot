@@ -1,5 +1,5 @@
-using DataGateVPNBot.Models.DashBoardApi;
 using DataGateVPNBot.Services.Http;
+using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -8,7 +8,7 @@ public class DashBoardApiServerService
     private readonly ILogger<DashBoardApiOvpnFileService> _logger;
     private readonly IHttpRequestService _httpRequestService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
-    private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
+    private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnServers/GetAllServers";
     
     public DashBoardApiServerService(ILogger<DashBoardApiOvpnFileService> logger,
         IHttpRequestService httpRequestService,
@@ -20,7 +20,7 @@ public class DashBoardApiServerService
         _dashBoardApiAuthService = dashBoardApiAuthService;
     }
 
-    public async Task<List<IssuedOvpnFileResponse>?> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
+    public async Task<List<OpenVpnServerResponse>?> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
@@ -31,7 +31,7 @@ public class DashBoardApiServerService
 
         var url = $"{EndpointGetAllOpenVpnFiles}";
         
-        var response = await _httpRequestService.GetAsync<List<IssuedOvpnFileResponse>>(url, token, cancellationToken);
+        var response = await _httpRequestService.GetAsync<List<OpenVpnServerResponse>>(url, token, cancellationToken);
 
         if (response == null)
         {
