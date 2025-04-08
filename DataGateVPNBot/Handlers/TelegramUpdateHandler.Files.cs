@@ -30,12 +30,34 @@ public partial class TelegramUpdateHandler
     private async Task<Message> GetOpenVpnServers(Message msg, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+        var openVpnServersService = scope.ServiceProvider.GetRequiredService<IOpenVpnServersService>();
+        var serverResponses = await openVpnServersService.
+            GetAllOpenVpnServersListAsync(cancellationToken);
         
+        var rows = new List<InlineKeyboardButton[]>();
+        var currentRow = new List<InlineKeyboardButton>();
+        foreach (var server in serverResponses)
+        {
+            currentRow.Add(InlineKeyboardButton.WithCallbackData(server.ServerName, 
+                $"/get_my_files {server.Id}"));
+        
+            if (currentRow.Count == 2)
+            {
+                rows.Add(currentRow.ToArray());
+                currentRow.Clear();
+            }
+        }
+        
+        if (currentRow.Count > 0)
+        {
+            rows.Add(currentRow.ToArray());
+        }
+        
+        var inlineMarkup = new InlineKeyboardMarkup(rows);
         return await _botClient.SendMessage(
-            chatId: msg.Chat.Id,
-            text: await GetLocalizationTextAsync("InvalidServerId", msg.From.Id, cancellationToken),
-            replyMarkup: new ReplyKeyboardRemove(),
+            msg.Chat,
+            await GetLocalizationTextAsync("ChooseOpenVpnServer", msg.From!.Id, cancellationToken),
+            replyMarkup: inlineMarkup, 
             cancellationToken: cancellationToken);
     }
 
@@ -46,11 +68,7 @@ public partial class TelegramUpdateHandler
 
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await _botClient.SendMessage(
-                chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("InvalidServerId", msg.From!.Id, cancellationToken),
-                replyMarkup: new ReplyKeyboardRemove(),
-                cancellationToken: cancellationToken);
+            return await GetOpenVpnServers(msg, cancellationToken);
         }
 
         await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);

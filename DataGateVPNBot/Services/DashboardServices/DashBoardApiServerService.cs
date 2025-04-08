@@ -35,7 +35,7 @@ public class DashBoardApiServerService
 
         if (response == null)
         {
-            _logger.LogError("Failed to fetch OVPN files from API.");
+            _logger.LogError("Failed to fetch Open VPN Servers from API.");
         }
 
         return response;
