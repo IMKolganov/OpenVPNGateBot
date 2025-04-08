@@ -20,13 +20,8 @@ public class DashBoardApiServerService
         _dashBoardApiAuthService = dashBoardApiAuthService;
     }
 
-    public async Task<List<IssuedOvpnFileResponse>?> GetOpenVpnServersListAsync(
-        int vpnServerId, CancellationToken cancellationToken)
+    public async Task<List<IssuedOvpnFileResponse>?> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
-        if (vpnServerId <= 0) 
-            throw new ArgumentException("vpnServerId is required.");
-
-
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
@@ -34,9 +29,7 @@ public class DashBoardApiServerService
             return null;
         }
 
-        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={vpnServerId}";
-
-        _logger.LogInformation($"Requesting OVPN files for Server ID: {vpnServerId}, External ID: {externalId}");
+        var url = $"{EndpointGetAllOpenVpnFiles}";
         
         var response = await _httpRequestService.GetAsync<List<IssuedOvpnFileResponse>>(url, token, cancellationToken);
 
