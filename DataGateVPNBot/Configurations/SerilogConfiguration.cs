@@ -9,24 +9,33 @@ public static class SerilogConfiguration
 {
     public static void ConfigureSerilog(this IHostBuilder host)
     {
+        var elasticConfig = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("elasticsearch.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
             .Enrich.FromLogContext()
             .MinimumLevel.Information();
-        
-        var elasticFileConfig = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("elasticsearch.json", optional: true)
-            .AddEnvironmentVariables()
-            .Build();
 
-        var elasticSection = elasticFileConfig.GetSection("Elasticsearch");
-        var elasticsearchSettings = elasticSection.Exists()
-            ? elasticSection.Get<ElasticsearchSettings>()
-            : null;
+        var elasticsearchSettings = new ElasticsearchSettings
+        {
+            Uri = (Environment.GetEnvironmentVariable("ELASTIC_URI") 
+                   ?? elasticConfig["Elasticsearch:Uri"]) ?? string.Empty,
 
-        if (elasticsearchSettings != null &&
-            !string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
+            Username = (Environment.GetEnvironmentVariable("ELASTIC_USERNAME") 
+                        ?? elasticConfig["Elasticsearch:Username"]) ?? string.Empty,
+
+            Password = (Environment.GetEnvironmentVariable("ELASTIC_PASSWORD") 
+                        ?? elasticConfig["Elasticsearch:Password"]) ?? string.Empty,
+
+            IndexFormat = (Environment.GetEnvironmentVariable("ELASTIC_INDEX_FORMAT") 
+                           ?? elasticConfig["Elasticsearch:IndexFormat"]) ?? string.Empty
+        };
+
+        if (!string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
         {
             loggerConfig = loggerConfig.WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(elasticsearchSettings.Uri))
             {
