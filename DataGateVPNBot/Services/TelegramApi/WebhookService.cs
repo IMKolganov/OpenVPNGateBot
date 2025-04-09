@@ -101,11 +101,11 @@ public class WebhookService
 
         if (response.IsSuccessStatusCode)
         {
-            _logger.LogInformation("Webhook successfully set.");
+            _logger.LogInformation("Webhook successfully set. Response: {Response}", result);
         }
         else
         {
-            _logger.LogError("Failed to set webhook: {Response}", result);
+            _logger.LogError("Failed to set webhook. Response: {Response}", result);
         }
     }
 }
