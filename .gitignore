@@ -419,3 +419,4 @@ appsettings*
 appsettings.json
 appsettings.Development.json
 !/.github/workflows/*.env
+NuGet.config
