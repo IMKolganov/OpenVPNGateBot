@@ -21,17 +21,26 @@ public static class PipelineConfiguration
         using (var scope = app.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+            try
+            {
+                var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
 
-            if (pendingMigrations.Any())
-            {
-                app.Logger.LogInformation("Applying {Count} pending migrations: {Migrations}", pendingMigrations.Count, string.Join(", ", pendingMigrations));
-                dbContext.Database.Migrate();
-                app.Logger.LogInformation("Migrations applied successfully.");
+                if (pendingMigrations.Any())
+                {
+                    app.Logger.LogInformation("Applying {Count} pending migrations: {Migrations}",
+                        pendingMigrations.Count, string.Join(", ", pendingMigrations));
+                    dbContext.Database.Migrate();
+                    app.Logger.LogInformation("Migrations applied successfully.");
+                }
+                else
+                {
+                    app.Logger.LogInformation("Database is up-to-date. No pending migrations.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                app.Logger.LogInformation("Database is up-to-date. No pending migrations.");
+                app.Logger.LogError(ex, $"An error occurred while applying migrations: {ex.Message}");
+                throw; // optionally rethrow if you want the app to crash
             }
         }
         
