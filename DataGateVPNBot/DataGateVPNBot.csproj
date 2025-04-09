@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <ApplicationIcon>logo.ico</ApplicationIcon>
+        <ApplicationIcon>logo/logo.ico</ApplicationIcon>
         <AssemblyVersion>1.2.0.2</AssemblyVersion>
         <FileVersion>1.2.0.2</FileVersion>
     </PropertyGroup>

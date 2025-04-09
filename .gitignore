@@ -422,6 +422,6 @@ appsettings.Development.json
 NuGet.config
 
 # Ignore generated SSL certificate and key files
-openssl/*.crt
-openssl/*.key
-openssl/*.cnf
+*.crt
+*.key
+*.cnf
