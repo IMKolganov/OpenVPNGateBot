@@ -7,14 +7,20 @@ namespace DataGateVPNBot.Configurations;
 
 public static class SerilogConfiguration
 {
-    public static void ConfigureSerilog(this IHostBuilder host, IConfiguration configuration)
+    public static void ConfigureSerilog(this IHostBuilder host)
     {
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
             .Enrich.FromLogContext()
             .MinimumLevel.Information();
+        
+        var elasticFileConfig = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("elasticsearch.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
 
-        var elasticSection = configuration.GetSection("Elasticsearch");
+        var elasticSection = elasticFileConfig.GetSection("Elasticsearch");
         var elasticsearchSettings = elasticSection.Exists()
             ? elasticSection.Get<ElasticsearchSettings>()
             : null;
@@ -41,7 +47,8 @@ public static class SerilogConfiguration
                 EmitEventFailure = EmitEventFailureHandling.WriteToSelfLog
             });
 
-            Console.WriteLine("Elasticsearch logging is enabled.");
+            Console.WriteLine($"Elasticsearch logging is enabled. " +
+                              $"Host: {elasticsearchSettings.Uri} IndexFormat: {elasticsearchSettings.IndexFormat}");
         }
         else
         {

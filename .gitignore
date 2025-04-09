@@ -420,6 +420,7 @@ appsettings.json
 appsettings.Development.json
 !/.github/workflows/*.env
 NuGet.config
+elasticsearch.json
 
 # Ignore generated SSL certificate and key files
 *.crt
