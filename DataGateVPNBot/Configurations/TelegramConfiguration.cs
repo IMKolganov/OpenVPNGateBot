@@ -20,7 +20,7 @@ public static class TelegramConfiguration
             botConfig.BotToken = envBotToken;
 
         if (!string.IsNullOrEmpty(envWebHook))
-            botConfig.TelegramWebHook = envWebHook;
+            botConfig.BotWebhookUrl = envWebHook;
 
         if (!string.IsNullOrEmpty(envCertPath))
             botConfig.CertificatePath = envCertPath;
@@ -31,12 +31,12 @@ public static class TelegramConfiguration
         if (string.IsNullOrEmpty(botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration or environment variables.");
 
-        if (string.IsNullOrEmpty(botConfig.TelegramWebHook))
+        if (string.IsNullOrEmpty(botConfig.BotWebhookUrl))
             throw new NullReferenceException("TelegramWebHook is missing in configuration or environment variables.");
 
         services.AddSingleton(botConfig);
 
-        services.AddHttpClient(botConfig.TelegramWebHook)
+        services.AddHttpClient(botConfig.BotWebhookUrl)
             .AddTypedClient<ITelegramBotClient>(httpClient => new TelegramBotClient(botConfig.BotToken, httpClient));
 
         services.AddHttpClient<WebhookService>();

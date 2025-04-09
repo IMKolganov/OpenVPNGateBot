@@ -21,7 +21,7 @@ public class WebhookService
         if (string.IsNullOrEmpty(_botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration.");
 
-        if (string.IsNullOrEmpty(_botConfig.TelegramWebHook))
+        if (string.IsNullOrEmpty(_botConfig.BotWebhookUrl))
             throw new NullReferenceException("TelegramWebHook is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/getWebhookInfo";
@@ -47,10 +47,10 @@ public class WebhookService
 
             _logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
 
-            if (currentUrl != _botConfig.TelegramWebHook)
+            if (currentUrl != _botConfig.BotWebhookUrl)
             {
                 _logger.LogWarning("Webhook URL mismatch! Expected: {Expected}, Got: {Actual}",
-                    _botConfig.TelegramWebHook, currentUrl);
+                    _botConfig.BotWebhookUrl, currentUrl);
                 return false;
             }
 
@@ -74,13 +74,13 @@ public class WebhookService
         if (string.IsNullOrEmpty(_botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration.");
 
-        if (string.IsNullOrEmpty(_botConfig.TelegramWebHook))
+        if (string.IsNullOrEmpty(_botConfig.BotWebhookUrl))
             throw new NullReferenceException("TelegramWebHook is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
         using var form = new MultipartFormDataContent();
 
-        form.Add(new StringContent(_botConfig.TelegramWebHook), "url");
+        form.Add(new StringContent(_botConfig.BotWebhookUrl), "url");
 
         if (_botConfig.UseCertificate)
         {
