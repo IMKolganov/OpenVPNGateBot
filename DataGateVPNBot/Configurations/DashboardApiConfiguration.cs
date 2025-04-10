@@ -20,7 +20,7 @@ public static class DashboardApiConfiguration
         // Лог подключения к Dashboard API
         var dashboardConfig = configuration.GetSection("DashboardApi").Get<DashboardApiConfig>();
         Log.ForContext("SourceContext", "DashboardApi")
-            .Information("📡 DashboardClient will be configured with base URL: {Url}", dashboardConfig.Url);
+            .Information("📡 DashboardClient will be configured with base URL: {Url}", dashboardConfig!.Url);
 
         // Redis
         services.AddSingleton<RedisConnectionFactory>();

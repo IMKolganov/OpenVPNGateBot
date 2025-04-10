@@ -56,7 +56,7 @@ public partial class TelegramUpdateHandler
         var inlineMarkup = new InlineKeyboardMarkup(rows);
         return await _botClient.SendMessage(
             msg.Chat,
-            await GetLocalizationTextAsync("ChooseOpenVpnServer", msg.From!.Id, cancellationToken),
+            await GetLocalizationTextAsync("ChooseOpenVpnServer", msg.Chat.Id, cancellationToken),
             replyMarkup: inlineMarkup, 
             cancellationToken: cancellationToken);
     }
@@ -71,16 +71,17 @@ public partial class TelegramUpdateHandler
         {
             return await GetOpenVpnServers(msg, cancellationToken);
         }
-        
-        _logger.LogInformation($"GetMyFiles started for user: {msg.From?.Id}, ServerId: {vpnServerId}");
 
-        var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesAsync(vpnServerId, msg.From!.Id, cancellationToken);
+        _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
+
+        var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesAsync(vpnServerId,
+            msg.Chat.Id, cancellationToken);
 
         if (!mediaGroupOpenVpnFiles.Any())
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("FilesNotFoundError", msg.From!.Id, cancellationToken),
+                text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
                 replyMarkup: new ReplyKeyboardRemove(),
                 cancellationToken: cancellationToken);
         }
@@ -92,7 +93,8 @@ public partial class TelegramUpdateHandler
             cancellationToken: cancellationToken);
         _logger.LogInformation("Media group sent successfully.");
 
-        return messages.FirstOrDefault() ?? throw new InvalidOperationException("No messages returned after sending media group.");
+        return messages.FirstOrDefault() ??
+               throw new InvalidOperationException("No messages returned after sending media group.");
     }
 
     private async Task<Message> MakeNewVpnFile(Message msg, string vpnServerIdArg, CancellationToken cancellationToken)
@@ -105,7 +107,7 @@ public partial class TelegramUpdateHandler
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("InvalidServerId", msg.From!.Id, cancellationToken),
+                text: await GetLocalizationTextAsync("InvalidServerId", msg.Chat.Id, cancellationToken),
                 replyMarkup: new ReplyKeyboardRemove(),
                 cancellationToken: cancellationToken);
         }
@@ -140,7 +142,7 @@ public partial class TelegramUpdateHandler
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("InvalidServerId", msg.From!.Id, cancellationToken),
+                text: await GetLocalizationTextAsync("InvalidServerId", msg.Chat.Id, cancellationToken),
                 replyMarkup: new ReplyKeyboardRemove(),
                 cancellationToken: cancellationToken);
         }
@@ -149,14 +151,14 @@ public partial class TelegramUpdateHandler
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("SuccessfullyDeletedAllFile", msg.From!.Id, cancellationToken),
+                text: await GetLocalizationTextAsync("SuccessfullyDeletedAllFile", msg.Chat.Id, cancellationToken),
                 replyMarkup: new ReplyKeyboardRemove(), 
                 cancellationToken: cancellationToken);
         }
 
         return await _botClient.SendMessage(
             chatId: msg.Chat.Id,
-            text: await GetLocalizationTextAsync("ErrorDeletedAllFile", msg.From!.Id, cancellationToken),
+            text: await GetLocalizationTextAsync("ErrorDeletedAllFile", msg.Chat.Id, cancellationToken),
             replyMarkup: new ReplyKeyboardRemove(), 
             cancellationToken: cancellationToken);
     }
@@ -172,13 +174,13 @@ public partial class TelegramUpdateHandler
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("InvalidServerId", msg.From!.Id, cancellationToken),
+                text: await GetLocalizationTextAsync("InvalidServerId", msg.Chat.Id, cancellationToken),
                 replyMarkup: new ReplyKeyboardRemove(),
                 cancellationToken: cancellationToken);
         }
         
         var clientConfigFiles = await ovpnFileService.GetAllOvpnFilesListAsync(vpnServerId,
-            msg.From!.Id, cancellationToken);
+            msg.Chat.Id, cancellationToken);
         
         var rows = new List<InlineKeyboardButton[]>();
         
@@ -202,7 +204,7 @@ public partial class TelegramUpdateHandler
         var inlineMarkup = new InlineKeyboardMarkup(rows);
         return await _botClient.SendMessage(
             msg.Chat,
-            await GetLocalizationTextAsync("ChooseFileForDelete", msg.From!.Id, cancellationToken),
+            await GetLocalizationTextAsync("ChooseFileForDelete", msg.Chat.Id, cancellationToken),
             replyMarkup: inlineMarkup, 
             cancellationToken: cancellationToken);
     }

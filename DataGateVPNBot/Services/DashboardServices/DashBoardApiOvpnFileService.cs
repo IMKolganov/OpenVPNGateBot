@@ -1,6 +1,7 @@
 using DataGateVPNBot.Services.Http;
 using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
+using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -25,13 +26,13 @@ public class DashBoardApiOvpnFileService
     }
 
     public async Task<List<OvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
-        int vpnServerId, string externalId, CancellationToken cancellationToken)
+        GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
     {
-        //GetAllByExternalIdOvpnFilesRequest
-        if (vpnServerId <= 0) 
+        var ovpnFiles = new List<OvpnFileResponse>();
+        if (request.VpnServerId <= 0) 
             throw new ArgumentException("vpnServerId is required.");
 
-        if (string.IsNullOrEmpty(externalId))
+        if (string.IsNullOrEmpty(request.ExternalId))
             throw new ArgumentException("externalId is required.");
         
         var token = await _dashBoardApiAuthService.GetTokenAsync();
@@ -41,18 +42,27 @@ public class DashBoardApiOvpnFileService
             return null;
         }
 
-        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={vpnServerId}&externalId={externalId}";
+        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={request.VpnServerId}&externalId={request.ExternalId}";
 
-        _logger.LogInformation($"Requesting OVPN files for Server ID: {vpnServerId}, External ID: {externalId}");
+        _logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
+                               $"External ID: {request.ExternalId}");
         
-        var response = await _httpRequestService.GetAsync<List<OvpnFileResponse>>(url, token, cancellationToken);
+        var response = await _httpRequestService.GetAsync<ApiResponse<List<OvpnFileResponse>>>(url, token, cancellationToken);
+        if (response is { Success: true, Data: not null })
+        {
+            ovpnFiles = response.Data;
+        }
+        else
+        {
+            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+        }
 
         if (response == null)
         {
-            _logger.LogError("Failed to fetch OVPN files from API.");
+            _logger.LogError("Failed to fetch Open VPN Servers from API.");
         }
 
-        return response;
+        return ovpnFiles;
     }
     
     public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadOvpnFileRequest request, CancellationToken cancellationToken)

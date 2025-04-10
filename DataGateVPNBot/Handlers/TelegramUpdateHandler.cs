@@ -170,8 +170,14 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/delete_file "))
         {
             var fileName = callbackQuery.Data.Substring("/delete_file ".Length);
-            _logger.LogInformation("Deleting file: {FileName}", fileName);
+            _logger.LogInformation($"Deleting file: {fileName}");
             await DeleteFile(callbackQuery.From.Id,  "8", fileName, cancellationToken);//todo: FIX IT!
+        }else if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/get_my_files "))
+        {
+            var vpnServerId = callbackQuery.Data.Substring("/delete_file ".Length);
+            _logger.LogInformation($"Get files for vpnServerId: {vpnServerId}");
+            await GetMyFiles(callbackQuery.Message ?? throw new InvalidOperationException("Message is null."), 
+                vpnServerId, cancellationToken);
         }
         else if (callbackQuery.Data != null && (callbackQuery.Data.ToLower() == "/english" || 
                                                 callbackQuery.Data.ToLower() == "/русский" ||

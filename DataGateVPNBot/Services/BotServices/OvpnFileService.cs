@@ -1,5 +1,7 @@
+using System.Text;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
 using Telegram.Bot.Types;
 
@@ -19,8 +21,13 @@ public class OvpnFileService : IOvpnFileService
     public async Task<List<OvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long userId,
         CancellationToken cancellationToken)
     {
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, userId.ToString(), cancellationToken);
+        var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
+        {
+            VpnServerId = vpnServerId,  ExternalId = userId.ToString()
+        };
+        var issuedOvpnFileResponses =
+            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+                getAllByExternalIdOvpnFilesRequest, cancellationToken);
         issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
                                   new List<OvpnFileResponse>();
         
@@ -30,67 +37,75 @@ public class OvpnFileService : IOvpnFileService
     public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long userId,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
-        // _logger.LogInformation($"Fetching OVPN files for user: {userId}, ServerId: {vpnServerId}");
-        //
-        // var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-        //     vpnServerId, userId.ToString(), cancellationToken);
-        //
-        // issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
-        //                           new List<IssuedOvpnFileResponse>();
-        //
-        // if (!issuedOvpnFileResponses.Any())
-        // {
-        //     _logger.LogInformation("No valid OVPN files found.");
-        //     return new List<IAlbumInputMedia>();
-        // }
-        //
-        // var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
-        //
-        // foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses)
-        // {
-        //     try
-        //     {
-        //         _logger.LogInformation(
-        //             $"Processing file: {issuedOvpnFileResponse.FileName}, " +
-        //             $"ServerId: {issuedOvpnFileResponse.ServerId}, FileId: {issuedOvpnFileResponse.Id}");
-        //
-        //         var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-        //             issuedOvpnFileResponse.Id, issuedOvpnFileResponse.ServerId, cancellationToken);
-        //
-        //         var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFileResponse.FileName);
-        //         var media = new InputMediaDocument(inputFile)
-        //         {
-        //             Caption = issuedOvpnFileResponse.FileName
-        //         };
-        //         mediaGroupOpenVpnFiles.Add(media);
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedOvpnFileResponse.FileName,
-        //             ex.Message);
-        //
-        //         var errorMessage = new StringBuilder()
-        //             .AppendLine($"Error processing file: {issuedOvpnFileResponse.FileName}")
-        //             .AppendLine($"ServerId: {issuedOvpnFileResponse.ServerId}")
-        //             .AppendLine($"FileId: {issuedOvpnFileResponse.Id}")
-        //             .AppendLine($"Error: {ex.Message}")
-        //             .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
-        //             .ToString();
-        //
-        //         var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
-        //         var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFileResponse.FileName}.error.txt");
-        //
-        //         var errorMedia = new InputMediaDocument(errorFile)
-        //         {
-        //             Caption = $"Error file: {issuedOvpnFileResponse.FileName}"
-        //         };
-        //
-        //         mediaGroupOpenVpnFiles.Add(errorMedia);
-        //     }
-        // }
-        //
-        // return mediaGroupOpenVpnFiles;
+        var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
+        {
+            VpnServerId = vpnServerId, ExternalId = userId.ToString()
+        };
+        _logger.LogInformation($"Fetching OVPN files for user: {userId}, ServerId: {vpnServerId}");
+
+        var issuedOvpnFileResponses =
+            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+                getAllByExternalIdOvpnFilesRequest, cancellationToken);
+
+        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
+                                  new List<OvpnFileResponse>();
+
+        if (!issuedOvpnFileResponses.Any())
+        {
+            _logger.LogInformation("No valid OVPN files found.");
+            return new List<IAlbumInputMedia>();
+        }
+
+        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
+
+        foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses)
+        {
+            try
+            {
+                _logger.LogInformation(
+                    $"Processing file: {issuedOvpnFileResponse.FileName}, " +
+                    $"ServerId: {issuedOvpnFileResponse.VpnServerId}, FileId: {issuedOvpnFileResponse.Id}");
+                var downloadOvpnFileRequest = new DownloadOvpnFileRequest()
+                {
+                    VpnServerId = issuedOvpnFileResponse.VpnServerId, IssuedOvpnFileId = issuedOvpnFileResponse.Id
+                };
+
+                var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                    downloadOvpnFileRequest, cancellationToken);
+
+                var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFileResponse.FileName);
+                var media = new InputMediaDocument(inputFile)
+                {
+                    Caption = issuedOvpnFileResponse.FileName
+                };
+                mediaGroupOpenVpnFiles.Add(media);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedOvpnFileResponse.FileName,
+                    ex.Message);
+
+                var errorMessage = new StringBuilder()
+                    .AppendLine($"Error processing file: {issuedOvpnFileResponse.FileName}")
+                    .AppendLine($"ServerId: {issuedOvpnFileResponse.VpnServerId}")
+                    .AppendLine($"FileId: {issuedOvpnFileResponse.Id}")
+                    .AppendLine($"Error: {ex.Message}")
+                    .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
+                    .ToString();
+
+                var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
+                var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFileResponse.FileName}.error.txt");
+
+                var errorMedia = new InputMediaDocument(errorFile)
+                {
+                    Caption = $"Error file: {issuedOvpnFileResponse.FileName}"
+                };
+
+                mediaGroupOpenVpnFiles.Add(errorMedia);
+            }
+        }
+
+        return mediaGroupOpenVpnFiles;
     }
 
     public async Task<InputFile?> MakeOvpnFileAsync(int vpnServerId, long userId, CancellationToken cancellationToken)

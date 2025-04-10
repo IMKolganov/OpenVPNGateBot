@@ -405,6 +405,22 @@ public static class LocalizationTextSeedData
             Id = 60, Key = "CertCriticalError", Language = Language.Greek,
             Text =
                 "Κρίσιμο σφάλμα. Κάτι πήγε στραβά με την υπηρεσία πιστοποίησης. Τώρα σταματάμε όλες τις διαδικασίες, παρακαλώ δοκιμάστε αργότερα."
+        },
+        
+        new LocalizationText
+        {
+            Id = 61, Key = "ChooseOpenVpnServer", Language = Language.English,
+            Text = "Choose an OpenVPN server:"
+        },
+        new LocalizationText
+        {
+            Id = 62, Key = "ChooseOpenVpnServer", Language = Language.Russian,
+            Text = "Выберите сервер OpenVPN:"
+        },
+        new LocalizationText
+        {
+            Id = 63, Key = "ChooseOpenVpnServer", Language = Language.Greek,
+            Text = "Επιλέξτε διακομιστή OpenVPN:"
         }
     };
 
