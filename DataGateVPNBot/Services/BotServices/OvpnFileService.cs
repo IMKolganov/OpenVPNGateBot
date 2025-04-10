@@ -34,14 +34,14 @@ public class OvpnFileService : IOvpnFileService
         return issuedOvpnFileResponses;
     }
 
-    public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long userId,
+    public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
         var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
         {
-            VpnServerId = vpnServerId, ExternalId = userId.ToString()
+            VpnServerId = vpnServerId, ExternalId = telegramId.ToString()
         };
-        _logger.LogInformation($"Fetching OVPN files for user: {userId}, ServerId: {vpnServerId}");
+        _logger.LogInformation($"Fetching OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
         var issuedOvpnFileResponses =
             await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
@@ -108,40 +108,41 @@ public class OvpnFileService : IOvpnFileService
         return mediaGroupOpenVpnFiles;
     }
 
-    public async Task<InputFile?> MakeOvpnFileAsync(int vpnServerId, long userId, CancellationToken cancellationToken)
+    public async Task<InputFile?> MakeOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
-        // _logger.LogInformation($"Creating OVPN file for user: {userId}, ServerId: {vpnServerId}");
-        //
-        // var success = await _dashBoardApiOvpnFileService.AddOvpnFileAsync(
-        //     userId.ToString(), $"user-{userId}", vpnServerId, cancellationToken);
-        //
-        // if (!success)
-        // {
-        //     _logger.LogWarning("Failed to request OVPN file creation for user {UserId} on server {VpnServerId}.",
-        //         userId, vpnServerId);
-        //     return null;
-        // }
-        //
-        // var issuedOvpnFileResponses = 
-        //     await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-        //     vpnServerId, userId.ToString(), cancellationToken);
-        //
-        // var issuedOvpnFile = issuedOvpnFileResponses?.FirstOrDefault(x => !x.IsRevoked);
-        // if (issuedOvpnFile == null)
-        // {
-        //     _logger.LogWarning("No valid OVPN file found for user {UserId} on server {VpnServerId} after creation.",
-        //         userId, vpnServerId);
-        //     return null;
-        // }
-        //
-        // _logger.LogInformation("Downloading newly created OVPN file: {FileName}", issuedOvpnFile.FileName);
-        //
-        // var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-        //     issuedOvpnFile.Id, issuedOvpnFile.ServerId, cancellationToken);
-        //
-        // var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
-        // return inputFile;
+        _logger.LogInformation($"Creating OVPN file for user: {telegramId}, ServerId: {vpnServerId}");
+
+        var addOvpnFileRequest = new AddOvpnFileRequest
+        {
+            VpnServerId = vpnServerId,
+            CommonName = $"tg-{telegramId}",
+            ExternalId = telegramId.ToString(),
+            IssuedTo = $"telegram user {telegramId}"
+        };
+
+        var addOvpnFileResponse = await _dashBoardApiOvpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
+
+        if (addOvpnFileResponse?.OvpnFile == null || string.IsNullOrEmpty(addOvpnFileResponse.OvpnFile.FullName))
+        {
+            _logger.LogWarning($"Failed to request OVPN file creation for user {telegramId} on server {vpnServerId}.");
+            return null;
+        }
+
+        var issuedOvpnFile = addOvpnFileResponse.IssuedOvpnFile;
+
+        _logger.LogInformation($"Downloading newly created OVPN file: {issuedOvpnFile.FileName}");
+
+        try
+        {
+            using var issuedOvpnFileStream = File.OpenRead(addOvpnFileResponse.OvpnFile.FullName);
+            var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
+            return inputFile;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open OVPN file: {FilePath}", addOvpnFileResponse.OvpnFile.FullName);
+            return null;
+        }
     }
 
     public async Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken)
@@ -192,6 +193,14 @@ public class OvpnFileService : IOvpnFileService
         // }
         //
         // return await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), fileToRevoke.CommonName, vpnServerId, cancellationToken);
+    }
+
+    private async Task<string> MakeCommonNameForOvpnFileAsync(string commonName,
+        CancellationToken cancellationToken)
+    {
+        //check_available_name
+        
+        return commonName;
     }
 
 }

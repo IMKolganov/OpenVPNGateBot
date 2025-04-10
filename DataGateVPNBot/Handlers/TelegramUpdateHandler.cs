@@ -113,8 +113,8 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/about_bot" => AboutBot(msg, cancellationToken),
             "/how_to_use" => HowToUseVpn(msg, cancellationToken),
             "/register" => RegisterForVpn(msg, cancellationToken),
-            "/get_my_files" => GetMyFiles(msg, argument, cancellationToken),//todo: fix
-            "/make_new_file" => MakeNewVpnFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
+            "/get_my_files" => GetMyFiles(msg, argument, cancellationToken),
+            "/make_new_file" => MakeNewVpnFile(msg, argument, cancellationToken),
             "/delete_selected_file" => DeleteSelectedFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/delete_all_files" => DeleteAllFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
             "/install_client" => InstallClient(msg, cancellationToken),
@@ -174,9 +174,15 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             await DeleteFile(callbackQuery.From.Id,  "8", fileName, cancellationToken);//todo: FIX IT!
         }else if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/get_my_files "))
         {
-            var vpnServerId = callbackQuery.Data.Substring("/delete_file ".Length);
+            var vpnServerId = callbackQuery.Data.Substring("/get_my_files ".Length);
             _logger.LogInformation($"Get files for vpnServerId: {vpnServerId}");
             await GetMyFiles(callbackQuery.Message ?? throw new InvalidOperationException("Message is null."), 
+                vpnServerId, cancellationToken);
+        }else if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/make_new_file "))
+        {
+            var vpnServerId = callbackQuery.Data.Substring("/make_new_file ".Length);
+            _logger.LogInformation($"Get files for vpnServerId: {vpnServerId}");
+            await MakeNewVpnFile(callbackQuery.Message ?? throw new InvalidOperationException("Message is null."), 
                 vpnServerId, cancellationToken);
         }
         else if (callbackQuery.Data != null && (callbackQuery.Data.ToLower() == "/english" || 

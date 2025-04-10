@@ -1,6 +1,8 @@
+using System.Security.Authentication;
 using DataGateVPNBot.Services.Http;
 using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
+using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
@@ -38,8 +40,7 @@ public class DashBoardApiOvpnFileService
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return null;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
         var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={request.VpnServerId}&externalId={request.ExternalId}";
@@ -79,8 +80,7 @@ public class DashBoardApiOvpnFileService
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            throw new InvalidOperationException("Authentication token is required.");
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
         var url = $"{EndpointDownloadOpenVpnFiles}/{request.IssuedOvpnFileId}/{request.VpnServerId}";
@@ -95,50 +95,44 @@ public class DashBoardApiOvpnFileService
         return stream;
     }
 
-    public async Task<bool> AddOvpnFileAsync(string telegramId, string commonName, int vpnServerId,
+    public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddOvpnFileRequest request,
         CancellationToken cancellationToken, string issuedTo = "TelegramBot")
     {
-        if (vpnServerId <= 0)
-            throw new ArgumentException("vpnServerId is required.");
+        if (request.VpnServerId <= 0)
+            throw new ArgumentException("VpnServerId is required.");
 
-        if (string.IsNullOrEmpty(telegramId))
-            throw new ArgumentException("telegramId is required.");
+        if (string.IsNullOrEmpty(request.ExternalId))
+            throw new ArgumentException("ExternalId is required.");
 
-        if (string.IsNullOrEmpty(commonName))
-            throw new ArgumentException("commonName is required.");
+        if (string.IsNullOrEmpty(request.CommonName))
+            throw new ArgumentException("CommonName is required.");
 
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return false;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var requestBody = new AddOvpnFileRequest
-        {
-            ExternalId = telegramId,
-            CommonName = commonName,
-            VpnServerId = vpnServerId,
-            IssuedTo = issuedTo
-        };
-
         _logger.LogInformation("Sending request to create OVPN file for " +
-                               $"TelegramId: {telegramId}, ServerId: {vpnServerId}");
+                               $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<bool>(EndpointAddOpenVpnFile, requestBody, token, cancellationToken);
+            await _httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, request, token, cancellationToken);
 
-        if (!response)
+        if (response is { Success: true, Data: not null })
         {
-            _logger.LogError($"Failed to create OVPN file for User: {telegramId}, ServerId: {vpnServerId}");
         }
         else
         {
-            _logger.LogInformation("Successfully created OVPN file for " +
-                                   $"TelegramId: {telegramId}, VpnServerId: {vpnServerId}");
+            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
         }
 
-        return response;
+        if (response == null)
+        {
+            _logger.LogError("Failed to fetch Open VPN Servers from API.");
+        }
+
+        return response!.Data!;
     }
     
     public async Task<bool> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, int telegramId,
@@ -147,8 +141,7 @@ public class DashBoardApiOvpnFileService
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return false;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
         _logger.LogInformation("Sending request to revoke OVPN file for " +

@@ -27,7 +27,7 @@ public partial class TelegramUpdateHandler
             replyMarkup: new ReplyKeyboardRemove());
     }
 
-    private async Task<Message> GetOpenVpnServers(Message msg, CancellationToken cancellationToken)
+    private async Task<Message> GetOpenVpnServers(Message msg, string command, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var openVpnServersService = scope.ServiceProvider.GetRequiredService<IOpenVpnServersService>();
@@ -39,7 +39,7 @@ public partial class TelegramUpdateHandler
         foreach (var server in serverResponses)
         {
             currentRow.Add(InlineKeyboardButton.WithCallbackData(server.ServerName, 
-                $"/get_my_files {server.Id}"));
+                $"{command} {server.Id}"));
         
             if (currentRow.Count == 2)
             {
@@ -69,7 +69,7 @@ public partial class TelegramUpdateHandler
 
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await GetOpenVpnServers(msg, cancellationToken);
+            return await GetOpenVpnServers(msg, "/get_my_files", cancellationToken);
         }
 
         _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
@@ -97,19 +97,15 @@ public partial class TelegramUpdateHandler
                throw new InvalidOperationException("No messages returned after sending media group.");
     }
 
-    private async Task<Message> MakeNewVpnFile(Message msg, string vpnServerIdArg, CancellationToken cancellationToken)
+    private async Task<Message> MakeNewVpnFile(Message msg, string? vpnServerIdArg, CancellationToken cancellationToken)
     {
         await _botClient.SendChatAction(msg.Chat.Id, ChatAction.UploadDocument, cancellationToken: cancellationToken);
         using var scope = _serviceProvider.CreateScope();
         var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
-        
+
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await _botClient.SendMessage(
-                chatId: msg.Chat.Id,
-                text: await GetLocalizationTextAsync("InvalidServerId", msg.Chat.Id, cancellationToken),
-                replyMarkup: new ReplyKeyboardRemove(),
-                cancellationToken: cancellationToken);
+            return await GetOpenVpnServers(msg, "/make_new_file", cancellationToken);
         }
         
         var newOvpnFile = await ovpnFileService.MakeOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken);
