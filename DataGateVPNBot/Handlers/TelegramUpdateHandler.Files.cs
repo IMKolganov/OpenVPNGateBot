@@ -61,8 +61,9 @@ public partial class TelegramUpdateHandler
             cancellationToken: cancellationToken);
     }
 
-    private async Task<Message> GetMyFiles(Message msg, string vpnServerIdArg, CancellationToken cancellationToken)
+    private async Task<Message> GetMyFiles(Message msg, string? vpnServerIdArg, CancellationToken cancellationToken)
     {
+        await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
         using var scope = _serviceProvider.CreateScope();
         var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
 
@@ -70,8 +71,7 @@ public partial class TelegramUpdateHandler
         {
             return await GetOpenVpnServers(msg, cancellationToken);
         }
-
-        await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
+        
         _logger.LogInformation($"GetMyFiles started for user: {msg.From?.Id}, ServerId: {vpnServerId}");
 
         var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesAsync(vpnServerId, msg.From!.Id, cancellationToken);

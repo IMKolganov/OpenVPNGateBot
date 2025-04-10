@@ -1,4 +1,3 @@
-using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
@@ -129,7 +128,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/русский" => ChangeLanguage(msg, command, cancellationToken),
             "/ελληνικά" => ChangeLanguage(msg, command, cancellationToken),
             
-            "/DashBoardApiGetToken" => DashBoardApiGetToken(msg),
+            "/dashboard_api_get_token" => DashBoardApiGetToken(msg),
 
             "/photo" => SendPhoto(msg),
             "/inline_buttons" => SendInlineKeyboard(msg),
