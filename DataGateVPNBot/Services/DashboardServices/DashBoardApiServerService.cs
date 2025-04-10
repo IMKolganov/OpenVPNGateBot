@@ -1,3 +1,4 @@
+using System.Security.Authentication;
 using DataGateVPNBot.Services.Http;
 using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
 
@@ -5,12 +6,12 @@ namespace DataGateVPNBot.Services.DashboardServices;
 
 public class DashBoardApiServerService
 {
-    private readonly ILogger<DashBoardApiOvpnFileService> _logger;
+    private readonly ILogger<DashBoardApiServerService> _logger;
     private readonly IHttpRequestService _httpRequestService;
     private readonly DashBoardApiAuthService _dashBoardApiAuthService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnServers/GetAllServers";
     
-    public DashBoardApiServerService(ILogger<DashBoardApiOvpnFileService> logger,
+    public DashBoardApiServerService(ILogger<DashBoardApiServerService> logger,
         IHttpRequestService httpRequestService,
         DashBoardApiAuthService dashBoardApiAuthService
         )
@@ -25,8 +26,7 @@ public class DashBoardApiServerService
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return null;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
         var url = $"{EndpointGetAllOpenVpnFiles}";

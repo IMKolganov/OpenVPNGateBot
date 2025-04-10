@@ -30,7 +30,17 @@ public class DashBoardApiAuthService
 
     public async Task<string?> GetTokenAsync()
     {
-        var cachedToken = await _redisCacheService.GetTokenWithExpirationAsync(TokenCacheKey);
+        string? cachedToken = null;
+
+        try
+        {
+            cachedToken = await _redisCacheService.GetTokenWithExpirationAsync(TokenCacheKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Redis unavailable while getting token.");
+        }
+
         if (cachedToken != null)
         {
             _logger.LogInformation("Using cached token from Redis.");
@@ -45,20 +55,34 @@ public class DashBoardApiAuthService
             ClientSecret = _clientSecret
         };
 
-        var response = await _httpRequestService.PostAsync<JsonElement>("api/Auth/token", requestBody);
+        var response = await _httpRequestService.PostAsync<JsonElement>("/api/Auth/token", requestBody);
 
-        if (response.TryGetProperty("token", out var tokenProperty))
+        if (response.ValueKind == JsonValueKind.Object &&
+            response.TryGetProperty("token", out var tokenProperty))
         {
             var newToken = tokenProperty.GetString();
             if (!string.IsNullOrEmpty(newToken))
             {
-                await _redisCacheService.SetTokenWithExpirationAsync(TokenCacheKey, newToken, _tokenExpiration);
-                _logger.LogInformation("New token saved in Redis.");
+                try
+                {
+                    await _redisCacheService.SetTokenWithExpirationAsync(TokenCacheKey, newToken, _tokenExpiration);
+                    _logger.LogInformation("New token saved in Redis.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Redis unavailable while setting token.");
+                }
+
                 return newToken;
             }
+        }
+        else
+        {
+            _logger.LogWarning("Invalid response structure or missing 'token' field.");
         }
 
         _logger.LogError("Failed to obtain a valid token from API.");
         return null;
     }
+
 }

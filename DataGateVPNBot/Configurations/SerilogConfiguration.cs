@@ -1,5 +1,4 @@
 ﻿using DataGateVPNBot.Models.Helpers;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 
@@ -55,16 +54,22 @@ public static class SerilogConfiguration
                 },
                 EmitEventFailure = EmitEventFailureHandling.WriteToSelfLog
             });
-
-            Console.WriteLine($"Elasticsearch logging is enabled. " +
-                              $"Host: {elasticsearchSettings.Uri} IndexFormat: {elasticsearchSettings.IndexFormat}");
-        }
-        else
-        {
-            Console.WriteLine("Elasticsearch settings not found. Logging to console only.");
         }
 
         Log.Logger = loggerConfig.CreateLogger();
+
+        var serilogLogger = Log.ForContext(typeof(SerilogConfiguration));
+
+        if (!string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
+        {
+            serilogLogger.Information("📡 Elasticsearch logging is enabled. Host: {Host}, IndexFormat: {Index}",
+                elasticsearchSettings.Uri, elasticsearchSettings.IndexFormat);
+        }
+        else
+        {
+            serilogLogger.Information("⚠️ Elasticsearch settings not found. Logging to console only.");
+        }
+
         host.UseSerilog();
     }
 }

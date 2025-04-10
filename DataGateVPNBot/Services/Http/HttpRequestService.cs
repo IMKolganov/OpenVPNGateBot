@@ -158,7 +158,7 @@ public class HttpRequestService : IHttpRequestService
             }
         }
 
-        _logger.LogError("Failed to complete HTTP request to {Url} after 3 attempts.", url);
+        throw new HttpRequestException($"Failed to complete HTTP request to {url} after 3 attempts.");
         return default;
     }
 }

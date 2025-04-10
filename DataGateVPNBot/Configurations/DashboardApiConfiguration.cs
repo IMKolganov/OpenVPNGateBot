@@ -4,6 +4,7 @@ using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
 using Microsoft.Extensions.Options;
+using Serilog;
 using StackExchange.Redis;
 
 namespace DataGateVPNBot.Configurations;
@@ -12,29 +13,25 @@ public static class DashboardApiConfiguration
 {
     public static void ConfigureDashboardApi(this IServiceCollection services, IConfiguration configuration)
     {
+        // Конфигурации
         services.Configure<RedisConfig>(configuration.GetSection("Redis"));
         services.Configure<DashboardApiConfig>(configuration.GetSection("DashboardApi"));
 
-        services.AddSingleton<IConnectionMultiplexer>(provider =>
+        // Лог подключения к Dashboard API
+        var dashboardConfig = configuration.GetSection("DashboardApi").Get<DashboardApiConfig>();
+        Log.ForContext("SourceContext", "DashboardApi")
+            .Information("📡 DashboardClient will be configured with base URL: {Url}", dashboardConfig.Url);
+
+        // Redis
+        services.AddSingleton<RedisConnectionFactory>();
+        services.AddSingleton<RedisCacheService>(sp =>
         {
-            var redisConfig = provider.GetRequiredService<IOptions<RedisConfig>>().Value;
-            var logger = provider.GetRequiredService<ILogger<IConnectionMultiplexer>>();
-            
-            try
-            {
-                var redis = ConnectionMultiplexer.Connect(redisConfig.ConnectionString);
-                logger.LogInformation($"Successfully connected to Redis at {redisConfig.ConnectionString}");
-                return redis;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, $"Failed to connect to Redis at {redisConfig.ConnectionString}");
-                throw;
-            }
+            var factory = sp.GetRequiredService<RedisConnectionFactory>();
+            var redis = factory.CreateConnection();
+            return new RedisCacheService(redis);
         });
 
-        services.AddSingleton<RedisCacheService>();
-
+        // HttpClient for Dashboard
         services.AddHttpClient("DashboardClient", (provider, client) =>
         {
             var dashboardApiConfig = provider.GetRequiredService<IOptions<DashboardApiConfig>>().Value;
@@ -43,6 +40,7 @@ public static class DashboardApiConfiguration
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
 
+        // HTTP
         services.AddSingleton<IHttpClientFactoryService, HttpClientFactoryService>();
         services.AddSingleton<IHttpRequestService, HttpRequestService>();
 
@@ -57,7 +55,7 @@ public static class DashboardApiConfiguration
                 dashboardApiConfig.ClientSecret,
                 provider.GetRequiredService<ILogger<DashBoardApiAuthService>>());
         });
-        
+
         services.AddScoped<DashBoardApiOvpnFileService>();
     }
 }
