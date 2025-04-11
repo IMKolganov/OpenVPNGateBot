@@ -452,6 +452,21 @@ public static class LocalizationTextSeedData
             Id = 69, Key = "ErrorDeletedAllFile", Language = Language.Greek,
             Text = "Δεν βρέθηκαν αρχεία προς διαγραφή."
         },
+        new LocalizationText
+        {
+            Id = 70, Key = "ErrorDeletedFile", Language = Language.English,
+            Text = "File not found or already deleted."
+        },
+        new LocalizationText
+        {
+            Id = 71, Key = "ErrorDeletedFile", Language = Language.Russian,
+            Text = "Файл не найден или уже удалён."
+        },
+        new LocalizationText
+        {
+            Id = 72, Key = "ErrorDeletedFile", Language = Language.Greek,
+            Text = "Το αρχείο δεν βρέθηκε ή έχει ήδη διαγραφεί."
+        },
     };
 
 }

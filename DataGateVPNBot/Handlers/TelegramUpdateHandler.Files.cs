@@ -201,7 +201,7 @@ public partial class TelegramUpdateHandler
         foreach (var fileInfo in clientConfigFiles)
         {
             currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, 
-                $"/delete_file {fileInfo.FileName}"));
+                $"/delete_file {vpnServerId} {fileInfo.FileName}"));
         
             if (currentRow.Count == 2)
             {
@@ -246,11 +246,13 @@ public partial class TelegramUpdateHandler
                 replyMarkup: new ReplyKeyboardRemove(), 
                 cancellationToken: cancellationToken);
         }
-
-        await _botClient.SendMessage(
-            chatId: telegramId,
-            text: await GetLocalizationTextAsync("ErrorDeletedFile",telegramId, cancellationToken),
-            replyMarkup: new ReplyKeyboardRemove(), 
-            cancellationToken: cancellationToken);
+        else
+        {
+            await _botClient.SendMessage(
+                chatId: telegramId,
+                text: await GetLocalizationTextAsync("ErrorDeletedFile",telegramId, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(), 
+                cancellationToken: cancellationToken);
+        }
     }
 }
