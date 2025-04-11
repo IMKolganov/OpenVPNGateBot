@@ -115,8 +115,8 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             "/register" => RegisterForVpn(msg, cancellationToken),
             "/get_my_files" => GetMyFiles(msg, argument, cancellationToken),
             "/make_new_file" => MakeNewVpnFile(msg, argument, cancellationToken),
-            "/delete_selected_file" => DeleteSelectedFile(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
-            "/delete_all_files" => DeleteAllFiles(msg, argument ?? throw new InvalidOperationException(), cancellationToken),//todo: fix
+            "/delete_selected_file" => DeleteSelectedFile(msg, argument, cancellationToken),
+            "/delete_all_files" => DeleteAllFiles(msg, argument, cancellationToken),
             "/install_client" => InstallClient(msg, cancellationToken),
             "/about_project" => AboutProject(msg, cancellationToken),
             "/contacts" => Contacts(msg, cancellationToken),
@@ -181,8 +181,20 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         }else if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/make_new_file "))
         {
             var vpnServerId = callbackQuery.Data.Substring("/make_new_file ".Length);
-            _logger.LogInformation($"Get files for vpnServerId: {vpnServerId}");
+            _logger.LogInformation($"Make files for vpnServerId: {vpnServerId}");
             await MakeNewVpnFile(callbackQuery.Message ?? throw new InvalidOperationException("Message is null."), 
+                vpnServerId, cancellationToken);
+        }else if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/delete_selected_file "))
+        {
+            var vpnServerId = callbackQuery.Data.Substring("/delete_selected_file ".Length);
+            _logger.LogInformation($"Delete selected file for vpnServerId: {vpnServerId}");
+            await DeleteSelectedFile(callbackQuery.Message ?? throw new InvalidOperationException("Message is null."), 
+                vpnServerId, cancellationToken);
+        }else if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/delete_all_files "))
+        {
+            var vpnServerId = callbackQuery.Data.Substring("/delete_all_files ".Length);
+            _logger.LogInformation($"Delete all files for vpnServerId: {vpnServerId}");
+            await DeleteAllFiles(callbackQuery.Message ?? throw new InvalidOperationException("Message is null."), 
                 vpnServerId, cancellationToken);
         }
         else if (callbackQuery.Data != null && (callbackQuery.Data.ToLower() == "/english" || 

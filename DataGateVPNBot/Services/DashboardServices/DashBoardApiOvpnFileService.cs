@@ -135,8 +135,7 @@ public class DashBoardApiOvpnFileService
         return response!.Data!;
     }
     
-    public async Task<bool> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, long telegramId,
-        CancellationToken cancellationToken)
+    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, CancellationToken cancellationToken)
     {
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
@@ -145,22 +144,24 @@ public class DashBoardApiOvpnFileService
         }
 
         _logger.LogInformation("Sending request to revoke OVPN file for " +
-                               $"TelegramId: {telegramId}, ServerId: {request.VpnServerId}");
+                               $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<bool>(EndpointRevokeOvpnFile, request, token, cancellationToken);
-
-        if (!response)
+            await _httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, request, token, cancellationToken);
+        
+        if (response is { Success: true, Data: not null })
         {
-            _logger.LogError("Failed to revoke OVPN file for " +
-                             $"TelegramId: {telegramId}, ServerId: {request.VpnServerId}, Response: {response}");
+            _logger.LogInformation("Successfully revoked OVPN file for " +
+                                   $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}, " +
+                                   $"Response: {response}");
         }
         else
         {
-            _logger.LogInformation("Successfully revoked OVPN file for " +
-                                   $"TelegramId: {telegramId}, ServerId: {request.VpnServerId}, Response: {response}");
+            _logger.LogError("Failed to revoke OVPN file for " +
+                             $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}, " +
+                             $"Response: {response}");
         }
 
-        return response;
+        return response!.Data!;
     }
 }

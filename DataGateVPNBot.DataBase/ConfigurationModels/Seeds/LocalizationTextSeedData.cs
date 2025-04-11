@@ -436,7 +436,22 @@ public static class LocalizationTextSeedData
         {
             Id = 66, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.Greek,
             Text = "Κάτι πήγε στραβά κατά την προσπάθεια δημιουργίας νέου αρχείου."
-        }
+        },
+        new LocalizationText
+        {
+            Id = 67, Key = "ErrorDeletedAllFile", Language = Language.English,
+            Text = "No files found to delete."
+        },
+        new LocalizationText
+        {
+            Id = 68, Key = "ErrorDeletedAllFile", Language = Language.Russian,
+            Text = "Файлы для удаления не найдены."
+        },
+        new LocalizationText
+        {
+            Id = 69, Key = "ErrorDeletedAllFile", Language = Language.Greek,
+            Text = "Δεν βρέθηκαν αρχεία προς διαγραφή."
+        },
     };
 
 }
