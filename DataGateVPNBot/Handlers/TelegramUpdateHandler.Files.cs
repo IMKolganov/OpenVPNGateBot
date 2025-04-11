@@ -100,31 +100,54 @@ public partial class TelegramUpdateHandler
     private async Task<Message> MakeNewVpnFile(Message msg, string? vpnServerIdArg, CancellationToken cancellationToken)
     {
         await _botClient.SendChatAction(msg.Chat.Id, ChatAction.UploadDocument, cancellationToken: cancellationToken);
-        using var scope = _serviceProvider.CreateScope();
-        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
-
-        if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+        try
         {
-            return await GetOpenVpnServers(msg, "/make_new_file", cancellationToken);
-        }
-        
-        var newOvpnFile = await ovpnFileService.MakeOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken);
-        if (newOvpnFile != null)
-        {
-            _logger.LogInformation("Client configuration created successfully in UpdateHandler.");
+            using var scope = _serviceProvider.CreateScope();
+            var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
 
-            return await _botClient.SendDocument(
+            if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+            {
+                return await GetOpenVpnServers(msg, "/make_new_file", cancellationToken);
+            }
+
+            if (await ovpnFileService.CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken))
+            {
+                return await _botClient.SendMessage(
+                    msg.Chat,
+                    await GetLocalizationTextAsync("MaxConfigError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            var mediaGroupOpenVpnFiles =
+                await ovpnFileService.MakeOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+            if (!mediaGroupOpenVpnFiles.Any())
+            {
+                return await _botClient.SendMessage(
+                    chatId: msg.Chat.Id,
+                    text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            _logger.LogInformation("Sending media group...");
+            var messages = await _botClient.SendMediaGroup(
                 chatId: msg.Chat.Id,
-                document: newOvpnFile,
-                caption: "1234", 
+                media: mediaGroupOpenVpnFiles,
                 cancellationToken: cancellationToken);
+            _logger.LogInformation("Media group sent successfully.");
+
+            return messages.FirstOrDefault() ??
+                   throw new InvalidOperationException("No messages returned after sending media group.");
         }
-        else
+        catch(Exception ex)
         {
             return await _botClient.SendMessage(
-                chatId: msg.Chat.Id,
-                text: "1423",
-                replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
+                msg.Chat,
+                await GetLocalizationTextAsync("SomethingWentWrongWhenTryMakeNewFile", 
+                    msg.Chat.Id, cancellationToken) + "Details: " + ex.Message,
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
         }
     }
     

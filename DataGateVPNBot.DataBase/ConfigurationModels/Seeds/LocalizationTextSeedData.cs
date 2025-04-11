@@ -421,6 +421,21 @@ public static class LocalizationTextSeedData
         {
             Id = 63, Key = "ChooseOpenVpnServer", Language = Language.Greek,
             Text = "Επιλέξτε διακομιστή OpenVPN:"
+        },
+        new LocalizationText
+        {
+            Id = 64, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.English,
+            Text = "Something went wrong while trying to create a new file."
+        },
+        new LocalizationText
+        {
+            Id = 65, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.Russian,
+            Text = "Произошла ошибка при попытке создать новый файл."
+        },
+        new LocalizationText
+        {
+            Id = 66, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.Greek,
+            Text = "Κάτι πήγε στραβά κατά την προσπάθεια δημιουργίας νέου αρχείου."
         }
     };
 
