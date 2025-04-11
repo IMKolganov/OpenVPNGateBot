@@ -135,7 +135,7 @@ public class DashBoardApiOvpnFileService
         return response!.Data!;
     }
     
-    public async Task<bool> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, int telegramId,
+    public async Task<bool> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, long telegramId,
         CancellationToken cancellationToken)
     {
         var token = await _dashBoardApiAuthService.GetTokenAsync();

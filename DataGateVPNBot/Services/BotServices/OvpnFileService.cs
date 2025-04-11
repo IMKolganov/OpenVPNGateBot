@@ -18,12 +18,12 @@ public class OvpnFileService : IOvpnFileService
         _logger = logger;
     }
 
-    public async Task<List<OvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long userId,
+    public async Task<List<OvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
         var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
         {
-            VpnServerId = vpnServerId,  ExternalId = userId.ToString()
+            VpnServerId = vpnServerId,  ExternalId = telegramId.ToString()
         };
         var issuedOvpnFileResponses =
             await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
@@ -115,7 +115,7 @@ public class OvpnFileService : IOvpnFileService
         var addOvpnFileRequest = new AddOvpnFileRequest
         {
             VpnServerId = vpnServerId,
-            CommonName = $"tg-{telegramId}",
+            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
             ExternalId = telegramId.ToString(),
             IssuedTo = $"telegram user {telegramId}"
         };
@@ -148,14 +148,14 @@ public class OvpnFileService : IOvpnFileService
     public async Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
-        // _logger.LogInformation("Revoking all OVPN files for user: {UserId}, ServerId: {VpnServerId}", telegramId, vpnServerId);
+        // _logger.LogInformation("Revoking all OVPN files for telegramId: {telegramId}, ServerId: {VpnServerId}", telegramId, vpnServerId);
         //
         // var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
         //     vpnServerId, telegramId.ToString(), cancellationToken);
         //
         // if (issuedOvpnFileResponses == null || !issuedOvpnFileResponses.Any())
         // {
-        //     _logger.LogWarning("No OVPN files found to revoke for user {UserId} on server {VpnServerId}.", telegramId, vpnServerId);
+        //     _logger.LogWarning("No OVPN files found to revoke for telegramId {telegramId} on server {VpnServerId}.", telegramId, vpnServerId);
         //     return false;
         // }
         //
@@ -165,7 +165,7 @@ public class OvpnFileService : IOvpnFileService
         //     var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), file.CommonName, vpnServerId, cancellationToken);
         //     if (!revoked)
         //     {
-        //         _logger.LogError("Failed to revoke OVPN file: {FileName} for user {UserId} on server {VpnServerId}", 
+        //         _logger.LogError("Failed to revoke OVPN file: {FileName} for telegramId {telegramId} on server {VpnServerId}", 
         //             file.FileName, telegramId, vpnServerId);
         //         success = false;
         //     }
@@ -178,7 +178,7 @@ public class OvpnFileService : IOvpnFileService
         CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
-        // _logger.LogInformation("Revoking OVPN file {FileName} for user {UserId}, ServerId: {VpnServerId}", 
+        // _logger.LogInformation("Revoking OVPN file {FileName} for telegramId {telegramId}, ServerId: {VpnServerId}", 
         //     fileName, telegramId, vpnServerId);
         //
         // var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
@@ -195,12 +195,27 @@ public class OvpnFileService : IOvpnFileService
         // return await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), fileToRevoke.CommonName, vpnServerId, cancellationToken);
     }
 
-    private async Task<string> MakeCommonNameForOvpnFileAsync(string commonName,
-        CancellationToken cancellationToken)
+    private async Task<string> MakeCommonNameForOvpnFileAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken, int maxCountFiles = 10)
     {
-        //check_available_name
-        
-        return commonName;
+        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+
+        var prefix = $"tg-{vpnServerId}-{telegramId}-";
+        var usedNames = files
+            .Where(f => f.CommonName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Select(f => f.CommonName)
+            .ToHashSet();
+
+        for (int i = 0; i < maxCountFiles; i++)
+        {
+            var candidate = $"{prefix}{i}";
+            if (!usedNames.Contains(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new Exception($"No available CommonName for Telegram ID {telegramId}. Limit of 10 reached.");
     }
 
 }
