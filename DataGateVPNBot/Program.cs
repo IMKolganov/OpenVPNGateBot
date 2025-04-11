@@ -7,7 +7,7 @@ builder.Host.ConfigureSerilog();
 builder.Services.ConfigureTelegram(builder.Configuration);
 builder.Services.ConfigureServices();
 builder.Services.DataBaseServices(builder.Configuration);
-builder.Services.ConfigureDashboardApi(builder.Configuration);
+builder.Services.ConfigureDashboardApi();
 
 builder.ConfigureWebHost();
 

@@ -11,16 +11,40 @@ namespace DataGateVPNBot.Configurations;
 
 public static class DashboardApiConfiguration
 {
-    public static void ConfigureDashboardApi(this IServiceCollection services, IConfiguration configuration)
+    public static void ConfigureDashboardApi(this IServiceCollection services)
     {
-        // Конфигурации
-        services.Configure<RedisConfig>(configuration.GetSection("Redis"));
-        services.Configure<DashboardApiConfig>(configuration.GetSection("DashboardApi"));
+        var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("dashboardapi.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
 
-        // Лог подключения к Dashboard API
-        var dashboardConfig = configuration.GetSection("DashboardApi").Get<DashboardApiConfig>();
+        var dashboardConfig = new DashboardApiConfig
+        {
+            Url = Environment.GetEnvironmentVariable("DASHBOARDAPI_URL")
+                  ?? config["DashboardApi:Url"]
+                  ?? string.Empty,
+
+            ClientId = Environment.GetEnvironmentVariable("DASHBOARDAPI_CLIENTID")
+                       ?? config["DashboardApi:ClientId"]
+                       ?? string.Empty,
+
+            ClientSecret = Environment.GetEnvironmentVariable("DASHBOARDAPI_CLIENTSECRET")
+                           ?? config["DashboardApi:ClientSecret"]
+                           ?? string.Empty
+        };
+
+        if (string.IsNullOrWhiteSpace(dashboardConfig.Url))
+        {
+            Log.ForContext("SourceContext", "DashboardApi")
+                .Error("❌ DashboardApi:Url is missing.");
+            throw new NullReferenceException("DashboardApi:Url is required.");
+        }
+
         Log.ForContext("SourceContext", "DashboardApi")
-            .Information("📡 DashboardClient will be configured with base URL: {Url}", dashboardConfig!.Url);
+            .Information("📡 DashboardClient will be configured with base URL: {Url}", dashboardConfig.Url);
+
+        services.AddSingleton(dashboardConfig);
 
         // Redis
         services.AddSingleton<RedisConnectionFactory>();
@@ -31,11 +55,10 @@ public static class DashboardApiConfiguration
             return new RedisCacheService(redis);
         });
 
-        // HttpClient for Dashboard
+        // HTTP Client
         services.AddHttpClient("DashboardClient", (provider, client) =>
         {
-            var dashboardApiConfig = provider.GetRequiredService<IOptions<DashboardApiConfig>>().Value;
-            client.BaseAddress = new Uri(dashboardApiConfig.Url);
+            client.BaseAddress = new Uri(dashboardConfig.Url);
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
@@ -45,16 +68,13 @@ public static class DashboardApiConfiguration
         services.AddSingleton<IHttpRequestService, HttpRequestService>();
 
         services.AddSingleton<DashBoardApiAuthService>(provider =>
-        {
-            var dashboardApiConfig = provider.GetRequiredService<IOptions<DashboardApiConfig>>().Value;
-
-            return new DashBoardApiAuthService(
+            new DashBoardApiAuthService(
                 provider.GetRequiredService<IHttpRequestService>(),
                 provider.GetRequiredService<RedisCacheService>(),
-                dashboardApiConfig.ClientId,
-                dashboardApiConfig.ClientSecret,
-                provider.GetRequiredService<ILogger<DashBoardApiAuthService>>());
-        });
+                dashboardConfig.ClientId,
+                dashboardConfig.ClientSecret,
+                provider.GetRequiredService<ILogger<DashBoardApiAuthService>>())
+        );
 
         services.AddScoped<DashBoardApiOvpnFileService>();
     }
