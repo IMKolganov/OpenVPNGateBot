@@ -108,9 +108,10 @@ public class OvpnFileService : IOvpnFileService
         return mediaGroupOpenVpnFiles;
     }
 
-    public async Task<InputFile?> MakeOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken)
+    public async Task<InputFile?> MakeOvpnFileAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"Creating OVPN file for user: {telegramId}, ServerId: {vpnServerId}");
+        _logger.LogInformation($"Creating OVPN file for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
         var addOvpnFileRequest = new AddOvpnFileRequest
         {
@@ -120,28 +121,51 @@ public class OvpnFileService : IOvpnFileService
             IssuedTo = $"telegram user {telegramId}"
         };
 
-        var addOvpnFileResponse = await _dashBoardApiOvpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
+        var addOvpnFileResponse =
+            await _dashBoardApiOvpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
 
-        if (addOvpnFileResponse?.OvpnFile == null || string.IsNullOrEmpty(addOvpnFileResponse.OvpnFile.FullName))
+        if (addOvpnFileResponse?.IssuedOvpnFile == null)
         {
-            _logger.LogWarning($"Failed to request OVPN file creation for user {telegramId} on server {vpnServerId}.");
+            _logger.LogWarning($"Failed to create OVPN file for telegramId: {telegramId}, ServerId: {vpnServerId}");
             return null;
         }
 
         var issuedOvpnFile = addOvpnFileResponse.IssuedOvpnFile;
 
-        _logger.LogInformation($"Downloading newly created OVPN file: {issuedOvpnFile.FileName}");
-
         try
         {
-            using var issuedOvpnFileStream = File.OpenRead(addOvpnFileResponse.OvpnFile.FullName);
+            _logger.LogInformation(
+                $"Downloading newly created file: {issuedOvpnFile.FileName}, " +
+                $"ServerId: {issuedOvpnFile.VpnServerId}, FileId: {issuedOvpnFile.Id}");
+
+            var downloadRequest = new DownloadOvpnFileRequest
+            {
+                VpnServerId = issuedOvpnFile.VpnServerId,
+                IssuedOvpnFileId = issuedOvpnFile.Id
+            };
+
+            var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                downloadRequest, cancellationToken);
+
             var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
             return inputFile;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to open OVPN file: {FilePath}", addOvpnFileResponse.OvpnFile.FullName);
-            return null;
+            _logger.LogError("Error downloading file {FileName}: {ErrorMessage}", issuedOvpnFile.FileName, ex.Message);
+
+            var errorMessage = new StringBuilder()
+                .AppendLine($"Error downloading file: {issuedOvpnFile.FileName}")
+                .AppendLine($"ServerId: {issuedOvpnFile.VpnServerId}")
+                .AppendLine($"FileId: {issuedOvpnFile.Id}")
+                .AppendLine($"Error: {ex.Message}")
+                .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
+                .ToString();
+
+            var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
+            var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFile.FileName}.error.txt");
+
+            return errorFile;
         }
     }
 
