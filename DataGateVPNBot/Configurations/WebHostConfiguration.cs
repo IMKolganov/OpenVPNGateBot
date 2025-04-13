@@ -1,15 +1,27 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using DataGateVPNBot.Models.Helpers;
-
-namespace DataGateVPNBot.Configurations;
+﻿namespace DataGateVPNBot.Configurations;
 
 public static class WebHostConfiguration
 {
     public static void ConfigureWebHost(this WebApplicationBuilder builder)
     {
-        builder.WebHost.ConfigureKestrel((context, options) =>
+        var config = builder.Configuration;
+
+        var certPath = config["CERTIFICATE_PATH"]; 
+        var portStr = config["TELEGRAMBOT_PORT"];
+
+        builder.WebHost.ConfigureKestrel(serverOptions =>
         {
-            options.Configure(context.Configuration.GetSection("Kestrel"));
+            serverOptions.Configure(config.GetSection("Kestrel"));
+
+            if (!string.IsNullOrWhiteSpace(certPath))
+            {
+                var port = int.TryParse(portStr, out var parsedPort) ? parsedPort : 8443;
+
+                serverOptions.ListenAnyIP(port, listen =>
+                {
+                    listen.UseHttps(certPath);
+                });
+            }
         });
     }
 }
