@@ -23,7 +23,6 @@ public class CertificateGenerator
         var certDir = Path.GetDirectoryName(certPath);
         if (string.IsNullOrWhiteSpace(certDir))
             certDir = Directory.GetCurrentDirectory();
-        Directory.CreateDirectory(certDir);
         
         var keyPath = Path.ChangeExtension(certPath, ".key");
         var pemPath = Path.ChangeExtension(certPath, ".pem");
