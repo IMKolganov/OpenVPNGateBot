@@ -50,10 +50,10 @@ public class WebhookService
 
             _logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
 
-            if (currentUrl != _botConfig.HostAddress)
+            if (currentUrl != $"_botConfig.HostAddress:{_botConfig.Port}")
             {
-                _logger.LogWarning("Webhook URL mismatch! Expected: {Expected}, Got: {Actual}",
-                    _botConfig.HostAddress, currentUrl);
+                _logger.LogWarning($"Webhook URL mismatch! Expected: {_botConfig.HostAddress}:{_botConfig.Port}, " +
+                                   $"Got: {currentUrl}");
                 return false;
             }
 
@@ -81,9 +81,11 @@ public class WebhookService
             throw new NullReferenceException("TelegramWebHook is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
+        _logger.LogInformation($"Set webhook URL: {url}");
         using var form = new MultipartFormDataContent();
 
         form.Add(new StringContent($"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot"), "url");
+        _logger.LogInformation($"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot");
 
         if (_botConfig.UseCertificate || _botConfig.AutoGenerateCertificate)
         {
