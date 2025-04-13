@@ -3,7 +3,9 @@
 public class BotConfiguration
 {
     public string BotToken { get; set; } = null!;
-    public string BotWebhookUrl { get; set; } = "TelegramWebHook";
+    public string HostAddress { get; set; } = "127.0.0.1";
+    public int Port { get; set; } = 443;
     public bool UseCertificate { get; set; } = false;
-    public string CertificatePath { get; set; } = null!;
+    public bool AutoGenerateCertificate { get; set; } = false;
+    public string CertificatePath { get; set; } = string.Empty;
 }
