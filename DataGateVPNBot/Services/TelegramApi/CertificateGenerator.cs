@@ -107,6 +107,9 @@ public class CertificateGenerator
         }
 
         _logger.LogInformation($"📦 PFX certificate created: {pfxPath}");
+        
+        _logger.LogInformation("Try to restart app...");
+        Environment.Exit(0);
     }
 
     private static bool IsOpenSslAvailable()
