@@ -25,7 +25,7 @@ public class WebhookService
             throw new NullReferenceException("BotToken is missing in configuration.");
 
         if (string.IsNullOrEmpty(_botConfig.HostAddress))
-            throw new NullReferenceException("TelegramWebHook is missing in configuration.");
+            throw new NullReferenceException("HostAddress is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/getWebhookInfo";
         var response = await _httpClient.GetAsync(url, cancellationToken);
@@ -48,19 +48,19 @@ public class WebhookService
             var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) &&
                                        certElement.GetBoolean();
 
+            var expectedUrl = $"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot";
+
             _logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
 
-            if (currentUrl != $"_botConfig.HostAddress:{_botConfig.Port}")
+            if (!string.Equals(currentUrl, expectedUrl, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning($"Webhook URL mismatch! Expected: {_botConfig.HostAddress}:{_botConfig.Port}, " +
-                                   $"Got: {currentUrl}");
+                _logger.LogWarning($"Webhook URL mismatch! Expected: {expectedUrl}, Got: {currentUrl}");
                 return false;
             }
 
             if (_botConfig.UseCertificate != hasCustomCertificate)
             {
-                _logger.LogWarning($"Webhook certificate mismatch! Expected custom cert: {_botConfig.UseCertificate}, " +
-                                   $"Got: {hasCustomCertificate}");
+                _logger.LogWarning($"Webhook certificate mismatch! Expected custom cert: {_botConfig.UseCertificate}, Got: {hasCustomCertificate}");
                 return false;
             }
 
@@ -78,21 +78,20 @@ public class WebhookService
             throw new NullReferenceException("BotToken is missing in configuration.");
 
         if (string.IsNullOrEmpty(_botConfig.HostAddress))
-            throw new NullReferenceException("TelegramWebHook is missing in configuration.");
+            throw new NullReferenceException("HostAddress is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
+        var webhookUrl = $"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot";
+
         _logger.LogInformation($"Set webhook URL: {url}");
+        _logger.LogInformation($"{webhookUrl}");
 
         using var form = new MultipartFormDataContent();
-
-        var webhookUrl = $"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot";
         form.Add(new StringContent(webhookUrl), "url");
-        _logger.LogInformation($"{webhookUrl}");
 
         if (_botConfig.UseCertificate || _botConfig.AutoGenerateCertificate)
         {
-            Stream certStream;
-            string certName = "datagatetgbot.crt";
+            var pemPath = _botConfig.CertificatePemPath;
 
             if (_botConfig.AutoGenerateCertificate)
             {
@@ -100,17 +99,15 @@ public class WebhookService
                 _certificateGenerator.EnsureCertificate(_botConfig.HostAddress);
             }
 
-            var crtPath = _botConfig.CertificateCrtPath;
-            if (string.IsNullOrEmpty(crtPath))
-                throw new NullReferenceException("CertificateCrtPath is missing in configuration.");
+            if (string.IsNullOrEmpty(pemPath))
+                throw new NullReferenceException("CertificatePemPath is missing in configuration.");
 
-            if (!File.Exists(crtPath))
-                throw new FileNotFoundException($"Certificate file '{crtPath}' not found.");
+            if (!File.Exists(pemPath))
+                throw new FileNotFoundException($"Certificate file '{pemPath}' not found.");
 
-            _logger.LogInformation($"Using certificate: {crtPath}");
-            certStream = File.OpenRead(crtPath);
-
-            form.Add(new StreamContent(certStream), "certificate", certName);
+            _logger.LogInformation($"Using certificate: {pemPath}");
+            var certStream = File.OpenRead(pemPath);
+            form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
         }
 
         var response = await _httpClient.PostAsync(url, form, cancellationToken);

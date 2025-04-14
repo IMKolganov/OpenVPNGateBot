@@ -29,15 +29,16 @@ public class CertificateGenerator
 
         var keyPath = Path.Combine(certDir, "datagatetgbot.key");
         var crtPath = Path.Combine(certDir, "datagatetgbot.crt");
+        var pemPath = Path.Combine(certDir, "datagatetgbot.pem");
         var cnfPath = Path.Combine(certDir, "datagatetgbot.cnf");
 
         if (!IsOpenSslAvailable())
             throw new InvalidOperationException("OpenSSL is not installed or not available in PATH.");
 
-        if (File.Exists(certPath))
+        if (File.Exists(certPath) && File.Exists(crtPath))
         {
-            _logger.LogInformation($"✅ Existing certificate found. Using: {certPath}");
-            // return File.OpenRead(certPath);
+            _logger.LogInformation($"✅ Existing certificate found: {certPath}");
+            return;
         }
 
         _logger.LogWarning("⚠ Certificate not found. Generating new self-signed certificate...");
@@ -47,14 +48,21 @@ public class CertificateGenerator
         default_bits = 2048
         prompt = no
         default_md = sha256
-        req_extensions = req_ext
         distinguished_name = dn
+        req_extensions = req_ext
 
         [dn]
+        C = CY
+        ST = Cyprus
+        L = Nicosia
+        O = DataGate
         CN = {hostAddress}
 
         [req_ext]
         subjectAltName = @alt_names
+        basicConstraints = critical, CA:FALSE
+        keyUsage = critical, digitalSignature, keyEncipherment
+        extendedKeyUsage = serverAuth
 
         [alt_names]
         IP.1 = {hostAddress}
@@ -77,7 +85,10 @@ public class CertificateGenerator
             throw new Exception("OpenSSL certificate generation failed.");
         }
 
+        File.Copy(crtPath, pemPath, true);
+
         _logger.LogInformation($"✅ CRT and KEY generated:\n - CRT: {crtPath}\n - KEY: {keyPath}");
+        _logger.LogInformation($"📦 PEM exported: {pemPath}");
 
         var pfxPath = certPath;
         var genPfx = RunOpenSslCommand(new[]
@@ -95,7 +106,7 @@ public class CertificateGenerator
             throw new Exception("OpenSSL PFX export failed.");
         }
 
-        _logger.LogInformation($"📦 PFX certificate created at: {pfxPath}");
+        _logger.LogInformation($"📦 PFX certificate created: {pfxPath}");
     }
 
     private static bool IsOpenSslAvailable()
