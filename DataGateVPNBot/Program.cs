@@ -11,7 +11,6 @@ logger.Information($"Application version: {version};");
 
 builder.Services.ConfigureTelegram(builder.Configuration);
 builder.Services.ConfigureServices();
-builder.Services.DataBaseServices(builder.Configuration);
 builder.Services.ConfigureDashboardApi();
 
 builder.ConfigureWebHost(logger);

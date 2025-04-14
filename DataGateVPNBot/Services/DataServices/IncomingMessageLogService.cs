@@ -1,5 +1,4 @@
-﻿using DataGateVPNBot.DataBase.UnitOfWork;
-using DataGateVPNBot.Models;
+﻿using DataGateVPNBot.Models;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -8,16 +7,14 @@ namespace DataGateVPNBot.Services.DataServices;
 
 public class IncomingMessageLogService : IIncomingMessageLogService
 {
-    private readonly IUnitOfWork _unitOfWork;
 
-    public IncomingMessageLogService(IUnitOfWork unitOfWork)
+    public IncomingMessageLogService()
     {
-        _unitOfWork = unitOfWork;
     }
 
     public async Task Log(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
-        var repository = _unitOfWork.GetRepository<IncomingMessageLog>();
+        // var repository = _unitOfWork.GetRepository<IncomingMessageLog>();
         
         var log = new IncomingMessageLog
         {
@@ -46,8 +43,8 @@ public class IncomingMessageLogService : IIncomingMessageLogService
             log.MessageText += $"\n[Error processing file: {ex.Message}]";
         }
 
-        await repository.AddAsync(log, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // await repository.AddAsync(log, cancellationToken);
+        // await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private async Task ProcessFileAsync(

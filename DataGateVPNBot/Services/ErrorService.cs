@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using DataGateVPNBot.DataBase.UnitOfWork;
 using DataGateVPNBot.Models;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
@@ -28,8 +27,8 @@ public class ErrorService : IErrorService
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            var errorLogRepository = unitOfWork.GetRepository<ErrorLog>();
+            // var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            // var errorLogRepository = unitOfWork.GetRepository<ErrorLog>();
         
             var source = context?.Request?.Path.Value ?? "Unknown";
 
@@ -50,8 +49,8 @@ public class ErrorService : IErrorService
                 Source = source
             };
 
-            await errorLogRepository.AddAsync(errorLog);
-            await unitOfWork.SaveChangesAsync();
+            // await errorLogRepository.AddAsync(errorLog);
+            // await unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {
