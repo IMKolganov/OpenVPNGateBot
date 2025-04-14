@@ -82,28 +82,35 @@ public class WebhookService
 
         var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
         _logger.LogInformation($"Set webhook URL: {url}");
+
         using var form = new MultipartFormDataContent();
 
-        form.Add(new StringContent($"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot"), "url");
-        _logger.LogInformation($"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot");
+        var webhookUrl = $"https://{_botConfig.HostAddress}:{_botConfig.Port}/bot";
+        form.Add(new StringContent(webhookUrl), "url");
+        _logger.LogInformation($"{webhookUrl}");
 
         if (_botConfig.UseCertificate || _botConfig.AutoGenerateCertificate)
         {
             Stream certStream;
+            string certName = "datagatetgbot.crt";
 
             if (_botConfig.AutoGenerateCertificate)
             {
-                certStream = _certificateGenerator.EnsureCertificate(_botConfig.HostAddress);
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(_botConfig.CertificateCrtPath))
-                    throw new NullReferenceException("CertificatePath is missing in configuration but UseCertificate is true.");
-
-                certStream = File.OpenRead(_botConfig.CertificateCrtPath);
+                _logger.LogInformation("Auto-generating certificate...");
+                _certificateGenerator.EnsureCertificate(_botConfig.HostAddress);
             }
 
-            form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.crt");
+            var crtPath = _botConfig.CertificateCrtPath;
+            if (string.IsNullOrEmpty(crtPath))
+                throw new NullReferenceException("CertificateCrtPath is missing in configuration.");
+
+            if (!File.Exists(crtPath))
+                throw new FileNotFoundException($"Certificate file '{crtPath}' not found.");
+
+            _logger.LogInformation($"Using certificate: {crtPath}");
+            certStream = File.OpenRead(crtPath);
+
+            form.Add(new StreamContent(certStream), "certificate", certName);
         }
 
         var response = await _httpClient.PostAsync(url, form, cancellationToken);
@@ -111,11 +118,11 @@ public class WebhookService
 
         if (response.IsSuccessStatusCode)
         {
-            _logger.LogInformation("Webhook successfully set. Response: {Response}", result);
+            _logger.LogInformation($"Webhook successfully set. Response: {result}");
         }
         else
         {
-            _logger.LogError("Failed to set webhook. Response: {Response}", result);
+            _logger.LogError($"Failed to set webhook. Response: {result}");
         }
     }
 }

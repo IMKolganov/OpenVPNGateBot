@@ -14,7 +14,7 @@ public class CertificateGenerator
         _config = config;
     }
 
-    public Stream EnsureCertificate(string hostAddress)
+    public void EnsureCertificate(string hostAddress)
     {
         var certPath = !string.IsNullOrEmpty(_config.CertificatePfxPath)
             ? _config.CertificatePfxPath
@@ -37,7 +37,7 @@ public class CertificateGenerator
         if (File.Exists(certPath))
         {
             _logger.LogInformation($"✅ Existing certificate found. Using: {certPath}");
-            return File.OpenRead(certPath);
+            // return File.OpenRead(certPath);
         }
 
         _logger.LogWarning("⚠ Certificate not found. Generating new self-signed certificate...");
@@ -96,8 +96,6 @@ public class CertificateGenerator
         }
 
         _logger.LogInformation($"📦 PFX certificate created at: {pfxPath}");
-
-        return File.OpenRead(pfxPath);
     }
 
     private static bool IsOpenSslAvailable()
