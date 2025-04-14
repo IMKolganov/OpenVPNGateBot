@@ -97,6 +97,10 @@ public class WebhookService
             {
                 _logger.LogInformation("Auto-generating certificate...");
                 _certificateGenerator.EnsureCertificate(_botConfig.HostAddress);
+                
+                _logger.LogInformation("Try to restart app...");
+                Environment.Exit(0);
+                return;
             }
 
             if (string.IsNullOrEmpty(pemPath))
