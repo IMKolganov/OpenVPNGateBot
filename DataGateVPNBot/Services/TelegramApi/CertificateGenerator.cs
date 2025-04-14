@@ -16,8 +16,8 @@ public class CertificateGenerator
 
     public Stream EnsureCertificate(string hostAddress)
     {
-        var certPath = !string.IsNullOrEmpty(_config.CertificatePath)
-            ? _config.CertificatePath
+        var certPath = !string.IsNullOrEmpty(_config.CertificatePfxPath)
+            ? _config.CertificatePfxPath
             : "datagatetgbot.pfx";
 
         if (string.IsNullOrEmpty(certPath))

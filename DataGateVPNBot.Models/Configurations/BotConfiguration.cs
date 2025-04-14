@@ -7,5 +7,5 @@ public class BotConfiguration
     public int Port { get; set; } = 0;
     public bool UseCertificate { get; set; } = false;
     public bool AutoGenerateCertificate { get; set; } = false;
-    public string CertificatePath { get; set; } = string.Empty;
-}
+    public string? CertificatePfxPath { get; set; }
+    public string? CertificateCrtPath { get; set; }}

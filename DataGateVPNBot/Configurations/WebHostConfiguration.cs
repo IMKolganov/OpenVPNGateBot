@@ -8,7 +8,7 @@ public static class WebHostConfiguration
     {
         var config = builder.Configuration;
 
-        var certPath = config["CERTIFICATE_PATH"];
+        var certPfxPath = config["CERTIFICATE_PFX_PATH"];
         var portStr = config["TELEGRAMBOT_PORT"];
         var port = int.TryParse(portStr, out var parsedPort) ? parsedPort : 8443;
 
@@ -16,26 +16,22 @@ public static class WebHostConfiguration
         {
             serverOptions.Configure(config.GetSection("Kestrel"));
 
-            if (!string.IsNullOrWhiteSpace(certPath))
+            if (!string.IsNullOrWhiteSpace(certPfxPath))
             {
-                if (File.Exists(certPath))
+                if (File.Exists(certPfxPath))
                 {
-                    logger.Information($"🔐 HTTPS certificate found at: {certPath}");
-
-                    serverOptions.ListenAnyIP(port, listen =>
-                    {
-                        listen.UseHttps(certPath);
-                    });
+                    logger.Information($"🔐 HTTPS certificate found at: {certPfxPath}");
+                    serverOptions.ListenAnyIP(port, listen => listen.UseHttps(certPfxPath));
                 }
                 else
                 {
-                    logger.Warning($"⚠ Certificate file '{certPath}' not found. Falling back to HTTP only.");
+                    logger.Warning($"⚠ Certificate file '{certPfxPath}' not found. Falling back to HTTP only.");
                     serverOptions.ListenAnyIP(port);
                 }
             }
             else
             {
-                logger.Warning("⚠ CERTIFICATE_PATH not provided. Running HTTP only.");
+                logger.Warning("⚠ CERTIFICATE_PFX_PATH not provided. Running HTTP only.");
                 serverOptions.ListenAnyIP(port);
             }
         });

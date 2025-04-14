@@ -14,7 +14,8 @@ public static class TelegramConfiguration
         var envBotToken = Environment.GetEnvironmentVariable("TELEGRAMBOT_BOT_TOKEN");
         var envWebHook = Environment.GetEnvironmentVariable("HOST_ADDRESS");
         var envPort = Environment.GetEnvironmentVariable("TELEGRAMBOT_PORT");
-        var envCertPath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
+        var envCertPfxPath = Environment.GetEnvironmentVariable("CERTIFICATE_PFX_PATH");
+        var envCertCrtPath = Environment.GetEnvironmentVariable("CERTIFICATE_CRT_PATH");
         var envUseCert = Environment.GetEnvironmentVariable("USE_CERTIFICATE");
         var envAutoGenerateCertificate = Environment.GetEnvironmentVariable("AUTO_GENERATE_CERTIFICATE");
 
@@ -27,8 +28,12 @@ public static class TelegramConfiguration
         if (!string.IsNullOrEmpty(envPort))
             botConfig.Port = Convert.ToInt32(envPort);
 
-        if (!string.IsNullOrEmpty(envCertPath))
-            botConfig.CertificatePath = envCertPath;
+        if (!string.IsNullOrEmpty(envCertPfxPath))
+            botConfig.CertificatePfxPath = envCertPfxPath;
+        
+        if (!string.IsNullOrEmpty(envCertCrtPath))
+            botConfig.CertificateCrtPath = envCertCrtPath;
+
 
         if (!string.IsNullOrEmpty(envUseCert) && bool.TryParse(envUseCert, out var useCert))
             botConfig.UseCertificate = useCert;

@@ -97,13 +97,13 @@ public class WebhookService
             }
             else
             {
-                if (string.IsNullOrEmpty(_botConfig.CertificatePath))
+                if (string.IsNullOrEmpty(_botConfig.CertificateCrtPath))
                     throw new NullReferenceException("CertificatePath is missing in configuration but UseCertificate is true.");
 
-                certStream = File.OpenRead(_botConfig.CertificatePath);
+                certStream = File.OpenRead(_botConfig.CertificateCrtPath);
             }
 
-            form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
+            form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.crt");
         }
 
         var response = await _httpClient.PostAsync(url, form, cancellationToken);
