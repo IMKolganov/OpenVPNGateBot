@@ -1,9 +1,9 @@
-
 using System.Text;
-using Telegram.Bot.Types;
-using DataGateVPNBot.Models.DashBoardApi;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
+using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
 
@@ -18,27 +18,37 @@ public class OvpnFileService : IOvpnFileService
         _logger = logger;
     }
 
-    public async Task<List<IssuedOvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long userId,
+    public async Task<List<OvpnFileResponse>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, userId.ToString(), cancellationToken);
+        var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
+        {
+            VpnServerId = vpnServerId,  ExternalId = telegramId.ToString()
+        };
+        var issuedOvpnFileResponses =
+            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+                getAllByExternalIdOvpnFilesRequest, cancellationToken);
         issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
-                                  new List<IssuedOvpnFileResponse>();
+                                  new List<OvpnFileResponse>();
         
         return issuedOvpnFileResponses;
     }
 
-    public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long userId,
+    public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"Fetching OVPN files for user: {userId}, ServerId: {vpnServerId}");
+        var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
+        {
+            VpnServerId = vpnServerId, ExternalId = telegramId.ToString()
+        };
+        _logger.LogInformation($"Fetching OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, userId.ToString(), cancellationToken);
+        var issuedOvpnFileResponses =
+            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+                getAllByExternalIdOvpnFilesRequest, cancellationToken);
 
         issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
-                                  new List<IssuedOvpnFileResponse>();
+                                  new List<OvpnFileResponse>();
 
         if (!issuedOvpnFileResponses.Any())
         {
@@ -54,10 +64,14 @@ public class OvpnFileService : IOvpnFileService
             {
                 _logger.LogInformation(
                     $"Processing file: {issuedOvpnFileResponse.FileName}, " +
-                    $"ServerId: {issuedOvpnFileResponse.ServerId}, FileId: {issuedOvpnFileResponse.Id}");
+                    $"ServerId: {issuedOvpnFileResponse.VpnServerId}, FileId: {issuedOvpnFileResponse.Id}");
+                var downloadOvpnFileRequest = new DownloadOvpnFileRequest()
+                {
+                    VpnServerId = issuedOvpnFileResponse.VpnServerId, IssuedOvpnFileId = issuedOvpnFileResponse.Id
+                };
 
                 var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-                    issuedOvpnFileResponse.Id, issuedOvpnFileResponse.ServerId, cancellationToken);
+                    downloadOvpnFileRequest, cancellationToken);
 
                 var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFileResponse.FileName);
                 var media = new InputMediaDocument(inputFile)
@@ -73,7 +87,7 @@ public class OvpnFileService : IOvpnFileService
 
                 var errorMessage = new StringBuilder()
                     .AppendLine($"Error processing file: {issuedOvpnFileResponse.FileName}")
-                    .AppendLine($"ServerId: {issuedOvpnFileResponse.ServerId}")
+                    .AppendLine($"ServerId: {issuedOvpnFileResponse.VpnServerId}")
                     .AppendLine($"FileId: {issuedOvpnFileResponse.Id}")
                     .AppendLine($"Error: {ex.Message}")
                     .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
@@ -94,87 +108,174 @@ public class OvpnFileService : IOvpnFileService
         return mediaGroupOpenVpnFiles;
     }
 
-    public async Task<InputFile?> MakeOvpnFileAsync(int vpnServerId, long userId, CancellationToken cancellationToken)
+    public async Task<List<IAlbumInputMedia>> MakeOvpnFileAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"Creating OVPN file for user: {userId}, ServerId: {vpnServerId}");
+        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
+        _logger.LogInformation($"Creating OVPN file for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var success = await _dashBoardApiOvpnFileService.AddOvpnFileAsync(
-            userId.ToString(), $"user-{userId}", vpnServerId, cancellationToken);
-
-        if (!success)
+        var addOvpnFileRequest = new AddOvpnFileRequest
         {
-            _logger.LogWarning("Failed to request OVPN file creation for user {UserId} on server {VpnServerId}.",
-                userId, vpnServerId);
-            return null;
+            VpnServerId = vpnServerId,
+            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
+            ExternalId = telegramId.ToString(),
+            IssuedTo = $"telegram user {telegramId}"
+        };
+
+        var addOvpnFileResponse =
+            await _dashBoardApiOvpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
+
+        if (addOvpnFileResponse?.IssuedOvpnFile == null)
+        {
+            _logger.LogWarning($"Failed to create OVPN file for telegramId: {telegramId}, ServerId: {vpnServerId}");
+            return mediaGroupOpenVpnFiles;
         }
 
-        var issuedOvpnFileResponses = 
-            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, userId.ToString(), cancellationToken);
-
-        var issuedOvpnFile = issuedOvpnFileResponses?.FirstOrDefault(x => !x.IsRevoked);
-        if (issuedOvpnFile == null)
+        var issuedOvpnFile = addOvpnFileResponse.IssuedOvpnFile;
+        try
         {
-            _logger.LogWarning("No valid OVPN file found for user {UserId} on server {VpnServerId} after creation.",
-                userId, vpnServerId);
-            return null;
+            _logger.LogInformation(
+                $"Downloading newly created file: {issuedOvpnFile.FileName}, " +
+                $"ServerId: {issuedOvpnFile.VpnServerId}, FileId: {issuedOvpnFile.Id}");
+
+            var downloadRequest = new DownloadOvpnFileRequest
+            {
+                VpnServerId = issuedOvpnFile.VpnServerId,
+                IssuedOvpnFileId = issuedOvpnFile.Id
+            };
+            var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                downloadRequest, cancellationToken);
+
+            var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
+            var media = new InputMediaDocument(inputFile)
+            {
+                Caption = issuedOvpnFile.FileName
+            };
+            mediaGroupOpenVpnFiles.Add(media);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedOvpnFile.FileName,
+                ex.Message);
 
-        _logger.LogInformation("Downloading newly created OVPN file: {FileName}", issuedOvpnFile.FileName);
+            var errorMessage = new StringBuilder()
+                .AppendLine($"Error downloading file: {issuedOvpnFile.FileName}")
+                .AppendLine($"ServerId: {issuedOvpnFile.VpnServerId}")
+                .AppendLine($"FileId: {issuedOvpnFile.Id}")
+                .AppendLine($"Error: {ex.Message}")
+                .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
+                .ToString();
 
-        var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-            issuedOvpnFile.Id, issuedOvpnFile.ServerId, cancellationToken);
+            var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
+            var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFile.FileName}.error.txt");
 
-        var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
-        return inputFile;
+            var errorMedia = new InputMediaDocument(errorFile)
+            {
+                Caption = $"Error file: {issuedOvpnFile.FileName}"
+            };
+
+            mediaGroupOpenVpnFiles.Add(errorMedia);
+        }
+        return mediaGroupOpenVpnFiles;
     }
 
     public async Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Revoking all OVPN files for user: {UserId}, ServerId: {VpnServerId}", telegramId, vpnServerId);
-
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, telegramId.ToString(), cancellationToken);
-
-        if (issuedOvpnFileResponses == null || !issuedOvpnFileResponses.Any())
+        _logger.LogInformation($"Revoking all OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
+        var issuedOvpnFileResponses = await GetAllOvpnFilesListAsync(vpnServerId, 
+            telegramId, cancellationToken);
+        
+        if (!issuedOvpnFileResponses.Any())
         {
-            _logger.LogWarning("No OVPN files found to revoke for user {UserId} on server {VpnServerId}.", telegramId, vpnServerId);
+            _logger.LogWarning($"No OVPN files found to revoke for telegramId {telegramId} on server {vpnServerId}.");
             return false;
         }
-
+        
         var success = true;
         foreach (var file in issuedOvpnFileResponses)
         {
-            var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), file.CommonName, vpnServerId, cancellationToken);
-            if (!revoked)
+            var request = new RevokeOvpnFileRequest()
             {
-                _logger.LogError("Failed to revoke OVPN file: {FileName} for user {UserId} on server {VpnServerId}", 
+                VpnServerId = file.VpnServerId,
+                CommonName = file.CommonName,
+            };
+            var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
+            if (!revoked.Success)
+            {
+                _logger.LogError("Failed to revoke OVPN file: {FileName} for telegramId {telegramId} on server {VpnServerId}", 
                     file.FileName, telegramId, vpnServerId);
                 success = false;
             }
         }
-
+        
         return success;
     }
     
     public async Task<bool> RevokeOvpnFileAsync(int vpnServerId, long telegramId, string fileName, 
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Revoking OVPN file {FileName} for user {UserId}, ServerId: {VpnServerId}", 
-            fileName, telegramId, vpnServerId);
+        _logger.LogInformation($"Revoking OVPN file '{fileName}' for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var issuedOvpnFileResponses = await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
-            vpnServerId, telegramId.ToString(), cancellationToken);
+        var issuedOvpnFileResponses = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
 
-        var fileToRevoke = issuedOvpnFileResponses?.FirstOrDefault(f => f.FileName == fileName);
+        var fileToRevoke = issuedOvpnFileResponses.FirstOrDefault(f => 
+            string.Equals(f.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+
         if (fileToRevoke == null)
         {
-            _logger.LogWarning("OVPN file {FileName} not found for user {telegramId} on server {VpnServerId}.", 
-                fileName, telegramId, vpnServerId);
+            _logger.LogWarning($"OVPN file '{fileName}' not found for telegramId {telegramId} on server {vpnServerId}.");
             return false;
         }
 
-        return await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(telegramId.ToString(), fileToRevoke.CommonName, vpnServerId, cancellationToken);
+        var request = new RevokeOvpnFileRequest
+        {
+            VpnServerId = fileToRevoke.VpnServerId,
+            CommonName = fileToRevoke.CommonName,
+        };
+
+        var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
+    
+        if (!revoked.Success)
+        {
+            _logger.LogError("Failed to revoke OVPN file: {FileName} for telegramId {telegramId} on server {VpnServerId}", 
+                fileName, telegramId, vpnServerId);
+        }
+
+        return revoked.Success;
+    }
+
+    public async Task<bool> CheckMaxCountOvpnFilesForClient(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken, int maxCountFiles = 10)
+    {
+        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+
+        var prefix = $"tg-{vpnServerId}-{telegramId}-";
+        var usedCount = files.Count(f => f.CommonName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+        return usedCount >= maxCountFiles;
+    }
+
+    private async Task<string> MakeCommonNameForOvpnFileAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken, int maxCountFiles = 10)
+    {
+        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+
+        var prefix = $"tg-{vpnServerId}-{telegramId}-";
+        var usedNames = files
+            .Where(f => f.CommonName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Select(f => f.CommonName)
+            .ToHashSet();
+
+        for (int i = 0; i < maxCountFiles; i++)
+        {
+            var candidate = $"{prefix}{i}";
+            if (!usedNames.Contains(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new Exception($"No available CommonName for Telegram ID {telegramId}. Limit of 10 reached.");
     }
 
 }

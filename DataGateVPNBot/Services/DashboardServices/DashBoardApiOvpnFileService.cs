@@ -1,5 +1,9 @@
-using DataGateVPNBot.Models.DashBoardApi;
+using System.Security.Authentication;
 using DataGateVPNBot.Services.Http;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
+using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
+using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
+using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -23,143 +27,141 @@ public class DashBoardApiOvpnFileService
         _dashBoardApiAuthService = dashBoardApiAuthService;
     }
 
-    public async Task<List<IssuedOvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
-        int vpnServerId, string externalId, CancellationToken cancellationToken)
+    public async Task<List<OvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
+        GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
     {
-        if (vpnServerId <= 0) 
+        var ovpnFiles = new List<OvpnFileResponse>();
+        if (request.VpnServerId <= 0) 
             throw new ArgumentException("vpnServerId is required.");
 
-        if (string.IsNullOrEmpty(externalId))
+        if (string.IsNullOrEmpty(request.ExternalId))
             throw new ArgumentException("externalId is required.");
         
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return null;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={vpnServerId}&externalId={externalId}";
+        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={request.VpnServerId}&externalId={request.ExternalId}";
 
-        _logger.LogInformation($"Requesting OVPN files for Server ID: {vpnServerId}, External ID: {externalId}");
+        _logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
+                               $"External ID: {request.ExternalId}");
         
-        var response = await _httpRequestService.GetAsync<List<IssuedOvpnFileResponse>>(url, token, cancellationToken);
+        var response = await _httpRequestService.GetAsync<ApiResponse<List<OvpnFileResponse>>>(url, token, cancellationToken);
+        if (response is { Success: true, Data: not null })
+        {
+            ovpnFiles = response.Data;
+        }
+        else
+        {
+            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+        }
 
         if (response == null)
         {
-            _logger.LogError("Failed to fetch OVPN files from API.");
+            _logger.LogError("Failed to fetch Open VPN Servers from API.");
         }
 
-        return response;
+        return ovpnFiles;
     }
     
-    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(
-        int issuedOvpnFileId, int vpnServerId, CancellationToken cancellationToken)
+    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadOvpnFileRequest request, CancellationToken cancellationToken)
     {
-        if (issuedOvpnFileId <= 0)
-            throw new ArgumentException($"Invalid issuedOvpnFileId: {issuedOvpnFileId}. Must be greater than zero.", nameof(issuedOvpnFileId));
+        //DownloadOvpnFileResponse
+        if (request.IssuedOvpnFileId <= 0)
+            throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
+                                        $"Must be greater than zero.", nameof(request.IssuedOvpnFileId));
         
-        if (vpnServerId <= 0)
-            throw new ArgumentException($"Invalid vpnServerId: {vpnServerId}. Must be greater than zero.", nameof(vpnServerId));
+        if (request.VpnServerId <= 0)
+            throw new ArgumentException($"Invalid vpnServerId: {request.VpnServerId}. " +
+                                        $"Must be greater than zero.", nameof(request.VpnServerId));
 
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            throw new InvalidOperationException("Authentication token is required.");
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var url = $"{EndpointDownloadOpenVpnFiles}/{issuedOvpnFileId}/{vpnServerId}";
+        var url = $"{EndpointDownloadOpenVpnFiles}/{request.IssuedOvpnFileId}/{request.VpnServerId}";
 
-        _logger.LogInformation($"Requesting OVPN file stream for Issued Ovpn File Id: {issuedOvpnFileId}, Server ID: {vpnServerId}");
+        _logger.LogInformation($"Requesting OVPN file stream for " +
+                               $"Issued Ovpn File Id: {request.IssuedOvpnFileId}, Server ID: {request.VpnServerId}");
 
-        var stream = await _httpRequestService.GetStreamAsync(url, token, cancellationToken);
+        var stream = await _httpRequestService.GetStreamAsync(url, token, cancellationToken);//todo:fix
 
         _logger.LogInformation("OVPN file stream retrieved successfully.");
 
         return stream;
     }
 
-    public async Task<bool> AddOvpnFileAsync(string telegramId, string commonName, int vpnServerId,
+    public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddOvpnFileRequest request,
         CancellationToken cancellationToken, string issuedTo = "TelegramBot")
     {
-        if (vpnServerId <= 0)
-            throw new ArgumentException("vpnServerId is required.");
+        if (request.VpnServerId <= 0)
+            throw new ArgumentException("VpnServerId is required.");
 
-        if (string.IsNullOrEmpty(telegramId))
-            throw new ArgumentException("telegramId is required.");
+        if (string.IsNullOrEmpty(request.ExternalId))
+            throw new ArgumentException("ExternalId is required.");
 
-        if (string.IsNullOrEmpty(commonName))
-            throw new ArgumentException("commonName is required.");
+        if (string.IsNullOrEmpty(request.CommonName))
+            throw new ArgumentException("CommonName is required.");
 
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return false;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var requestBody = new AddOvpnFileRequest
-        {
-            ExternalId = telegramId,
-            CommonName = commonName,
-            VpnServerId = vpnServerId,
-            IssuedTo = issuedTo
-        };
-
         _logger.LogInformation("Sending request to create OVPN file for " +
-                               $"TelegramId: {telegramId}, ServerId: {vpnServerId}");
+                               $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<bool>(EndpointAddOpenVpnFile, requestBody, token, cancellationToken);
+            await _httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, request, token, cancellationToken);
 
-        if (!response)
+        if (response is { Success: true, Data: not null })
         {
-            _logger.LogError($"Failed to create OVPN file for User: {telegramId}, ServerId: {vpnServerId}");
         }
         else
         {
-            _logger.LogInformation("Successfully created OVPN file for " +
-                                   $"TelegramId: {telegramId}, VpnServerId: {vpnServerId}");
+            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
         }
 
-        return response;
+        if (response == null)
+        {
+            _logger.LogError("Failed to fetch Open VPN Servers from API.");
+        }
+
+        return response!.Data!;
     }
     
-    public async Task<bool> RevokeOvpnFileAsync(string telegramId, string commonName, int vpnServerId, 
-        CancellationToken cancellationToken)
+    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, CancellationToken cancellationToken)
     {
         var token = await _dashBoardApiAuthService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("Failed to retrieve Bearer token.");
-            return false;
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var requestBody = new RevokeOvpnFileRequest
-        {
-            ExternalId = telegramId,
-            CommonName = commonName,
-            ServerId = vpnServerId
-        };
-
         _logger.LogInformation("Sending request to revoke OVPN file for " +
-                               $"TelegramId: {telegramId}, ServerId: {vpnServerId}");
+                               $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<bool>(EndpointRevokeOvpnFile, requestBody, token, cancellationToken);
-
-        if (!response)
+            await _httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, request, token, cancellationToken);
+        
+        if (response is { Success: true, Data: not null })
         {
-            _logger.LogError("Failed to revoke OVPN file for " +
-                             $"TelegramId: {telegramId}, ServerId: {vpnServerId}, Response: {response}");
+            _logger.LogInformation("Successfully revoked OVPN file for " +
+                                   $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}, " +
+                                   $"Response: {response}");
         }
         else
         {
-            _logger.LogInformation("Successfully revoked OVPN file for " +
-                                   $"TelegramId: {telegramId}, ServerId: {vpnServerId}, Response: {response}");
+            _logger.LogError("Failed to revoke OVPN file for " +
+                             $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}, " +
+                             $"Response: {response}");
         }
 
-        return response;
+        return response!.Data!;
     }
 }

@@ -3,6 +3,7 @@ using System;
 using DataGateVPNBot.DataBase.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DataGateVPNBot.DataBase.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250410045343_LocalizationTextSeedData_ChooseOpenVpnServer")]
+    partial class LocalizationTextSeedData_ChooseOpenVpnServer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -615,69 +618,6 @@ namespace DataGateVPNBot.DataBase.Migrations
                             Key = "ChooseOpenVpnServer",
                             Language = 2,
                             Text = "Επιλέξτε διακομιστή OpenVPN:"
-                        },
-                        new
-                        {
-                            Id = 64,
-                            Key = "SomethingWentWrongWhenTryMakeNewFile",
-                            Language = 1,
-                            Text = "Something went wrong while trying to create a new file."
-                        },
-                        new
-                        {
-                            Id = 65,
-                            Key = "SomethingWentWrongWhenTryMakeNewFile",
-                            Language = 3,
-                            Text = "Произошла ошибка при попытке создать новый файл."
-                        },
-                        new
-                        {
-                            Id = 66,
-                            Key = "SomethingWentWrongWhenTryMakeNewFile",
-                            Language = 2,
-                            Text = "Κάτι πήγε στραβά κατά την προσπάθεια δημιουργίας νέου αρχείου."
-                        },
-                        new
-                        {
-                            Id = 67,
-                            Key = "ErrorDeletedAllFile",
-                            Language = 1,
-                            Text = "No files found to delete."
-                        },
-                        new
-                        {
-                            Id = 68,
-                            Key = "ErrorDeletedAllFile",
-                            Language = 3,
-                            Text = "Файлы для удаления не найдены."
-                        },
-                        new
-                        {
-                            Id = 69,
-                            Key = "ErrorDeletedAllFile",
-                            Language = 2,
-                            Text = "Δεν βρέθηκαν αρχεία προς διαγραφή."
-                        },
-                        new
-                        {
-                            Id = 70,
-                            Key = "ErrorDeletedFile",
-                            Language = 1,
-                            Text = "File not found or already deleted."
-                        },
-                        new
-                        {
-                            Id = 71,
-                            Key = "ErrorDeletedFile",
-                            Language = 3,
-                            Text = "Файл не найден или уже удалён."
-                        },
-                        new
-                        {
-                            Id = 72,
-                            Key = "ErrorDeletedFile",
-                            Language = 2,
-                            Text = "Το αρχείο δεν βρέθηκε ή έχει ήδη διαγραφεί."
                         });
                 });
 

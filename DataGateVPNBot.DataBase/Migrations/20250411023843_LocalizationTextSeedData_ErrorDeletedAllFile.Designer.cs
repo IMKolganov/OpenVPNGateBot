@@ -3,6 +3,7 @@ using System;
 using DataGateVPNBot.DataBase.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DataGateVPNBot.DataBase.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250411023843_LocalizationTextSeedData_ErrorDeletedAllFile")]
+    partial class LocalizationTextSeedData_ErrorDeletedAllFile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -657,27 +660,6 @@ namespace DataGateVPNBot.DataBase.Migrations
                             Key = "ErrorDeletedAllFile",
                             Language = 2,
                             Text = "Δεν βρέθηκαν αρχεία προς διαγραφή."
-                        },
-                        new
-                        {
-                            Id = 70,
-                            Key = "ErrorDeletedFile",
-                            Language = 1,
-                            Text = "File not found or already deleted."
-                        },
-                        new
-                        {
-                            Id = 71,
-                            Key = "ErrorDeletedFile",
-                            Language = 3,
-                            Text = "Файл не найден или уже удалён."
-                        },
-                        new
-                        {
-                            Id = 72,
-                            Key = "ErrorDeletedFile",
-                            Language = 2,
-                            Text = "Το αρχείο δεν βρέθηκε ή έχει ήδη διαγραφεί."
                         });
                 });
 

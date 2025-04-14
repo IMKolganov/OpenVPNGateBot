@@ -405,7 +405,68 @@ public static class LocalizationTextSeedData
             Id = 60, Key = "CertCriticalError", Language = Language.Greek,
             Text =
                 "Κρίσιμο σφάλμα. Κάτι πήγε στραβά με την υπηρεσία πιστοποίησης. Τώρα σταματάμε όλες τις διαδικασίες, παρακαλώ δοκιμάστε αργότερα."
-        }
+        },
+        
+        new LocalizationText
+        {
+            Id = 61, Key = "ChooseOpenVpnServer", Language = Language.English,
+            Text = "Choose an OpenVPN server:"
+        },
+        new LocalizationText
+        {
+            Id = 62, Key = "ChooseOpenVpnServer", Language = Language.Russian,
+            Text = "Выберите сервер OpenVPN:"
+        },
+        new LocalizationText
+        {
+            Id = 63, Key = "ChooseOpenVpnServer", Language = Language.Greek,
+            Text = "Επιλέξτε διακομιστή OpenVPN:"
+        },
+        new LocalizationText
+        {
+            Id = 64, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.English,
+            Text = "Something went wrong while trying to create a new file."
+        },
+        new LocalizationText
+        {
+            Id = 65, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.Russian,
+            Text = "Произошла ошибка при попытке создать новый файл."
+        },
+        new LocalizationText
+        {
+            Id = 66, Key = "SomethingWentWrongWhenTryMakeNewFile", Language = Language.Greek,
+            Text = "Κάτι πήγε στραβά κατά την προσπάθεια δημιουργίας νέου αρχείου."
+        },
+        new LocalizationText
+        {
+            Id = 67, Key = "ErrorDeletedAllFile", Language = Language.English,
+            Text = "No files found to delete."
+        },
+        new LocalizationText
+        {
+            Id = 68, Key = "ErrorDeletedAllFile", Language = Language.Russian,
+            Text = "Файлы для удаления не найдены."
+        },
+        new LocalizationText
+        {
+            Id = 69, Key = "ErrorDeletedAllFile", Language = Language.Greek,
+            Text = "Δεν βρέθηκαν αρχεία προς διαγραφή."
+        },
+        new LocalizationText
+        {
+            Id = 70, Key = "ErrorDeletedFile", Language = Language.English,
+            Text = "File not found or already deleted."
+        },
+        new LocalizationText
+        {
+            Id = 71, Key = "ErrorDeletedFile", Language = Language.Russian,
+            Text = "Файл не найден или уже удалён."
+        },
+        new LocalizationText
+        {
+            Id = 72, Key = "ErrorDeletedFile", Language = Language.Greek,
+            Text = "Το αρχείο δεν βρέθηκε ή έχει ήδη διαγραφεί."
+        },
     };
 
 }

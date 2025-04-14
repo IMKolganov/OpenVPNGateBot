@@ -2,6 +2,7 @@
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.BotServices;
 using DataGateVPNBot.Services.BotServices.Interfaces;
+using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DataServices;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
@@ -18,7 +19,10 @@ public static class ServiceConfiguration
         services.AddScoped<IErrorService, ErrorService>();
         services.AddSingleton<TelegramUpdateHandler>();
         services.AddSingleton<ITelegramSettingsService, TelegramSettingsService>();
+        services.AddScoped<IOpenVpnServersService, OpenVpnServersService>();
         services.AddScoped<IOvpnFileService, OvpnFileService>();
+        services.AddSingleton<DashBoardApiServerService>();
+
         
         services.ConfigureTelegramBotMvc();
 

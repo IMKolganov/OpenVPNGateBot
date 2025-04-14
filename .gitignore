@@ -419,3 +419,11 @@ appsettings*
 appsettings.json
 appsettings.Development.json
 !/.github/workflows/*.env
+NuGet.config
+elasticsearch.json
+dashboardapi.json
+
+# Ignore generated SSL certificate and key files
+*.crt
+*.key
+*.cnf

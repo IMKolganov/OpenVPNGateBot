@@ -107,7 +107,7 @@ public class HttpRequestService : IHttpRequestService
             {
                 _logger.LogInformation("Attempt {Attempt}: Sending HTTP request to {Url}...", attempt, url);
 
-                var response = await httpRequest(); // Убираем using, чтобы вручную управлять жизненным циклом объекта
+                var response = await httpRequest();
 
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("Response from {Url} (Attempt {Attempt}): {StatusCode} - {ResponseContent}",
@@ -158,7 +158,7 @@ public class HttpRequestService : IHttpRequestService
             }
         }
 
-        _logger.LogError("Failed to complete HTTP request to {Url} after 3 attempts.", url);
-        return default;
+        throw new HttpRequestException($"Failed to complete HTTP request to {url} after 3 attempts.");
+        // return default;
     }
 }

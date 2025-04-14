@@ -1,4 +1,5 @@
 ﻿using DataGateVPNBot.Models.Enums;
+using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -53,7 +54,20 @@ public partial class TelegramUpdateHandler
             replyMarkup: new ReplyKeyboardRemove(), 
             cancellationToken: cancellationToken);
         
-        await MakeNewVpnFile(msg, "8", cancellationToken);//todo: FIX IT!
+        var openVpnServersService = scope.ServiceProvider.GetRequiredService<IOpenVpnServersService>();
+        var serverResponses = await openVpnServersService.GetAllOpenVpnServersListAsync(cancellationToken);
+
+        var defaultServerId = serverResponses
+            .Where(x => x.IsDefault)
+            .Select(x => x.Id)
+            .FirstOrDefault();
+
+        if (defaultServerId >= 0)
+        {
+            throw new Exception("No default VPN server found.");
+        }
+
+        await MakeNewVpnFile(msg, defaultServerId.ToString(), cancellationToken);
         await InstallClient(msg, cancellationToken);
         await Usage(msg, cancellationToken);
 
