@@ -9,12 +9,12 @@ namespace DataGateVPNBot.Services.BotServices;
 
 public class OvpnFileService : IOvpnFileService
 {
-    private readonly DashBoardApiOvpnFileService _dashBoardApiOvpnFileService;
+    private readonly DashboardServices.OvpnFileService _ovpnFileService;
     private readonly ILogger<OvpnFileService> _logger;
 
-    public OvpnFileService(DashBoardApiOvpnFileService dashBoardApiOvpnFileService, ILogger<OvpnFileService> logger)
+    public OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, ILogger<OvpnFileService> logger)
     {
-        _dashBoardApiOvpnFileService = dashBoardApiOvpnFileService;
+        _ovpnFileService = ovpnFileService;
         _logger = logger;
     }
 
@@ -26,7 +26,7 @@ public class OvpnFileService : IOvpnFileService
             VpnServerId = vpnServerId,  ExternalId = telegramId.ToString()
         };
         var issuedOvpnFileResponses =
-            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+            await _ovpnFileService.GetAllOvpnFilesByExternalIdAsync(
                 getAllByExternalIdOvpnFilesRequest, cancellationToken);
         issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
                                   new List<OvpnFileResponse>();
@@ -44,7 +44,7 @@ public class OvpnFileService : IOvpnFileService
         _logger.LogInformation($"Fetching OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
         var issuedOvpnFileResponses =
-            await _dashBoardApiOvpnFileService.GetAllOvpnFilesByExternalIdAsync(
+            await _ovpnFileService.GetAllOvpnFilesByExternalIdAsync(
                 getAllByExternalIdOvpnFilesRequest, cancellationToken);
 
         issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x => !x.IsRevoked).ToList() ??
@@ -70,7 +70,7 @@ public class OvpnFileService : IOvpnFileService
                     VpnServerId = issuedOvpnFileResponse.VpnServerId, IssuedOvpnFileId = issuedOvpnFileResponse.Id
                 };
 
-                var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                var issuedOvpnFileStream = await _ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                     downloadOvpnFileRequest, cancellationToken);
 
                 var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFileResponse.FileName);
@@ -123,7 +123,7 @@ public class OvpnFileService : IOvpnFileService
         };
 
         var addOvpnFileResponse =
-            await _dashBoardApiOvpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
+            await _ovpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
 
         if (addOvpnFileResponse?.IssuedOvpnFile == null)
         {
@@ -143,7 +143,7 @@ public class OvpnFileService : IOvpnFileService
                 VpnServerId = issuedOvpnFile.VpnServerId,
                 IssuedOvpnFileId = issuedOvpnFile.Id
             };
-            var issuedOvpnFileStream = await _dashBoardApiOvpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+            var issuedOvpnFileStream = await _ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                 downloadRequest, cancellationToken);
 
             var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
@@ -199,7 +199,7 @@ public class OvpnFileService : IOvpnFileService
                 VpnServerId = file.VpnServerId,
                 CommonName = file.CommonName,
             };
-            var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
+            var revoked = await _ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
             if (!revoked.Success)
             {
                 _logger.LogError("Failed to revoke OVPN file: {FileName} for telegramId {telegramId} on server {VpnServerId}", 
@@ -233,7 +233,7 @@ public class OvpnFileService : IOvpnFileService
             CommonName = fileToRevoke.CommonName,
         };
 
-        var revoked = await _dashBoardApiOvpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
+        var revoked = await _ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
     
         if (!revoked.Success)
         {

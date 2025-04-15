@@ -6,6 +6,7 @@ using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DataServices;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
+using OvpnFileService = DataGateVPNBot.Services.BotServices.OvpnFileService;
 
 namespace DataGateVPNBot.Configurations;
 
@@ -21,7 +22,7 @@ public static class ServiceConfiguration
         services.AddSingleton<ITelegramSettingsService, TelegramSettingsService>();
         services.AddScoped<IOpenVpnServersService, OpenVpnServersService>();
         services.AddScoped<IOvpnFileService, OvpnFileService>();
-        services.AddSingleton<DashBoardApiServerService>();
+        services.AddSingleton<ServerService>();
 
         
         services.ConfigureTelegramBotMvc();

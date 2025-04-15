@@ -11,7 +11,7 @@ public partial class TelegramUpdateHandler
     
     private async Task<Message> DashBoardApiGetToken(Message msg)
     {
-        string? token = await _dashBoardApiAuthService.GetTokenAsync();
+        string? token = await _authService.GetTokenAsync();
         
         if (token == null)
         {
