@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Headers;
-using DataGateVPNBot.Models.Helpers.Configurations;
+using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;

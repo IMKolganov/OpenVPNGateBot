@@ -1,4 +1,5 @@
 using System.Security.Authentication;
+using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Http;
 using OpenVPNGateMonitor.SharedModels.Responses;
 using OpenVPNGateMonitor.SharedModels.TelegramBotUser.Requests;
@@ -6,7 +7,7 @@ using OpenVPNGateMonitor.SharedModels.TelegramBotUser.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class TelegramBotUserService
+public class TelegramBotUserService : ITelegramBotUserService
 {
     private readonly IHttpRequestService _httpRequestService;
     private readonly ILogger<TelegramBotUserService> _logger;

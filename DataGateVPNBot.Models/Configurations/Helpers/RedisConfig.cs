@@ -1,4 +1,4 @@
-namespace DataGateVPNBot.Models.Helpers.Configurations;
+namespace DataGateVPNBot.Models.Configurations.Helpers;
 
 public class RedisConfig
 {

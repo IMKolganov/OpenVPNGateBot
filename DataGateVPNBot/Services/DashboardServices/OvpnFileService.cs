@@ -68,7 +68,6 @@ public class OvpnFileService
     
     public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadOvpnFileRequest request, CancellationToken cancellationToken)
     {
-        //DownloadOvpnFileResponse
         if (request.IssuedOvpnFileId <= 0)
             throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
                                         $"Must be greater than zero.", nameof(request.IssuedOvpnFileId));
@@ -96,7 +95,7 @@ public class OvpnFileService
     }
 
     public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddOvpnFileRequest request,
-        CancellationToken cancellationToken, string issuedTo = "TelegramBot")
+        CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
             throw new ArgumentException("VpnServerId is required.");

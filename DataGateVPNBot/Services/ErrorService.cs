@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using DataGateVPNBot.Models;
+using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Telegram.Bot;
@@ -61,20 +62,20 @@ public class ErrorService : IErrorService
     public async Task NotifyAdminsAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default)
     {
         using var scope = _serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramUsersService>();
+        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
         var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
 
-        if (admins is { Count: 0 })
+        if (admins.TelegramBotAdmins is { Count: 0 })
         {
             _logger.LogWarning("No admins are configured to receive error notifications.");
             return;
         }
 
-        _logger.LogInformation($"Notifying {admins!.Count} admins about an error.");
+        _logger.LogInformation($"Notifying {admins!.TelegramBotAdmins.Count} admins about an error.");
 
-        foreach (var admin in admins)
+        foreach (var admin in admins.TelegramBotAdmins)
         {
             try
             {
@@ -114,17 +115,17 @@ public class ErrorService : IErrorService
     public async Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramUsersService>();
+        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
         var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
-        if (admins is { Count: 0 })
+        if (admins.TelegramBotAdmins is { Count: 0 })
         {
             _logger.LogWarning("Admin chat ID is not configured.");
             return;
         }
-        _logger.LogInformation("Admins count: {RecordCount}", admins!.Count);
-        foreach (var admin in admins)
+        _logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
+        foreach (var admin in admins.TelegramBotAdmins)
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
 

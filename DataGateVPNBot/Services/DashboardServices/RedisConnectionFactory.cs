@@ -1,6 +1,6 @@
+using DataGateVPNBot.Models.Configurations.Helpers;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using DataGateVPNBot.Models.Helpers.Configurations;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 

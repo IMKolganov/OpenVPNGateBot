@@ -3,6 +3,7 @@ using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.BotServices;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
+using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.DataServices;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
@@ -15,7 +16,7 @@ public static class ServiceConfiguration
     public static void ConfigureServices(this IServiceCollection services)
     {
         services.AddScoped<IIncomingMessageLogService, IncomingMessageLogService>();
-        services.AddScoped<ITelegramUsersService, TelegramUsersService>();
+        services.AddScoped<ITelegramBotUserService, TelegramBotUserService>();
         services.AddScoped<ILocalizationService, LocalizationService>();
         services.AddScoped<IErrorService, ErrorService>();
         services.AddSingleton<TelegramUpdateHandler>();
