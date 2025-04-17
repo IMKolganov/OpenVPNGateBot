@@ -1,7 +1,6 @@
 ﻿using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
-using DataGateVPNBot.Services.DataServices.Interfaces;
 using OpenVPNGateMonitor.SharedModels.TelegramBotLocalization.Requests;
 using Telegram.Bot;
 using Telegram.Bot.Types;

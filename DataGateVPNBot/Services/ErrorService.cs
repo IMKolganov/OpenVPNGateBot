@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using DataGateVPNBot.Models;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
-using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Telegram.Bot;
 
@@ -23,7 +22,7 @@ public class ErrorService : IErrorService
         _logger = logger;
     }
 
-    public async Task LogErrorToDatabase(Exception exception, HttpContext? context)
+    public void LogErrorToDatabase(Exception exception, HttpContext? context)
     {
         try
         {

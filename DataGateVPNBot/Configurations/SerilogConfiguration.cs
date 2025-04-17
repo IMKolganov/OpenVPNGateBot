@@ -62,12 +62,13 @@ public static class SerilogConfiguration
 
         if (!string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
         {
-            serilogLogger.Information("📡 Elasticsearch logging is enabled. Host: {Host}, IndexFormat: {Index}",
-                elasticsearchSettings.Uri, elasticsearchSettings.IndexFormat);
+            serilogLogger.Information($"📡 Elasticsearch logging is enabled. " +
+                                      $"Host: {elasticsearchSettings.Uri}, " +
+                                      $"IndexFormat: {elasticsearchSettings.IndexFormat}");
         }
         else
         {
-            serilogLogger.Information("⚠️ Elasticsearch settings not found. Logging to console only.");
+            serilogLogger.Warning("🚨 Elasticsearch settings not found. Logging to console only.");
         }
 
         host.UseSerilog();

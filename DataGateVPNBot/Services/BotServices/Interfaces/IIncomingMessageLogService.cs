@@ -1,7 +1,7 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace DataGateVPNBot.Services.DataServices.Interfaces;
+namespace DataGateVPNBot.Services.BotServices.Interfaces;
 
 public interface IIncomingMessageLogService
 {
