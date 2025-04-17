@@ -1,4 +1,4 @@
-﻿namespace DataGateVPNBot.Models.Helpers;
+﻿namespace DataGateVPNBot.Models.Configurations.Helpers;
 
 public class ElasticsearchSettings
 {

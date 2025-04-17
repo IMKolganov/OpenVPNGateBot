@@ -1,6 +1,8 @@
 ﻿using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.BotServices.Interfaces;
+using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.DataServices.Interfaces;
+using OpenVPNGateMonitor.SharedModels.TelegramBotLocalization.Requests;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -45,8 +47,9 @@ public partial class TelegramUpdateHandler
         }
 
         using var scope = _serviceProvider.CreateScope();
+        var request = new SetTelegramUserLanguageRequest() { TelegramId = msg.Chat.Id, PreferredLanguage = (OpenVPNGateMonitor.SharedModels.TelegramBotLocalization.Enums.Language)language };
         var localizationService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
-        await localizationService.SetUserLanguageAsync(msg.Chat.Id, language.Value, cancellationToken);
+        await localizationService.SetTelegramUserLanguageAsync(request, cancellationToken);
         
         var messageResponse = await _botClient.SendMessage(
             chatId: msg.Chat.Id,
@@ -78,6 +81,7 @@ public partial class TelegramUpdateHandler
     {
         using var scope = _serviceProvider.CreateScope();
         var localizationService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
-        return await localizationService.GetTextAsync(key, telegramId, cancellationToken);
+        var request = new GetTextForTelegramUserRequest() { TelegramId = telegramId, Key = key };
+        return (await localizationService.GetTextForTelegramUser(request, cancellationToken)).Text;
     }
 }

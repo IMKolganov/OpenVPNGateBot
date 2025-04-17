@@ -3,23 +3,23 @@ using DataGateVPNBot.Services.Http;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class DashBoardApiAuthService
+public class AuthService
 {
     private readonly IHttpRequestService _httpRequestService;
     private readonly RedisCacheService _redisCacheService;
     private readonly string _clientId;
     private readonly string _clientSecret;
-    private readonly ILogger<DashBoardApiAuthService> _logger;
+    private readonly ILogger<AuthService> _logger;
 
     private const string TokenCacheKey = "dashboard_openvpn_token";
     private readonly TimeSpan _tokenExpiration = TimeSpan.FromHours(1);
 
-    public DashBoardApiAuthService(
+    public AuthService(
         IHttpRequestService httpRequestService,
         RedisCacheService redisCacheService,
         string clientId,
         string clientSecret,
-        ILogger<DashBoardApiAuthService> logger)
+        ILogger<AuthService> logger)
     {
         _httpRequestService = httpRequestService;
         _redisCacheService = redisCacheService;

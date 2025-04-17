@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		global.json = global.json
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataGateVPNBot.DataBase", "DataGateVPNBot.DataBase\DataGateVPNBot.DataBase.csproj", "{C531A99C-04AA-409F-9858-DD8446571254}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataGateVPNBot.Models", "DataGateVPNBot.Models\DataGateVPNBot.Models.csproj", "{24645906-7DAD-4673-827C-85A7DC981827}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "openssl", "openssl", "{9DD5CA3E-F2DC-4588-A6F9-27EF89AF46EA}"
@@ -32,10 +30,6 @@ Global
 		{11C98FD4-7613-4BD4-B35E-9D049B33947C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11C98FD4-7613-4BD4-B35E-9D049B33947C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11C98FD4-7613-4BD4-B35E-9D049B33947C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Release|Any CPU.Build.0 = Release|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Release|Any CPU.ActiveCfg = Release|Any CPU

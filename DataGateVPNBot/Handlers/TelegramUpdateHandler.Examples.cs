@@ -83,7 +83,6 @@ public partial class TelegramUpdateHandler
     {
         _logger.LogInformation("Received inline query from: {InlineQueryFromId}", inlineQuery.From.Id);
 
-        // throw new NotImplementedException();// displayed result
         InlineQueryResult[] results =
         [
             new InlineQueryResultArticle("1", "Telegram.Bot", new InputTextMessageContent("hello")),
@@ -108,7 +107,6 @@ public partial class TelegramUpdateHandler
 
     private async Task OnPollAnswer(PollAnswer pollAnswer)
     {
-        // throw new NotImplementedException("OnPollAnswer");
         var answer = pollAnswer.OptionIds.FirstOrDefault();
         var selectedOption = _pollOptions[answer];
         if (pollAnswer.User != null)

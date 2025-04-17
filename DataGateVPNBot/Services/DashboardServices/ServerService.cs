@@ -5,26 +5,26 @@ using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class DashBoardApiServerService
+public class ServerService
 {
-    private readonly ILogger<DashBoardApiServerService> _logger;
+    private readonly ILogger<ServerService> _logger;
     private readonly IHttpRequestService _httpRequestService;
-    private readonly DashBoardApiAuthService _dashBoardApiAuthService;
+    private readonly AuthService _authService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnServers/GetAllServers";
     
-    public DashBoardApiServerService(ILogger<DashBoardApiServerService> logger,
+    public ServerService(ILogger<ServerService> logger,
         IHttpRequestService httpRequestService,
-        DashBoardApiAuthService dashBoardApiAuthService
+        AuthService authService
         )
     {
         _logger = logger;
         _httpRequestService = httpRequestService;
-        _dashBoardApiAuthService = dashBoardApiAuthService;
+        _authService = authService;
     }
 
     public async Task<List<OpenVpnServerResponse>?> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
-        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        var token = await _authService.GetTokenAsync();
         var servers = new List<OpenVpnServerResponse>();
         if (string.IsNullOrEmpty(token))
         {

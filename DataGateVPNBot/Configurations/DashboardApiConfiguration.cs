@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Headers;
-using DataGateVPNBot.Models.Helpers.Configurations;
+using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
@@ -67,15 +67,15 @@ public static class DashboardApiConfiguration
         services.AddSingleton<IHttpClientFactoryService, HttpClientFactoryService>();
         services.AddSingleton<IHttpRequestService, HttpRequestService>();
 
-        services.AddSingleton<DashBoardApiAuthService>(provider =>
-            new DashBoardApiAuthService(
+        services.AddSingleton<AuthService>(provider =>
+            new AuthService(
                 provider.GetRequiredService<IHttpRequestService>(),
                 provider.GetRequiredService<RedisCacheService>(),
                 dashboardConfig.ClientId,
                 dashboardConfig.ClientSecret,
-                provider.GetRequiredService<ILogger<DashBoardApiAuthService>>())
+                provider.GetRequiredService<ILogger<AuthService>>())
         );
 
-        services.AddScoped<DashBoardApiOvpnFileService>();
+        services.AddScoped<OvpnFileService>();
     }
 }

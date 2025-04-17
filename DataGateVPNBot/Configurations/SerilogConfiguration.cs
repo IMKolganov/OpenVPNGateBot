@@ -1,4 +1,4 @@
-﻿using DataGateVPNBot.Models.Helpers;
+﻿using DataGateVPNBot.Models.Configurations.Helpers;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 

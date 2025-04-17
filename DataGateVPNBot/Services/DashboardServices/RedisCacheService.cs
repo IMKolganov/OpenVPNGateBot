@@ -1,6 +1,6 @@
 using StackExchange.Redis;
 using System.Text.Json;
-using DataGateVPNBot.Models.Redis;
+using DataGateVPNBot.Models;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 

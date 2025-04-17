@@ -1,4 +1,4 @@
-namespace DataGateVPNBot.Models.Redis;
+namespace DataGateVPNBot.Models;
 
 public class TokenCacheModel
 {

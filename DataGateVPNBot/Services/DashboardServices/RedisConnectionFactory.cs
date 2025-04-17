@@ -1,6 +1,6 @@
+using DataGateVPNBot.Models.Configurations.Helpers;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using DataGateVPNBot.Models.Helpers.Configurations;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -27,13 +27,13 @@ public class RedisConnectionFactory
             var redis = ConnectionMultiplexer.Connect(options);
 
             var pong = redis.GetDatabase().Ping();
-            _logger.LogInformation("✅ Connected to Redis. Ping = {Ping} ms", pong.TotalMilliseconds);
+            _logger.LogInformation($"✅ Connected to Redis. Ping = {pong.TotalMilliseconds} ms");
 
             return redis;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "⚠️ Redis connection failed. ConnectionString: {ConnectionString}", _config.ConnectionString);
+            _logger.LogWarning(ex,$"⚠️ Redis connection failed. ConnectionString: {_config.ConnectionString}");
             return null;
         }
     }

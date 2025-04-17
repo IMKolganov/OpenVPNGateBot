@@ -7,24 +7,24 @@ using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class DashBoardApiOvpnFileService
+public class OvpnFileService
 {
-    private readonly ILogger<DashBoardApiOvpnFileService> _logger;
+    private readonly ILogger<OvpnFileService> _logger;
     private readonly IHttpRequestService _httpRequestService;
-    private readonly DashBoardApiAuthService _dashBoardApiAuthService;
+    private readonly AuthService _authService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadOvpnFile";
     private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddOvpnFile";
     private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeOvpnFile";
     
-    public DashBoardApiOvpnFileService(ILogger<DashBoardApiOvpnFileService> logger,
+    public OvpnFileService(ILogger<OvpnFileService> logger,
         IHttpRequestService httpRequestService,
-        DashBoardApiAuthService dashBoardApiAuthService
+        AuthService authService
         )
     {
         _logger = logger;
         _httpRequestService = httpRequestService;
-        _dashBoardApiAuthService = dashBoardApiAuthService;
+        _authService = authService;
     }
 
     public async Task<List<OvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
@@ -37,7 +37,7 @@ public class DashBoardApiOvpnFileService
         if (string.IsNullOrEmpty(request.ExternalId))
             throw new ArgumentException("externalId is required.");
         
-        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
@@ -68,7 +68,6 @@ public class DashBoardApiOvpnFileService
     
     public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadOvpnFileRequest request, CancellationToken cancellationToken)
     {
-        //DownloadOvpnFileResponse
         if (request.IssuedOvpnFileId <= 0)
             throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
                                         $"Must be greater than zero.", nameof(request.IssuedOvpnFileId));
@@ -77,7 +76,7 @@ public class DashBoardApiOvpnFileService
             throw new ArgumentException($"Invalid vpnServerId: {request.VpnServerId}. " +
                                         $"Must be greater than zero.", nameof(request.VpnServerId));
 
-        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
@@ -96,7 +95,7 @@ public class DashBoardApiOvpnFileService
     }
 
     public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddOvpnFileRequest request,
-        CancellationToken cancellationToken, string issuedTo = "TelegramBot")
+        CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
             throw new ArgumentException("VpnServerId is required.");
@@ -107,7 +106,7 @@ public class DashBoardApiOvpnFileService
         if (string.IsNullOrEmpty(request.CommonName))
             throw new ArgumentException("CommonName is required.");
 
-        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
@@ -137,7 +136,7 @@ public class DashBoardApiOvpnFileService
     
     public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, CancellationToken cancellationToken)
     {
-        var token = await _dashBoardApiAuthService.GetTokenAsync();
+        var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");

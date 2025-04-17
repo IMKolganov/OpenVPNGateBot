@@ -11,7 +11,7 @@ public partial class TelegramUpdateHandler
     
     private async Task<Message> DashBoardApiGetToken(Message msg)
     {
-        string? token = await _dashBoardApiAuthService.GetTokenAsync();
+        string? token = await _authService.GetTokenAsync();
         
         if (token == null)
         {
@@ -200,8 +200,8 @@ public partial class TelegramUpdateHandler
         var currentRow = new List<InlineKeyboardButton>();
         foreach (var fileInfo in clientConfigFiles)
         {
-            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, 
-                $"/delete_file {vpnServerId} {fileInfo.FileName}"));
+            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.IssuedOvpnFile.FileName, 
+                $"/delete_file {vpnServerId} {fileInfo.IssuedOvpnFile.FileName}"));
         
             if (currentRow.Count == 2)
             {

@@ -1,8 +1,11 @@
 using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
+using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
+using OpenVPNGateMonitor.SharedModels.TelegramBotLocalization.Requests;
+using OpenVPNGateMonitor.SharedModels.TelegramBotUser.Requests;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -18,19 +21,19 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly ITelegramBotClient _botClient;
     private readonly IServiceProvider _serviceProvider;
     private readonly ITelegramSettingsService _telegramSettingsService;
-    private readonly DashBoardApiAuthService _dashBoardApiAuthService;
+    private readonly AuthService _authService;
     
     public TelegramUpdateHandler(
         ILogger<TelegramUpdateHandler> logger,
         ITelegramBotClient botClient,
         IServiceProvider serviceProvider,
         ITelegramSettingsService telegramSettingsService,
-        DashBoardApiAuthService dashBoardApiAuthService)
+        AuthService authService)
     {
         _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
-        _dashBoardApiAuthService = dashBoardApiAuthService;
+        _authService = authService;
         
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -258,14 +261,16 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private async Task RegisterNewUserAsync(Message msg, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var registrationService = scope.ServiceProvider.GetRequiredService<ITelegramUsersService>();
-        await registrationService.RegisterUserAsync(
-            telegramId: msg.From!.Id,
-            username: msg.From.Username,
-            firstName: msg.From.FirstName,
-            lastName: msg.From.LastName,
-            cancellationToken
-        );
+        var registrationService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
+        var request = new RegisterUserRequest()
+            { 
+                TelegramId = msg.From!.Id, 
+                FirstName = msg.From.FirstName, 
+                LastName = msg.From.LastName, 
+                Username = msg.From.Username
+            };
+        
+        await registrationService.RegisterUserAsync(request, cancellationToken);
     }
 
     private async Task LogIncomingMessage(Message msg, CancellationToken cancellationToken)
@@ -277,13 +282,16 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     
     private async Task<bool> IsExistLocalizationSettings(long telegramId, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Checking localization settings for TelegramId: {TelegramId}.", telegramId);
+        var request = new IsExistTelegramUserLanguagePreferenceRequest() { TelegramId = telegramId };
+        
+        _logger.LogInformation($"Checking localization settings for TelegramId: {telegramId}.");
         using var scope = _serviceProvider.CreateScope();
         var incomingMessageLogService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
 
-        var result = await incomingMessageLogService.IsExistUserLanguageAsync(telegramId, cancellationToken);
-        _logger.LogInformation("Result of IsExistUserLanguageAsync for TelegramId {TelegramId}: {Result}", telegramId, result);
+        var result = 
+            await incomingMessageLogService.IsExistTelegramUserLanguagePreferenceAsync(request, cancellationToken);
+        _logger.LogInformation($"Result of IsExistUserLanguageAsync for TelegramId {telegramId}: {result}");
 
-        return result;
+        return result.IsExistTelegramUserLanguagePreference;
     }
 }

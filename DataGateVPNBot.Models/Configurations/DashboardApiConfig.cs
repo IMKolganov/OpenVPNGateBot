@@ -1,4 +1,4 @@
-namespace DataGateVPNBot.Models.Helpers.Configurations;
+namespace DataGateVPNBot.Models.Configurations;
 
 public class DashboardApiConfig
 {
