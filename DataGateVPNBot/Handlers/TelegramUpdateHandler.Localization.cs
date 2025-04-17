@@ -65,7 +65,7 @@ public partial class TelegramUpdateHandler
             .Select(x => x.Id)
             .FirstOrDefault();
 
-        if (defaultServerId >= 0)
+        if (defaultServerId <= 0)
         {
             throw new Exception("No default VPN server found.");
         }
