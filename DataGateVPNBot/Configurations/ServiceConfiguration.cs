@@ -5,6 +5,7 @@ using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
+using Telegram.Bot.AspNetCore;
 using OvpnFileService = DataGateVPNBot.Services.BotServices.OvpnFileService;
 
 namespace DataGateVPNBot.Configurations;

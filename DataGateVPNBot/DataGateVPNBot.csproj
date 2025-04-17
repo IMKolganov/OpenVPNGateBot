@@ -27,6 +27,7 @@
         <PackageReference Include="StackExchange.Redis" Version="2.8.31" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
         <PackageReference Include="Telegram.Bot" Version="22.5.0" />
+        <PackageReference Include="Telegram.Bot.AspNetCore" Version="22.5.0" />
     </ItemGroup>
 
     <ItemGroup>
