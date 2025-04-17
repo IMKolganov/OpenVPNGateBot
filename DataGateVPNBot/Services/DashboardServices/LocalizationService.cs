@@ -1,7 +1,5 @@
 ﻿using System.Security.Authentication;
-using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
-using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Http;
 using OpenVPNGateMonitor.SharedModels.Responses;
 using OpenVPNGateMonitor.SharedModels.TelegramBotLocalization.Requests;
@@ -16,6 +14,7 @@ public class LocalizationService(ILogger<LocalizationService> logger, IHttpReque
     private const string EndpointGetTelegramUserLanguage = "api/TelegramBotLocalization/GetTelegramUserLanguage";
     private const string EndpointIsExistTelegramUserLanguagePreference = 
         "api/TelegramBotLocalization/IsExistTelegramUserLanguagePreference";
+    private const string EndpointGetTextForTelegramUser = "api/TelegramBotLocalization/GetTextForTelegramUser";
 
     public async Task<SetTelegramUserLanguageResponse> SetTelegramUserLanguageAsync(
         SetTelegramUserLanguageRequest request, CancellationToken cancellationToken)
@@ -78,7 +77,7 @@ public class LocalizationService(ILogger<LocalizationService> logger, IHttpReque
         }
         else
         {
-            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+            logger.LogWarning($"Failed to get user language: {response?.Message}");
         }
 
         if (response == null)
@@ -115,7 +114,7 @@ public class LocalizationService(ILogger<LocalizationService> logger, IHttpReque
         }
         else
         {
-            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+            logger.LogWarning($"Failed to get user language: {response?.Message}");
         }
 
         if (response == null)
@@ -143,7 +142,7 @@ public class LocalizationService(ILogger<LocalizationService> logger, IHttpReque
         logger.LogInformation("Sending request to get user language " +
                               $"TelegramId: {request.TelegramId}");
         
-        var url = $"{EndpointSetTelegramUserLanguage}/{request.TelegramId}/{request.Key}";
+        var url = $"{EndpointGetTextForTelegramUser}/{request.TelegramId}/{request.Key}";
         
         var response =
             await httpRequestService.GetAsync<ApiResponse<GetTextForTelegramUserResponse>>(
@@ -154,12 +153,12 @@ public class LocalizationService(ILogger<LocalizationService> logger, IHttpReque
         }
         else
         {
-            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+            logger.LogWarning($"Failed to get text for user language: {response?.Message}");
         }
 
         if (response == null)
         {
-            logger.LogError("Failed to fetch user language from API.");
+            logger.LogError("Failed to fetch text for user from API.");
         }
 
         return response!.Data!;
