@@ -25,6 +25,7 @@ public class StartupNotificationHandler : IHostedService
         if (!await webhookService.IsWebhookSetAsync(cancellationToken))
         {
             _logger.LogWarning("Webhook is not set. Attempting to set...");
+            await webhookService.DeleteWebhookAsync(cancellationToken);
             await webhookService.SetWebhookAsync(cancellationToken);
         }
     }

@@ -122,4 +122,36 @@ public class WebhookService
             _logger.LogError($"Failed to set webhook. Response: {result}");
         }
     }
+    
+    public async Task DeleteWebhookAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(_botConfig.BotToken))
+            throw new NullReferenceException("BotToken is missing in configuration.");
+
+        if (string.IsNullOrEmpty(_botConfig.HostAddress))
+            throw new NullReferenceException("HostAddress is missing in configuration.");
+
+        var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/deleteWebhook";
+
+        _logger.LogInformation($"Sending request to delete webhook. URL: {url}");
+
+        try
+        {
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var result = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            _logger.LogInformation($"Delete webhook response: {result}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Delete webhook request failed with status code {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception occurred while deleting webhook");
+            throw;
+        }
+    }
+
 }
