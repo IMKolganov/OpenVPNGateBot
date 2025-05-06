@@ -3,29 +3,46 @@ using DataGateVPNBot.Services.TelegramApi;
 
 namespace DataGateVPNBot.Handlers;
 
-public class StartupNotificationHandler : IHostedService
+public class StartupNotificationHandler(IServiceProvider serviceProvider, ILogger<StartupNotificationHandler> logger)
+    : IHostedService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<StartupNotificationHandler> _logger;
-
-    public StartupNotificationHandler(IServiceProvider serviceProvider, ILogger<StartupNotificationHandler> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using var scope = _serviceProvider.CreateScope();
-        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
-        var webhookService = scope.ServiceProvider.GetRequiredService<WebhookService>();
-
-        await errorService.NotifyAdminsAboutStartAsync(cancellationToken);
-
-        if (!await webhookService.IsWebhookSetAsync(cancellationToken))
+        while (!cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning("Webhook is not set. Attempting to set...");
-            await webhookService.SetWebhookAsync(cancellationToken);
+            using var scope = serviceProvider.CreateScope();
+            var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+            var webhookService = scope.ServiceProvider.GetRequiredService<WebhookService>();
+
+            try
+            {
+                logger.LogInformation("Attempting to notify admins and check webhook...");
+
+                await errorService.NotifyAdminsAboutStartAsync(cancellationToken);
+
+                if (!await webhookService.IsWebhookSetAsync(cancellationToken))
+                {
+                    logger.LogWarning("Webhook is not set. Attempting to set...");
+                    await webhookService.DeleteWebhookAsync(cancellationToken);
+                    await webhookService.SetWebhookAsync(cancellationToken);
+                }
+
+                logger.LogInformation("Startup initialization completed successfully.");
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Startup task failed. Retrying in 10 seconds...");
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    logger.LogWarning("Startup retry loop cancelled.");
+                    break;
+                }
+            }
         }
     }
 

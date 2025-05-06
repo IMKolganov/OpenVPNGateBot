@@ -2,7 +2,6 @@ using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
-using DataGateVPNBot.Services.DataServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using OpenVPNGateMonitor.SharedModels.TelegramBotLocalization.Requests;
 using OpenVPNGateMonitor.SharedModels.TelegramBotUser.Requests;
@@ -46,7 +45,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         using var scope = _serviceProvider.CreateScope();
         var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
 
-        await errorService.LogErrorToDatabase(exception);
+        errorService.LogErrorToDatabase(exception);//todo:fix it
         await errorService.NotifyAdminsAsync(exception, null, cancellationToken);
         if (exception is RequestException)
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);

@@ -30,7 +30,7 @@ public class GlobalExceptionMiddleware
             _logger.LogError(ex, "Unhandled exception occurred.");
             using var scope = _serviceProvider.CreateScope();
             var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
-            await errorService.LogErrorToDatabase(ex, context);
+            errorService.LogErrorToDatabase(ex, context); //todo: fix it
             await errorService.NotifyAdminsAsync(ex, context);
             await HandleExceptionAsync(context); //ex);
 
