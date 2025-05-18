@@ -1,6 +1,6 @@
 using System.Security.Authentication;
 using DataGateVPNBot.Services.Http;
-using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnServers.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;

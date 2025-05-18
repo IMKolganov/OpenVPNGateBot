@@ -1,4 +1,4 @@
-﻿using OpenVPNGateMonitor.SharedModels.OpenVpnServers.Responses;
+﻿using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnServers.Responses;
 
 namespace DataGateVPNBot.Services.BotServices.Interfaces;
 

@@ -1,7 +1,7 @@
 using System.Text;
 using DataGateVPNBot.Services.BotServices.Interfaces;
-using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Requests;
-using OpenVPNGateMonitor.SharedModels.OpenVpnFiles.Responses;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
