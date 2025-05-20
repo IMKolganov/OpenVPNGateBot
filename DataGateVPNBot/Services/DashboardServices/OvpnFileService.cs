@@ -42,7 +42,7 @@ public class OvpnFileService
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var url = $"{EndpointGetAllOpenVpnFiles}?vpnServerId={request.VpnServerId}&externalId={request.ExternalId}";
+        var url = $"{EndpointGetAllOpenVpnFiles}/{request.VpnServerId}/{request.ExternalId}";
 
         _logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
                                $"External ID: {request.ExternalId}");
