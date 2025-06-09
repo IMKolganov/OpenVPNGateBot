@@ -48,7 +48,8 @@ public class OvpnFileService
         _logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
                                $"External ID: {request.ExternalId}");
         
-        var response = await _httpRequestService.GetAsync<ApiResponse<List<IssuedOvpnFileDto>>>(url, token, cancellationToken);
+        var response = await _httpRequestService.GetAsync<ApiResponse<List<IssuedOvpnFileDto>>>(url, token, 
+            cancellationToken);
         if (response is { Success: true, Data: not null })
         {
             ovpnFiles = response.Data;
@@ -66,7 +67,8 @@ public class OvpnFileService
         return ovpnFiles;
     }
     
-    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request, CancellationToken cancellationToken)
+    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request, 
+        CancellationToken cancellationToken)
     {
         if (request.IssuedOvpnFileId <= 0)
             throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
@@ -116,9 +118,10 @@ public class OvpnFileService
                                $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, request, token, cancellationToken);
+            await _httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, 
+                request, token, cancellationToken);
 
-        if (response is { Success: true, Data: not null })
+        if (response is { Success: true, Data: not null, Data.IssuedOvpnFile.Id: > 0 })
         {
         }
         else
@@ -134,7 +137,8 @@ public class OvpnFileService
         return response!.Data!;
     }
     
-    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeClientOvpnFileRequest request, CancellationToken cancellationToken)
+    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeClientOvpnFileRequest request, 
+        CancellationToken cancellationToken)
     {
         var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
@@ -146,7 +150,8 @@ public class OvpnFileService
                                $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, request, token, cancellationToken);
+            await _httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, 
+                request, token, cancellationToken);
         
         if (response is { Success: true, Data: not null })
         {
