@@ -93,6 +93,8 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         var commandParts = messageText.Split(' ', 2);
         var command = commandParts[0].ToLower();
         var argument = commandParts.Length > 1 ? commandParts[1] : null;
+        await RegisterNewUserAsync(msg, cancellationToken);//for something wrong when "/start" don't work. This line usually is not a necessary 
+        
         if (!await IsExistLocalizationSettings(msg.From!.Id, cancellationToken) && 
             (command != "/start"
              ||command != "/change_language"
@@ -107,7 +109,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         {
             _logger.LogInformation("Localization settings found for user with TelegramId: {TelegramId}.", msg.From.Id);
         }
-        await RegisterNewUserAsync(msg, cancellationToken);//for something wrong when "/start" don't work. This line usually is not a necessary 
+        
 
         return await (command switch
         {
