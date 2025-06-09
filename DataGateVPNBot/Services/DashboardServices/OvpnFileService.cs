@@ -66,34 +66,40 @@ public class OvpnFileService
 
         return ovpnFiles;
     }
-    
-    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request, 
+
+    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request,
         CancellationToken cancellationToken)
     {
         if (request.IssuedOvpnFileId <= 0)
-            throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
-                                        $"Must be greater than zero.", nameof(request.IssuedOvpnFileId));
-        
+            throw new ArgumentException(
+                $"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. Must be greater than zero.",
+                nameof(request.IssuedOvpnFileId));
+
         if (request.VpnServerId <= 0)
-            throw new ArgumentException($"Invalid vpnServerId: {request.VpnServerId}. " +
-                                        $"Must be greater than zero.", nameof(request.VpnServerId));
+            throw new ArgumentException($"Invalid vpnServerId: {request.VpnServerId}. Must be greater than zero.",
+                nameof(request.VpnServerId));
 
         var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
-        {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
-        }
 
-        var url = $"{EndpointDownloadOpenVpnFiles}/{request.IssuedOvpnFileId}/{request.VpnServerId}";
+        _logger.LogInformation(
+            "Requesting OVPN file content for IssuedOvpnFileId: {IssuedOvpnFileId}, Server ID: {VpnServerId}",
+            request.IssuedOvpnFileId, request.VpnServerId);
 
-        _logger.LogInformation($"Requesting OVPN file stream for " +
-                               $"Issued Ovpn File Id: {request.IssuedOvpnFileId}, Server ID: {request.VpnServerId}");
+        var response = await _httpRequestService.PostAsync<ApiResponse<DownloadOvpnFileResponse>>(
+            EndpointDownloadOpenVpnFiles,
+            request,
+            token,
+            cancellationToken);
 
-        var stream = await _httpRequestService.GetStreamAsync(url, token, cancellationToken);//todo:fix
+        if (response == null || response.Data == null)
+            throw new InvalidOperationException("OVPN file response is null or invalid.");
 
-        _logger.LogInformation("OVPN file stream retrieved successfully.");
+        var memoryStream = new MemoryStream(response.Data.Content);
+        _logger.LogInformation("OVPN file stream constructed successfully.");
 
-        return stream;
+        return memoryStream;
     }
 
     public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddClientOvpnFileRequest request,
