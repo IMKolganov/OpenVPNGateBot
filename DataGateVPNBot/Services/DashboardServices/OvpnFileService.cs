@@ -13,9 +13,9 @@ public class OvpnFileService
     private readonly IHttpRequestService _httpRequestService;
     private readonly AuthService _authService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
-    private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadOvpnFile";
-    private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddOvpnFile";
-    private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeOvpnFile";
+    private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadClientOvpnFile";
+    private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddClientOvpnFile";
+    private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeClientOvpnFile";
     
     public OvpnFileService(ILogger<OvpnFileService> logger,
         IHttpRequestService httpRequestService,
