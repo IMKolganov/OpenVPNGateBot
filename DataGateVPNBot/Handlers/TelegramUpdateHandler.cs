@@ -101,7 +101,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
              ||command != "/ελληνικά"))
         {
             _logger.LogInformation("Localization settings not found for user with TelegramId: {TelegramId}. Calling SelectLanguage.", msg.From.Id);
-            await SelectLanguage(msg, cancellationToken);
+            return await SelectLanguage(msg, cancellationToken);
         }
         else
         {
