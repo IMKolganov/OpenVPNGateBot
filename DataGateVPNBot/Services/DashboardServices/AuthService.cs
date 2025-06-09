@@ -3,59 +3,33 @@ using DataGateVPNBot.Services.Http;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class AuthService
+public class AuthService(
+    IHttpRequestService httpRequestService,
+    string clientId,
+    string clientSecret,
+    ILogger<AuthService> logger)
 {
-    private readonly IHttpRequestService _httpRequestService;
-    private readonly RedisCacheService _redisCacheService;
-    private readonly string _clientId;
-    private readonly string _clientSecret;
-    private readonly ILogger<AuthService> _logger;
-
-    private const string TokenCacheKey = "dashboard_openvpn_token";
-    private readonly TimeSpan _tokenExpiration = TimeSpan.FromHours(1);
-
-    public AuthService(
-        IHttpRequestService httpRequestService,
-        RedisCacheService redisCacheService,
-        string clientId,
-        string clientSecret,
-        ILogger<AuthService> logger)
-    {
-        _httpRequestService = httpRequestService;
-        _redisCacheService = redisCacheService;
-        _clientId = clientId;
-        _clientSecret = clientSecret;
-        _logger = logger;
-    }
+    private string? _cachedToken;
+    private DateTime _tokenExpiry = DateTime.MinValue;
+    private readonly TimeSpan _tokenExpiration = TimeSpan.FromMinutes(55);
 
     public async Task<string?> GetTokenAsync()
     {
-        string? cachedToken = null;
-
-        try
+        if (!string.IsNullOrEmpty(_cachedToken) && DateTime.UtcNow < _tokenExpiry)
         {
-            cachedToken = await _redisCacheService.GetTokenWithExpirationAsync(TokenCacheKey);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Redis unavailable while getting token.");
+            logger.LogInformation("Using cached token from memory.");
+            return _cachedToken;
         }
 
-        if (cachedToken != null)
-        {
-            _logger.LogInformation("Using cached token from Redis.");
-            return cachedToken;
-        }
-
-        _logger.LogInformation("Cached token not found or expired. Requesting new token...");
+        logger.LogInformation("Token not found or expired. Requesting new token...");
 
         var requestBody = new
         {
-            ClientId = _clientId,
-            ClientSecret = _clientSecret
+            ClientId = clientId,
+            ClientSecret = clientSecret
         };
 
-        var response = await _httpRequestService.PostAsync<JsonElement>("/api/Auth/token", requestBody);
+        var response = await httpRequestService.PostAsync<JsonElement>("/api/Auth/token", requestBody);
 
         if (response.ValueKind == JsonValueKind.Object &&
             response.TryGetProperty("token", out var tokenProperty))
@@ -63,26 +37,18 @@ public class AuthService
             var newToken = tokenProperty.GetString();
             if (!string.IsNullOrEmpty(newToken))
             {
-                try
-                {
-                    await _redisCacheService.SetTokenWithExpirationAsync(TokenCacheKey, newToken, _tokenExpiration);
-                    _logger.LogInformation("New token saved in Redis.");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Redis unavailable while setting token.");
-                }
-
+                _cachedToken = newToken;
+                _tokenExpiry = DateTime.UtcNow.Add(_tokenExpiration);
+                logger.LogInformation("Token cached in memory.");
                 return newToken;
             }
         }
         else
         {
-            _logger.LogWarning("Invalid response structure or missing 'token' field.");
+            logger.LogWarning("Invalid response structure or missing 'token' field.");
         }
 
-        _logger.LogError("Failed to obtain a valid token from API.");
+        logger.LogError("Failed to obtain a valid token from API.");
         return null;
     }
-
 }

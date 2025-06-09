@@ -65,6 +65,12 @@ public class WebhookService
             }
 
             _logger.LogInformation("Webhook is correctly set.");
+            if (_botConfig.AutoGenerateCertificate && !File.Exists(_botConfig.CertificatePemPath))
+            {
+                _logger.LogWarning("AutoGenerateCertificate is enabled, but certificate file is missing.");
+                return false;
+            }
+            
             return true;
         }
 
@@ -96,7 +102,7 @@ public class WebhookService
             if (_botConfig.AutoGenerateCertificate)
             {
                 _logger.LogInformation("Auto-generating certificate...");
-                _certificateGenerator.EnsureCertificate(_botConfig.HostAddress);
+                await _certificateGenerator.EnsureCertificateAsync(_botConfig.HostAddress, cancellationToken);
             }
 
             if (string.IsNullOrEmpty(pemPath))
