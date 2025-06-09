@@ -2,6 +2,7 @@ using System.Security.Authentication;
 using DataGateVPNBot.Services.Http;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses.Dto;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
@@ -26,10 +27,10 @@ public class OvpnFileService
         _authService = authService;
     }
 
-    public async Task<List<OvpnFileResponse>?> GetAllOvpnFilesByExternalIdAsync(
+    public async Task<List<IssuedOvpnFileDto>?> GetAllOvpnFilesByExternalIdAsync(
         GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
     {
-        var ovpnFiles = new List<OvpnFileResponse>();
+        var ovpnFiles = new List<IssuedOvpnFileDto>();
         if (request.VpnServerId <= 0) 
             throw new ArgumentException("vpnServerId is required.");
 
@@ -47,7 +48,7 @@ public class OvpnFileService
         _logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
                                $"External ID: {request.ExternalId}");
         
-        var response = await _httpRequestService.GetAsync<ApiResponse<List<OvpnFileResponse>>>(url, token, cancellationToken);
+        var response = await _httpRequestService.GetAsync<ApiResponse<List<IssuedOvpnFileDto>>>(url, token, cancellationToken);
         if (response is { Success: true, Data: not null })
         {
             ovpnFiles = response.Data;
@@ -65,7 +66,7 @@ public class OvpnFileService
         return ovpnFiles;
     }
     
-    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadOvpnFileRequest request, CancellationToken cancellationToken)
+    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request, CancellationToken cancellationToken)
     {
         if (request.IssuedOvpnFileId <= 0)
             throw new ArgumentException($"Invalid issuedOvpnFileId: {request.IssuedOvpnFileId}. " +
@@ -93,7 +94,7 @@ public class OvpnFileService
         return stream;
     }
 
-    public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddOvpnFileRequest request,
+    public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddClientOvpnFileRequest request,
         CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
@@ -133,7 +134,7 @@ public class OvpnFileService
         return response!.Data!;
     }
     
-    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeOvpnFileRequest request, CancellationToken cancellationToken)
+    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeClientOvpnFileRequest request, CancellationToken cancellationToken)
     {
         var token = await _authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))

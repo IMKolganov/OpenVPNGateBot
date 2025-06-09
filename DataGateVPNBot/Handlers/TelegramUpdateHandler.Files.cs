@@ -200,8 +200,8 @@ public partial class TelegramUpdateHandler
         var currentRow = new List<InlineKeyboardButton>();
         foreach (var fileInfo in clientConfigFiles)
         {
-            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.IssuedOvpnFile.FileName, 
-                $"/delete_file {vpnServerId} {fileInfo.IssuedOvpnFile.FileName}"));
+            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, 
+                $"/delete_file {vpnServerId} {fileInfo.FileName}"));
         
             if (currentRow.Count == 2)
             {
