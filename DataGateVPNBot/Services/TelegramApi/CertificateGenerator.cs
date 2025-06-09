@@ -7,7 +7,7 @@ namespace DataGateVPNBot.Services.TelegramApi;
 public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfiguration config, 
     IErrorService  errorService)
 {
-    public async Task EnsureCertificate(string hostAddress, CancellationToken cancellationToken)
+    public async Task EnsureCertificateAsync(string hostAddress, CancellationToken cancellationToken)
     {
         await errorService.NotifyAdmins("🔐 Verifying certificate...", cancellationToken);
 

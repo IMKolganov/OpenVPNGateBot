@@ -102,7 +102,7 @@ public class WebhookService
             if (_botConfig.AutoGenerateCertificate)
             {
                 _logger.LogInformation("Auto-generating certificate...");
-                _certificateGenerator.EnsureCertificate(_botConfig.HostAddress);
+                await _certificateGenerator.EnsureCertificateAsync(_botConfig.HostAddress, cancellationToken);
             }
 
             if (string.IsNullOrEmpty(pemPath))
