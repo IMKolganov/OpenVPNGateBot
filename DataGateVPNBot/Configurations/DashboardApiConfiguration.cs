@@ -3,9 +3,7 @@ using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
-using Microsoft.Extensions.Options;
 using Serilog;
-using StackExchange.Redis;
 
 namespace DataGateVPNBot.Configurations;
 
@@ -46,15 +44,6 @@ public static class DashboardApiConfiguration
 
         services.AddSingleton(dashboardConfig);
 
-        // Redis
-        services.AddSingleton<RedisConnectionFactory>();
-        services.AddSingleton<RedisCacheService>(sp =>
-        {
-            var factory = sp.GetRequiredService<RedisConnectionFactory>();
-            var redis = factory.CreateConnection();
-            return new RedisCacheService(redis);
-        });
-
         // HTTP Client
         services.AddHttpClient("DashboardClient", (provider, client) =>
         {
@@ -70,7 +59,6 @@ public static class DashboardApiConfiguration
         services.AddSingleton<AuthService>(provider =>
             new AuthService(
                 provider.GetRequiredService<IHttpRequestService>(),
-                provider.GetRequiredService<RedisCacheService>(),
                 dashboardConfig.ClientId,
                 dashboardConfig.ClientSecret,
                 provider.GetRequiredService<ILogger<AuthService>>())
