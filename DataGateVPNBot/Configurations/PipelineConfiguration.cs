@@ -15,6 +15,7 @@ public static class PipelineConfiguration
         app.UseHttpsRedirection();
         app.UseAuthorization();
         app.MapControllers();
+        app.UseHttpsRedirection();
         
         app.UseStatusCodePagesWithReExecute("/error/{0}");
         app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found", 
