@@ -1,23 +1,18 @@
 using System.Diagnostics;
 using DataGateVPNBot.Models.Configurations;
+using DataGateVPNBot.Services.Interfaces;
 
 namespace DataGateVPNBot.Services.TelegramApi;
 
-public class CertificateGenerator
+public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfiguration config, 
+    IErrorService  errorService)
 {
-    private readonly ILogger<CertificateGenerator> _logger;
-    private readonly BotConfiguration _config;
-
-    public CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfiguration config)
+    public async Task EnsureCertificate(string hostAddress, CancellationToken cancellationToken)
     {
-        _logger = logger;
-        _config = config;
-    }
+        await errorService.NotifyAdmins("🔐 Verifying certificate...", cancellationToken);
 
-    public void EnsureCertificate(string hostAddress)
-    {
-        var certPath = !string.IsNullOrEmpty(_config.CertificatePfxPath)
-            ? _config.CertificatePfxPath
+        var certPath = !string.IsNullOrEmpty(config.CertificatePfxPath)
+            ? config.CertificatePfxPath
             : "datagatetgbot.pfx";
 
         if (string.IsNullOrEmpty(certPath))
@@ -37,11 +32,13 @@ public class CertificateGenerator
 
         if (File.Exists(certPath) && File.Exists(crtPath))
         {
-            _logger.LogInformation($"✅ Existing certificate found: {certPath}");
+            logger.LogInformation($"✅ Existing certificate found: {certPath}");
+            await errorService.NotifyAdmins($"✅ Existing certificate found:\n`{certPath}`", cancellationToken);
             return;
         }
 
-        _logger.LogWarning("⚠ Certificate not found. Generating new self-signed certificate...");
+        await errorService.NotifyAdmins(
+            "⚠️ Certificate not found. Generating a new self-signed certificate...",  cancellationToken);
 
         var cnf = $"""
         [req]
@@ -67,7 +64,7 @@ public class CertificateGenerator
         [alt_names]
         IP.1 = {hostAddress}
         """;
-        File.WriteAllText(cnfPath, cnf);
+        await File.WriteAllTextAsync(cnfPath, cnf, cancellationToken);
 
         var genCert = RunOpenSslCommand(new[]
         {
@@ -81,20 +78,24 @@ public class CertificateGenerator
 
         if (!genCert.Success)
         {
-            _logger.LogError($"❌ OpenSSL cert error:\n{genCert.Error}");
+            logger.LogError($"❌ OpenSSL cert error:\n{genCert.Error}");
+            await errorService.NotifyAdmins(
+                $"❌ OpenSSL certificate generation failed:\n{genCert.Error}", cancellationToken);
             throw new Exception("OpenSSL certificate generation failed.");
         }
 
         File.Copy(crtPath, pemPath, true);
+        logger.LogInformation($"✅ CRT and KEY generated:\n - CRT: {crtPath}\n - KEY: {keyPath}");
+        await errorService.NotifyAdmins(
+            $"✅ Certificate and key generated.\nCRT: `{crtPath}`\nKEY: `{keyPath}`",  cancellationToken);
 
-        _logger.LogInformation($"✅ CRT and KEY generated:\n - CRT: {crtPath}\n - KEY: {keyPath}");
-        _logger.LogInformation($"📦 PEM exported: {pemPath}");
+        logger.LogInformation($"📦 PEM exported: {pemPath}");
+        await errorService.NotifyAdmins($"📦 PEM file exported:\n`{pemPath}`", cancellationToken);
 
-        var pfxPath = certPath;
         var genPfx = RunOpenSslCommand(new[]
         {
             "pkcs12", "-export",
-            "-out", pfxPath,
+            "-out", certPath,
             "-inkey", keyPath,
             "-in", crtPath,
             "-passout", "pass:"
@@ -102,13 +103,18 @@ public class CertificateGenerator
 
         if (!genPfx.Success)
         {
-            _logger.LogError($"❌ OpenSSL pfx export error:\n{genPfx.Error}");
+            logger.LogError($"❌ OpenSSL pfx export error:\n{genPfx.Error}");
+            await errorService.NotifyAdmins(
+                $"❌ Failed to export PFX certificate:\n{genPfx.Error}", cancellationToken);
             throw new Exception("OpenSSL PFX export failed.");
         }
 
-        _logger.LogInformation($"📦 PFX certificate created: {pfxPath}");
-        
-        _logger.LogInformation("Try to restart app...");
+        logger.LogInformation($"📦 PFX certificate created: {certPath}");
+        await errorService.NotifyAdmins(
+            $"📦 PFX certificate successfully created:\n`{certPath}`", cancellationToken);
+
+        await errorService.NotifyAdmins(
+            "♻️ Restarting the application to apply the new certificate...", cancellationToken);
         Environment.Exit(0);
     }
 

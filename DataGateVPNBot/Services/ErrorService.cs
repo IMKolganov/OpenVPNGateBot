@@ -136,4 +136,23 @@ public class ErrorService : IErrorService
             await botClient.SendMessage(admin.TelegramId, startupMessage, cancellationToken: cancellationToken);
         }
     }
+    
+    public async Task NotifyAdmins(string message, CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
+        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+        var admins =  await telegramUsersService.GetAdminsAsync(cancellationToken);
+        
+        if (admins.TelegramBotAdmins is { Count: 0 })
+        {
+            _logger.LogWarning("Admin chat ID is not configured.");
+            return;
+        }
+        _logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
+        foreach (var admin in admins.TelegramBotAdmins)
+        {
+            await botClient.SendMessage(admin.TelegramId, message, cancellationToken: cancellationToken);
+        }
+    }
 }
