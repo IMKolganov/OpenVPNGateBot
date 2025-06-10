@@ -270,8 +270,12 @@ public partial class TelegramUpdateHandler : IUpdateHandler
                 LastName = msg.From.LastName, 
                 Username = msg.From.Username
             };
-        
-        await registrationService.RegisterUserAsync(request, cancellationToken);
+
+        if (!await registrationService.UserExistsAsync(request.TelegramId, cancellationToken))
+        {
+            _logger.LogInformation("User with TelegramId {TelegramId} not found. Registering...", request.TelegramId);
+            await registrationService.RegisterUserAsync(request, cancellationToken);
+        }
     }
 
     private async Task LogIncomingMessage(Message msg, CancellationToken cancellationToken)

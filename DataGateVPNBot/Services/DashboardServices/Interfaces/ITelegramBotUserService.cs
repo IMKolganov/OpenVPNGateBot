@@ -7,6 +7,6 @@ public interface ITelegramBotUserService
 {
     Task<RegisterUserResponse> RegisterUserAsync(RegisterUserRequest request, 
         CancellationToken cancellationToken);
-
+    Task<bool> UserExistsAsync(long telegramUserId, CancellationToken cancellationToken);
     Task<GetAdminsResponse> GetAdminsAsync(CancellationToken cancellationToken);
 }

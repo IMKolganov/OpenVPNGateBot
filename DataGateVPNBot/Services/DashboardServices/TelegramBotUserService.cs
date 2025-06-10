@@ -17,18 +17,12 @@ public class TelegramBotUserService(
 {
     private const string EndpointRegisterUser = "api/TelegramBotUser/RegisterUser";
     private const string EndpointGetAdmins = "api/TelegramBotUser/GetAdmins";
+    private const string EndpointUserExists = "api/TelegramBotUser/UserExists";
+
 
     public async Task<RegisterUserResponse> RegisterUserAsync(RegisterUserRequest request, 
         CancellationToken cancellationToken)
     {
-        var fullName = $"{request.FirstName} {request.LastName}".Trim();
-        var displayName = string.IsNullOrWhiteSpace(fullName) ? "Unnamed" : fullName;
-        var message = $"👤 New user registered:\n" +
-                      $"ID: `{request.TelegramId}`\n" +
-                      $"Username: @{request.Username?.Trim().TrimStart('@')}\n" +
-                      $"Name: {displayName}";
-
-        await errorService.NotifyAdmins(message, cancellationToken);
         if (request.TelegramId <= 0) 
             throw new ArgumentException("TelegramId is required.");
         
@@ -46,6 +40,14 @@ public class TelegramBotUserService(
 
         if (response is { Success: true, Data: not null })
         {
+            var fullName = $"{request.FirstName} {request.LastName}".Trim();
+            var displayName = string.IsNullOrWhiteSpace(fullName) ? "Unnamed" : fullName;
+            var message = $"👤 New user registered:\n" +
+                          $"ID: `{request.TelegramId}`\n" +
+                          $"Username: @{request.Username?.Trim().TrimStart('@')}\n" +
+                          $"Name: {displayName}";
+
+            await errorService.NotifyAdmins(message, cancellationToken);
         }
         else
         {
@@ -58,6 +60,38 @@ public class TelegramBotUserService(
         }
 
         return response!.Data!;
+    }
+    
+    public async Task<bool> UserExistsAsync(long telegramUserId, CancellationToken cancellationToken)
+    {
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            logger.LogError("UserExistsAsync: Failed to obtain token.");
+            return false;
+        }
+
+        var url = $"{EndpointUserExists}/{telegramUserId}";
+
+        try
+        {
+            var response = await httpRequestService.GetAsync<ApiResponse<bool>>(url, token, cancellationToken);
+
+            if (response is { Success: true, Data: true })
+            {
+                logger.LogInformation("UserExistsAsync: user {TelegramUserId} exists.", telegramUserId);
+                return true;
+            }
+
+            logger.LogWarning("UserExistsAsync: user {TelegramUserId} does not exist or API returned error. Message: {Message}",
+                telegramUserId, response?.Message);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "UserExistsAsync: exception occurred while checking user {TelegramUserId}", telegramUserId);
+        }
+
+        return false;
     }
 
     public async Task<GetAdminsResponse> GetAdminsAsync(CancellationToken cancellationToken)
