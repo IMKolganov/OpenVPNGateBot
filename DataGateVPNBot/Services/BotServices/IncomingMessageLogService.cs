@@ -8,8 +8,8 @@ using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
 
-public class IncomingMessageLogService(IIncomingMessageLogSenderService incomingMessageLogSenderService) 
-    : IIncomingMessageLogService
+public class IncomingMessageLogService(IIncomingMessageLogSenderService incomingMessageLogSenderService, 
+    ILogger<IncomingMessageLogService> log) : IIncomingMessageLogService
 {
     public async Task Log(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
@@ -44,12 +44,27 @@ public class IncomingMessageLogService(IIncomingMessageLogSenderService incoming
         }
         catch (Exception ex)
         {
+            log.LogError(ex, "Error processing file from Telegram message.");
             request.Message.MessageText += $"\n[Error processing file: {ex.Message}]";
         }
 
-        await incomingMessageLogSenderService.TelegramBotIncomingMessageLogAddMessageAsync(request, cancellationToken);
+        try
+        {
+            await incomingMessageLogSenderService.TelegramBotIncomingMessageLogAddMessageAsync(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Error sending incoming message log to backend.");
+        }
 
-        await SaveToFileAsync(request, cancellationToken);
+        try
+        {
+            await SaveToFileAsync(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Error saving incoming message log to file.");
+        }
     }
 
     private async Task ProcessFileAsync(
