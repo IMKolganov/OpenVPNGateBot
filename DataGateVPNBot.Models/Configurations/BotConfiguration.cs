@@ -7,6 +7,6 @@ public class BotConfiguration
     public int Port { get; set; } = 0;
     public bool UseCertificate { get; set; } = false;
     public bool AutoGenerateCertificate { get; set; } = false;
-    public string? CertificatePfxPath { get; set; }
+    public string? CertificatePfxPath { get; set; } = "certificates/datagatetgbot.pfx";
     public string? CertificatePemPath { get; set; }
 }
