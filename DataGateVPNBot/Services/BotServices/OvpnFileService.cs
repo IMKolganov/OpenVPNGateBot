@@ -202,6 +202,7 @@ public class OvpnFileService : IOvpnFileService
             var request = new RevokeClientOvpnFileRequest()
             {
                 VpnServerId = file.VpnServerId,
+                OvpnFileId = file.Id,
                 CommonName = file.CommonName,
             };
             var revoked = await _ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
@@ -238,6 +239,7 @@ public class OvpnFileService : IOvpnFileService
         var request = new RevokeClientOvpnFileRequest
         {
             VpnServerId = fileToRevoke.VpnServerId,
+            OvpnFileId = fileToRevoke.Id,
             CommonName = fileToRevoke.CommonName,
         };
 
