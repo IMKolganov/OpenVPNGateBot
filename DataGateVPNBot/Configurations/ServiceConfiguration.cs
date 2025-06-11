@@ -17,6 +17,7 @@ public static class ServiceConfiguration
         services.AddScoped<IIncomingMessageLogService, IncomingMessageLogService>();
         services.AddScoped<ITelegramBotUserService, TelegramBotUserService>();
         services.AddScoped<ILocalizationService, LocalizationService>();
+        services.AddScoped<IIncomingMessageLogSenderService, IncomingMessageLogSenderService>();
         services.AddScoped<IErrorService, ErrorService>();
         services.AddSingleton<TelegramUpdateHandler>();
         services.AddSingleton<ITelegramSettingsService, TelegramSettingsService>();

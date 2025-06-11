@@ -13,7 +13,7 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
 
         var certPath = !string.IsNullOrEmpty(config.CertificatePfxPath)
             ? config.CertificatePfxPath
-            : "datagatetgbot.pfx";
+            : "certificates/datagatetgbot.pfx";
 
         if (string.IsNullOrEmpty(certPath))
             throw new InvalidOperationException("CertificatePath is not set in the configuration.");
@@ -66,15 +66,14 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
         """;
         await File.WriteAllTextAsync(cnfPath, cnf, cancellationToken);
 
-        var genCert = RunOpenSslCommand(new[]
-        {
+        var genCert = RunOpenSslCommand([
             "req", "-x509", "-nodes", "-days", "365",
             "-newkey", "rsa:2048",
             "-keyout", keyPath,
             "-out", crtPath,
             "-config", cnfPath,
             "-extensions", "req_ext"
-        });
+        ]);
 
         if (!genCert.Success)
         {
@@ -92,14 +91,13 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
         logger.LogInformation($"📦 PEM exported: {pemPath}");
         await errorService.NotifyAdmins($"📦 PEM file exported:\n`{pemPath}`", cancellationToken);
 
-        var genPfx = RunOpenSslCommand(new[]
-        {
+        var genPfx = RunOpenSslCommand([
             "pkcs12", "-export",
             "-out", certPath,
             "-inkey", keyPath,
             "-in", crtPath,
             "-passout", "pass:"
-        });
+        ]);
 
         if (!genPfx.Success)
         {
