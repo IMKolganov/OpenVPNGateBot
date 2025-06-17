@@ -1,13 +1,5 @@
-# Define the TARGETARCH argument
-ARG TARGETARCH
-
 # Use the .NET SDK for building
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-
-# Check if the argument is passed
-ARG TARGETARCH
-RUN if [ -z "$TARGETARCH" ]; then echo "ERROR: TARGETARCH is not set!"; exit 1; fi
-RUN echo "BUILD STAGE: TARGETARCH=${TARGETARCH}"
 
 # Set the working directory
 WORKDIR /src
