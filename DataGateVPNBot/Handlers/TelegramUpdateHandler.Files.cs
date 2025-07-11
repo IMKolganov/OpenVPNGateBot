@@ -142,7 +142,7 @@ public partial class TelegramUpdateHandler
         }
         catch(Exception ex)
         {
-            await _errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            `
             return await _botClient.SendMessage(
                 msg.Chat,
                 await GetLocalizationTextAsync("SomethingWentWrongWhenTryMakeNewFile", 
