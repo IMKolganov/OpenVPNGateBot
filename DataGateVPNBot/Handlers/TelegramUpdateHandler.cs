@@ -21,18 +21,21 @@ public partial class TelegramUpdateHandler : IUpdateHandler
     private readonly IServiceProvider _serviceProvider;
     private readonly ITelegramSettingsService _telegramSettingsService;
     private readonly AuthService _authService;
+    private readonly IErrorService _errorService;
     
     public TelegramUpdateHandler(
         ILogger<TelegramUpdateHandler> logger,
         ITelegramBotClient botClient,
         IServiceProvider serviceProvider,
         ITelegramSettingsService telegramSettingsService,
-        AuthService authService)
+        AuthService authService,
+        IErrorService errorService)
     {
         _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
         _authService = authService;
+        _errorService = errorService;
         
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -46,7 +49,7 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
 
         errorService.LogErrorToDatabase(exception);//todo:fix it
-        await errorService.NotifyAdminsAsync(exception, null, cancellationToken);
+        await errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
         if (exception is RequestException)
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
     }

@@ -21,7 +21,7 @@ public class GlobalExceptionMiddleware(
             using var scope = serviceProvider.CreateScope();
             var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
             errorService.LogErrorToDatabase(ex, context); //todo: fix it
-            await errorService.NotifyAdminsAsync(ex, context);
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, context);
             await HandleExceptionAsync(context); //ex);
 
         }

@@ -9,7 +9,7 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
 {
     public async Task EnsureCertificateAsync(string hostAddress, CancellationToken cancellationToken)
     {
-        await errorService.NotifyAdmins("🔐 Verifying certificate...", cancellationToken);
+        await errorService.SendMessageToAdminsAsync("🔐 Verifying certificate...", cancellationToken);
 
         var certPath = !string.IsNullOrEmpty(config.CertificatePfxPath)
             ? config.CertificatePfxPath
@@ -33,11 +33,11 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
         if (File.Exists(certPath) && File.Exists(crtPath))
         {
             logger.LogInformation($"✅ Existing certificate found: {certPath}");
-            await errorService.NotifyAdmins($"✅ Existing certificate found:\n`{certPath}`", cancellationToken);
+            await errorService.SendMessageToAdminsAsync($"✅ Existing certificate found:\n`{certPath}`", cancellationToken);
             return;
         }
 
-        await errorService.NotifyAdmins(
+        await errorService.SendMessageToAdminsAsync(
             "⚠️ Certificate not found. Generating a new self-signed certificate...",  cancellationToken);
 
         var cnf = $"""
@@ -78,18 +78,18 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
         if (!genCert.Success)
         {
             logger.LogError($"❌ OpenSSL cert error:\n{genCert.Error}");
-            await errorService.NotifyAdmins(
+            await errorService.SendMessageToAdminsAsync(
                 $"❌ OpenSSL certificate generation failed:\n{genCert.Error}", cancellationToken);
             throw new Exception("OpenSSL certificate generation failed.");
         }
 
         File.Copy(crtPath, pemPath, true);
         logger.LogInformation($"✅ CRT and KEY generated:\n - CRT: {crtPath}\n - KEY: {keyPath}");
-        await errorService.NotifyAdmins(
+        await errorService.SendMessageToAdminsAsync(
             $"✅ Certificate and key generated.\nCRT: `{crtPath}`\nKEY: `{keyPath}`",  cancellationToken);
 
         logger.LogInformation($"📦 PEM exported: {pemPath}");
-        await errorService.NotifyAdmins($"📦 PEM file exported:\n`{pemPath}`", cancellationToken);
+        await errorService.SendMessageToAdminsAsync($"📦 PEM file exported:\n`{pemPath}`", cancellationToken);
 
         var genPfx = RunOpenSslCommand([
             "pkcs12", "-export",
@@ -102,16 +102,16 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
         if (!genPfx.Success)
         {
             logger.LogError($"❌ OpenSSL pfx export error:\n{genPfx.Error}");
-            await errorService.NotifyAdmins(
+            await errorService.SendMessageToAdminsAsync(
                 $"❌ Failed to export PFX certificate:\n{genPfx.Error}", cancellationToken);
             throw new Exception("OpenSSL PFX export failed.");
         }
 
         logger.LogInformation($"📦 PFX certificate created: {certPath}");
-        await errorService.NotifyAdmins(
+        await errorService.SendMessageToAdminsAsync(
             $"📦 PFX certificate successfully created:\n`{certPath}`", cancellationToken);
 
-        await errorService.NotifyAdmins(
+        await errorService.SendMessageToAdminsAsync(
             "♻️ Restarting the application to apply the new certificate...", cancellationToken);
         Environment.Exit(0);
     }

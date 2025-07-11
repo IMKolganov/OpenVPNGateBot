@@ -47,7 +47,7 @@ public class TelegramBotUserService(
                           $"Username: @{request.Username?.Trim().TrimStart('@')}\n" +
                           $"Name: {displayName}";
 
-            await errorService.NotifyAdmins(message, cancellationToken);
+            await errorService.SendMessageToAdminsAsync(message, cancellationToken);
         }
         else
         {
