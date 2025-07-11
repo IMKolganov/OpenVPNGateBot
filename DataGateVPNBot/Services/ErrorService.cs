@@ -57,8 +57,27 @@ public class ErrorService : IErrorService
             _logger.LogError(ex, "Failed to log error to the database.");
         }
     }
+    
+    public async Task SendMessageToAdminsAsync(string message, CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
+        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+        var admins =  await telegramUsersService.GetAdminsAsync(cancellationToken);
+        
+        if (admins.TelegramBotAdmins is { Count: 0 })
+        {
+            _logger.LogWarning("Admin chat ID is not configured.");
+            return;
+        }
+        _logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
+        foreach (var admin in admins.TelegramBotAdmins)
+        {
+            await botClient.SendMessage(admin.TelegramId, message, cancellationToken: cancellationToken);
+        }
+    }
 
-    public async Task NotifyAdminsAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default)
+    public async Task NotifyAdminsAboutExceptionAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default)
     {
         using var scope = _serviceProvider.CreateScope();
         var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
@@ -134,25 +153,6 @@ public class ErrorService : IErrorService
                                  $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
 
             await botClient.SendMessage(admin.TelegramId, startupMessage, cancellationToken: cancellationToken);
-        }
-    }
-    
-    public async Task NotifyAdmins(string message, CancellationToken cancellationToken)
-    {
-        using var scope = _serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-        var admins =  await telegramUsersService.GetAdminsAsync(cancellationToken);
-        
-        if (admins.TelegramBotAdmins is { Count: 0 })
-        {
-            _logger.LogWarning("Admin chat ID is not configured.");
-            return;
-        }
-        _logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
-        foreach (var admin in admins.TelegramBotAdmins)
-        {
-            await botClient.SendMessage(admin.TelegramId, message, cancellationToken: cancellationToken);
         }
     }
 }
