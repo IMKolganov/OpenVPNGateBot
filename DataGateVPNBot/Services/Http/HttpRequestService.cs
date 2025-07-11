@@ -6,24 +6,17 @@ using DataGateVPNBot.Services.Interfaces;
 
 namespace DataGateVPNBot.Services.Http;
 
-public class HttpRequestService : IHttpRequestService
+public class HttpRequestService(
+    IHttpClientFactoryService httpClientFactoryService,
+    IErrorService errorService,
+    ILogger<HttpRequestService> logger)
+    : IHttpRequestService
 {
-    private readonly IHttpClientFactoryService _httpClientFactoryService;
-    private readonly IErrorService _errorService;
-    private readonly ILogger<HttpRequestService> _logger;
     private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
-
-    public HttpRequestService(IHttpClientFactoryService httpClientFactoryService, IErrorService errorService,
-        ILogger<HttpRequestService> logger)
-    {
-        _httpClientFactoryService = httpClientFactoryService;
-        _errorService = errorService;
-        _logger = logger;
-    }
 
     private HttpClient CreateClient(string? token)
     {
-        var client = _httpClientFactoryService.CreateDashboardClient();
+        var client = httpClientFactoryService.CreateDashboardClient();
         if (!string.IsNullOrEmpty(token))
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -34,7 +27,7 @@ public class HttpRequestService : IHttpRequestService
 
     public async Task<T?> GetAsync<T>(string url, string? token = null, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending GET request to {Url}", url);
+        logger.LogInformation("Sending GET request to {Url}", url);
         var client = CreateClient(token);
         var response = await SendRequestAsync<HttpResponseMessage>(
             () => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken), url,
@@ -42,13 +35,13 @@ public class HttpRequestService : IHttpRequestService
 
         if (response == null || !response.IsSuccessStatusCode)
         {
-            _logger.LogError("Failed to fetch data from {Url}. StatusCode: {StatusCode}", url, response?.StatusCode);
+            logger.LogError("Failed to fetch data from {Url}. StatusCode: {StatusCode}", url, response?.StatusCode);
             return default;
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        _logger.LogInformation("Received JSON from {Url}: {Json}", url, json);
+        logger.LogInformation("Received JSON from {Url}: {Json}", url, json);
 
         return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
         {
@@ -59,7 +52,7 @@ public class HttpRequestService : IHttpRequestService
     public async Task<T?> PostAsync<T>(string url, object data, string? token = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending POST request to {Url} with data: {Data}", url, JsonSerializer.Serialize(data));
+        logger.LogInformation("Sending POST request to {Url} with data: {Data}", url, JsonSerializer.Serialize(data));
         var client = CreateClient(token);
         var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
         return await SendRequestAsync<T>(() => client.PostAsync(url, content, cancellationToken), url,
@@ -69,7 +62,7 @@ public class HttpRequestService : IHttpRequestService
     public async Task<T?> PutAsync<T>(string url, object data, string? token = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending PUT request to {Url} with data: {Data}", url, JsonSerializer.Serialize(data));
+        logger.LogInformation("Sending PUT request to {Url} with data: {Data}", url, JsonSerializer.Serialize(data));
         var client = CreateClient(token);
         var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
         return await SendRequestAsync<T>(() => client.PutAsync(url, content, cancellationToken), url,
@@ -78,7 +71,7 @@ public class HttpRequestService : IHttpRequestService
 
     public async Task<bool> DeleteAsync(string url, string? token = null, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending DELETE request to {Url}", url);
+        logger.LogInformation("Sending DELETE request to {Url}", url);
         var client = CreateClient(token);
         return await SendRequestAsync<bool>(() => client.DeleteAsync(url, cancellationToken), url, cancellationToken);
     }
@@ -86,13 +79,13 @@ public class HttpRequestService : IHttpRequestService
     public async Task<Stream> GetStreamAsync(string url, string? token = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending GET request for stream to {Url}", url);
+        logger.LogInformation("Sending GET request for stream to {Url}", url);
         var client = CreateClient(token);
         var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("Failed to download stream from {Url}. Status code: {StatusCode}", url,
+            logger.LogError("Failed to download stream from {Url}. Status code: {StatusCode}", url,
                 response.StatusCode);
             throw new HttpRequestException($"Failed to download stream. Status code: {response.StatusCode}");
         }
@@ -112,17 +105,17 @@ public class HttpRequestService : IHttpRequestService
 
             try
             {
-                _logger.LogInformation("Attempt {Attempt}: Sending HTTP request to {Url}...", attempt, url);
+                logger.LogInformation("Attempt {Attempt}: Sending HTTP request to {Url}...", attempt, url);
 
                 using var response = await httpRequest();
 
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogInformation("Response from {Url} (Attempt {Attempt}): {StatusCode} - {ResponseContent}",
+                logger.LogInformation("Response from {Url} (Attempt {Attempt}): {StatusCode} - {ResponseContent}",
                     url, attempt, response.StatusCode, content);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("Request to {Url} failed (Attempt {Attempt}): {StatusCode} - {ReasonPhrase}",
+                    logger.LogWarning("Request to {Url} failed (Attempt {Attempt}): {StatusCode} - {ReasonPhrase}",
                         url, attempt, response.StatusCode, response.ReasonPhrase);
 
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -140,29 +133,29 @@ public class HttpRequestService : IHttpRequestService
                     PropertyNameCaseInsensitive = true
                 });
 
-                _logger.LogInformation("Successfully deserialized response to {ResultType}", typeof(T).Name);
+                logger.LogInformation("Successfully deserialized response to {ResultType}", typeof(T).Name);
                 return result;
             }
             catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
             {
-                _logger.LogError("Request to {Url} timed out (Attempt {Attempt})", url, attempt);
+                logger.LogError("Request to {Url} timed out (Attempt {Attempt})", url, attempt);
                 return default;
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Network error while accessing {Url} (Attempt {Attempt})", url, attempt);
-                await _errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                logger.LogError(ex, "Network error while accessing {Url} (Attempt {Attempt})", url, attempt);
+                await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error while accessing {Url} (Attempt {Attempt})", url, attempt);
-                await _errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                logger.LogError(ex, "Unexpected error while accessing {Url} (Attempt {Attempt})", url, attempt);
+                await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             }
         }
 
         var finalException = new HttpRequestException($"Failed to complete HTTP request to {url} after 3 attempts.");
-        _logger.LogError(finalException, "Giving up after 3 attempts to {Url}", url);
-        await _errorService.NotifyAdminsAboutExceptionAsync(finalException, null, cancellationToken);
+        logger.LogError(finalException, "Giving up after 3 attempts to {Url}", url);
+        await errorService.NotifyAdminsAboutExceptionAsync(finalException, null, cancellationToken);
         throw finalException;
     }
 }
