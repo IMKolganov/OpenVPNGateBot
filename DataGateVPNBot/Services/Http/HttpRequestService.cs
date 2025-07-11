@@ -1,18 +1,22 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using DataGateVPNBot.Services.Interfaces;
 
 namespace DataGateVPNBot.Services.Http;
 
 public class HttpRequestService : IHttpRequestService
 {
     private readonly IHttpClientFactoryService _httpClientFactoryService;
+    private readonly IErrorService _errorService;
     private readonly ILogger<HttpRequestService> _logger;
     private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
 
-    public HttpRequestService(IHttpClientFactoryService httpClientFactoryService, ILogger<HttpRequestService> logger)
+    public HttpRequestService(IHttpClientFactoryService httpClientFactoryService, IErrorService errorService,
+        ILogger<HttpRequestService> logger)
     {
         _httpClientFactoryService = httpClientFactoryService;
+        _errorService = errorService;
         _logger = logger;
     }
 
@@ -157,8 +161,10 @@ public class HttpRequestService : IHttpRequestService
                     ex.Message);
             }
         }
-
-        throw new HttpRequestException($"Failed to complete HTTP request to {url} after 3 attempts.");
+        
+        var exception = new HttpRequestException($"Failed to complete HTTP request to {url} after 3 attempts.");
+        await _errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
+        throw exception;
         // return default;
     }
 }
