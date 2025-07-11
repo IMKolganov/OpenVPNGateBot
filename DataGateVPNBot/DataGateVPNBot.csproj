@@ -6,13 +6,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ApplicationIcon>logo/logo.ico</ApplicationIcon>
-        <AssemblyVersion>1.2.2.17</AssemblyVersion>
-        <FileVersion>1.2.2.17</FileVersion>
+        <AssemblyVersion>1.2.2.18</AssemblyVersion>
+        <FileVersion>1.2.2.18</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.0.6" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -24,8 +24,8 @@
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.Elasticsearch" Version="10.0.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
-        <PackageReference Include="Telegram.Bot" Version="22.5.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+        <PackageReference Include="Telegram.Bot" Version="22.6.0" />
         <PackageReference Include="Telegram.Bot.AspNetCore" Version="22.5.0" />
     </ItemGroup>
 
