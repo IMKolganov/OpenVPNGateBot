@@ -1,5 +1,7 @@
+using System.Net;
 using System.Text.Json;
 using DataGateVPNBot.Models.Configurations;
+using DataGateVPNBot.Services.LetsEncrypt;
 
 namespace DataGateVPNBot.Services.TelegramApi;
 
@@ -7,7 +9,8 @@ public class WebhookService(
     HttpClient httpClient,
     ILogger<WebhookService> logger,
     BotConfiguration botConfig,
-    CertificateGenerator certificateGenerator)
+    OpensslCertificateGenerator opensslCertificateGenerator,
+    LetsEncryptCertificateGenerator letsEncryptCertificateGenerator)
 {
     public async Task<bool> IsWebhookSetAsync(CancellationToken cancellationToken)
     {
@@ -96,10 +99,20 @@ public class WebhookService(
 
             if (botConfig.AutoGenerateCertificate)
             {
-                logger.LogInformation("Auto-generating certificate...");
-                await certificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, cancellationToken);
+                if (IsDomainName(botConfig.HostAddress))
+                {
+                    logger.LogInformation("Auto-generating Let's Encrypt certificate (domain detected)...");
+                    await letsEncryptCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, 
+                        "imkolganov@gmail.com",
+                        cancellationToken);
+                }
+                else
+                {
+                    logger.LogInformation("Auto-generating self-signed certificate (IP detected)...");
+                    await opensslCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, cancellationToken);
+                }
             }
-
+            
             if (string.IsNullOrEmpty(pemPath))
                 throw new NullReferenceException("CertificatePemPath is missing in configuration.");
 
@@ -156,4 +169,15 @@ public class WebhookService(
         }
     }
 
+    private static bool IsDomainName(string input)
+    {
+        if (input.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            input.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            input = new Uri(input).Host;
+        }
+
+        return Uri.CheckHostName(input) == UriHostNameType.Dns &&
+               !IPAddress.TryParse(input, out _);
+    }
 }

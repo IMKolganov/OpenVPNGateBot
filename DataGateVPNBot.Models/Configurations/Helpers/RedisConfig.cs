@@ -1,6 +1,0 @@
-namespace DataGateVPNBot.Models.Configurations.Helpers;
-
-public class RedisConfig
-{
-    public string ConnectionString { get; init; } = "telegrambot_redis:6379,abortConnect=false";
-}

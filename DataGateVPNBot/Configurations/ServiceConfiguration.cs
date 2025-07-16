@@ -17,7 +17,6 @@ public static class ServiceConfiguration
     public static void ConfigureServices(this IServiceCollection services)
     {
         services.AddSingleton<IKey>(_ => LetsEncryptAccountStore.LoadOrCreateAccountKey());
-        services.AddSingleton<CertificateGenerator>();
         
         services.AddScoped<IIncomingMessageLogService, IncomingMessageLogService>();
         services.AddScoped<ITelegramBotUserService, TelegramBotUserService>();

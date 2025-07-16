@@ -16,6 +16,19 @@ public static class PipelineConfiguration
         app.UseAuthorization();
         app.MapControllers();
         app.UseHttpsRedirection();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            ServeUnknownFileTypes = true,
+            OnPrepareResponse = ctx =>
+            {
+                var path = ctx.File.PhysicalPath;
+                if (path != null && !path.Contains(@"\.well-known\acme-challenge\"))
+                {
+                    ctx.Context.Response.StatusCode = 404;
+                    ctx.Context.Response.Body = Stream.Null;
+                }
+            }
+        });
         
         app.UseStatusCodePagesWithReExecute("/error/{0}");
         app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found", 

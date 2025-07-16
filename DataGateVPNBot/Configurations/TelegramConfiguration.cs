@@ -1,5 +1,6 @@
 ﻿using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Models.Configurations;
+using DataGateVPNBot.Services.LetsEncrypt;
 using DataGateVPNBot.Services.TelegramApi;
 using Telegram.Bot;
 
@@ -53,7 +54,8 @@ public static class TelegramConfiguration
         services.AddHttpClient(botConfig.HostAddress)
             .AddTypedClient<ITelegramBotClient>(httpClient => new TelegramBotClient(botConfig.BotToken, httpClient));
 
-        services.AddSingleton<CertificateGenerator>();
+        services.AddSingleton<OpensslCertificateGenerator>();
+        services.AddSingleton<LetsEncryptCertificateGenerator>();
         services.AddHttpClient<WebhookService>();
         services.AddHostedService<StartupNotificationHandler>();
     }

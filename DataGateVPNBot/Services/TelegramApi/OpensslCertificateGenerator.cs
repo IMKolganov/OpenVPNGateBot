@@ -4,7 +4,7 @@ using DataGateVPNBot.Services.Interfaces;
 
 namespace DataGateVPNBot.Services.TelegramApi;
 
-public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfiguration config, 
+public class OpensslCertificateGenerator(ILogger<OpensslCertificateGenerator> logger, BotConfiguration config, 
     IErrorService  errorService)
 {
     public async Task EnsureCertificateAsync(string hostAddress, CancellationToken cancellationToken)
