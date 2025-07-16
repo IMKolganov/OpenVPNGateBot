@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;

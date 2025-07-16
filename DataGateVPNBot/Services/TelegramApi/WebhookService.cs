@@ -38,7 +38,7 @@ public class WebhookService(
             var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) &&
                                        certElement.GetBoolean();
 
-            var expectedUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/bot";
+            var expectedUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/api/bot";
 
             logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
 
@@ -77,7 +77,7 @@ public class WebhookService(
             throw new NullReferenceException("HostAddress is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{botConfig.BotToken}/setWebhook";
-        var webhookUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/bot";
+        var webhookUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/api/bot";
 
         logger.LogInformation($"Set webhook URL: {url}");
         logger.LogInformation($"{webhookUrl}");

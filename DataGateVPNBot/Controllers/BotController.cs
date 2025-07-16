@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 namespace DataGateVPNBot.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class BotController : BaseController
 {
     [HttpPost]
