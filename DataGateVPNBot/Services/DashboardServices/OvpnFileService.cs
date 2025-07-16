@@ -7,25 +7,15 @@ using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class OvpnFileService
+public class OvpnFileService(
+    ILogger<OvpnFileService> logger,
+    IHttpRequestService httpRequestService,
+    AuthService authService)
 {
-    private readonly ILogger<OvpnFileService> _logger;
-    private readonly IHttpRequestService _httpRequestService;
-    private readonly AuthService _authService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadClientOvpnFile";
     private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddClientOvpnFile";
     private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeClientOvpnFile";
-    
-    public OvpnFileService(ILogger<OvpnFileService> logger,
-        IHttpRequestService httpRequestService,
-        AuthService authService
-        )
-    {
-        _logger = logger;
-        _httpRequestService = httpRequestService;
-        _authService = authService;
-    }
 
     public async Task<List<IssuedOvpnFileDto>?> GetAllOvpnFilesByExternalIdAsync(
         GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
@@ -37,7 +27,7 @@ public class OvpnFileService
         if (string.IsNullOrEmpty(request.ExternalId))
             throw new ArgumentException("externalId is required.");
         
-        var token = await _authService.GetTokenAsync();
+        var token = await authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
@@ -45,10 +35,10 @@ public class OvpnFileService
 
         var url = $"{EndpointGetAllOpenVpnFiles}/{request.VpnServerId}/{request.ExternalId}";
 
-        _logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
+        logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
                                $"External ID: {request.ExternalId}");
         
-        var response = await _httpRequestService.GetAsync<ApiResponse<List<IssuedOvpnFileDto>>>(url, token, 
+        var response = await httpRequestService.GetAsync<ApiResponse<List<IssuedOvpnFileDto>>>(url, token, 
             cancellationToken);
         if (response is { Success: true, Data: not null })
         {
@@ -56,18 +46,18 @@ public class OvpnFileService
         }
         else
         {
-            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
         }
 
         if (response == null)
         {
-            _logger.LogError("Failed to fetch Open VPN Servers from API.");
+            logger.LogError("Failed to fetch Open VPN Servers from API.");
         }
 
         return ovpnFiles;
     }
 
-    public async Task<Stream> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request,
+    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request,
         CancellationToken cancellationToken)
     {
         if (request.IssuedOvpnFileId <= 0)
@@ -79,15 +69,15 @@ public class OvpnFileService
             throw new ArgumentException($"Invalid vpnServerId: {request.VpnServerId}. Must be greater than zero.",
                 nameof(request.VpnServerId));
 
-        var token = await _authService.GetTokenAsync();
+        var token = await authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Requesting OVPN file content for IssuedOvpnFileId: {IssuedOvpnFileId}, Server ID: {VpnServerId}",
             request.IssuedOvpnFileId, request.VpnServerId);
 
-        var response = await _httpRequestService.PostAsync<ApiResponse<DownloadOvpnFileResponse>>(
+        var response = await httpRequestService.PostAsync<ApiResponse<DownloadOvpnFileResponse>>(
             EndpointDownloadOpenVpnFiles,
             request,
             token,
@@ -96,10 +86,9 @@ public class OvpnFileService
         if (response == null || response.Data == null)
             throw new InvalidOperationException("OVPN file response is null or invalid.");
 
-        var memoryStream = new MemoryStream(response.Data.Content);
-        _logger.LogInformation("OVPN file stream constructed successfully.");
+        logger.LogInformation("OVPN file stream constructed successfully.");
 
-        return memoryStream;
+        return response.Data;
     }
 
     public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddClientOvpnFileRequest request,
@@ -114,17 +103,17 @@ public class OvpnFileService
         if (string.IsNullOrEmpty(request.CommonName))
             throw new ArgumentException("CommonName is required.");
 
-        var token = await _authService.GetTokenAsync();
+        var token = await authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        _logger.LogInformation("Sending request to create OVPN file for " +
+        logger.LogInformation("Sending request to create OVPN file for " +
                                $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, 
+            await httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, 
                 request, token, cancellationToken);
 
         if (response is { Success: true, Data: not null, Data.IssuedOvpnFile.Id: > 0 })
@@ -132,12 +121,12 @@ public class OvpnFileService
         }
         else
         {
-            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
         }
 
         if (response == null)
         {
-            _logger.LogError("Failed to fetch Open VPN Servers from API.");
+            logger.LogError("Failed to fetch Open VPN Servers from API.");
         }
 
         return response!.Data!;
@@ -146,28 +135,28 @@ public class OvpnFileService
     public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeClientOvpnFileRequest request, 
         CancellationToken cancellationToken)
     {
-        var token = await _authService.GetTokenAsync();
+        var token = await authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        _logger.LogInformation("Sending request to revoke OVPN file for " +
+        logger.LogInformation("Sending request to revoke OVPN file for " +
                                $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}");
 
         var response =
-            await _httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, 
+            await httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, 
                 request, token, cancellationToken);
         
         if (response is { Success: true, Data: not null })
         {
-            _logger.LogInformation("Successfully revoked OVPN file for " +
+            logger.LogInformation("Successfully revoked OVPN file for " +
                                    $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}, " +
                                    $"Response: {response}");
         }
         else
         {
-            _logger.LogError("Failed to revoke OVPN file for " +
+            logger.LogError("Failed to revoke OVPN file for " +
                              $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}, " +
                              $"Response: {response}");
         }

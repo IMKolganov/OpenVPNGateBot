@@ -2,6 +2,7 @@ using System.Text;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses.Dto;
 using Telegram.Bot.Types;
 
@@ -26,6 +27,12 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
 
         return issuedOvpnFileResponses;
     }
+    
+    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileAsync(DownloadClientOvpnFileRequest request, CancellationToken cancellationToken)
+    {
+        return await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(request, cancellationToken);
+    }
+
 
     public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
@@ -65,11 +72,11 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
                     IssuedOvpnFileId = issuedOvpnFileResponse.Id
                 };
 
-                var issuedOvpnFileStream = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                     downloadOvpnFileRequest, cancellationToken);
 
-                var inputFile = new InputFileStream(issuedOvpnFileStream,
-                    issuedOvpnFileResponse.FileName);
+                var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+                var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.FileName);
                 var media = new InputMediaDocument(inputFile)
                 {
                     Caption = issuedOvpnFileResponse.FileName
@@ -141,10 +148,11 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
                 VpnServerId = issuedOvpnFile.VpnServerId,
                 IssuedOvpnFileId = issuedOvpnFile.Id
             };
-            var issuedOvpnFileStream = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+            var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                 downloadRequest, cancellationToken);
 
-            var inputFile = new InputFileStream(issuedOvpnFileStream, issuedOvpnFile.FileName);
+            var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+            var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.FileName);
             var media = new InputMediaDocument(inputFile)
             {
                 Caption = issuedOvpnFile.FileName
