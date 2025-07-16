@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <PackageReference Include="ACMESharpCore" Version="2.2.0.148" />
+        <PackageReference Include="Certes" Version="3.0.4" />
         <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
           <PrivateAssets>all</PrivateAssets>
