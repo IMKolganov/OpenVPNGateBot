@@ -7,13 +7,13 @@ namespace DataGateVPNBot.Controllers;
 [Route("api/[controller]")]
 public class BaseController : ControllerBase
 {
-    [HttpGet(Name = "healthcheck")]
+    [HttpGet]
     public IActionResult Healthcheck()
     {
         return Ok(200);
     }
-    
-    [HttpGet("HealthcheckWithJwt", Name = "HealthcheckWithJwt")]
+
+    [HttpGet("HealthcheckWithJwt")]
     [Authorize]
     public IActionResult HealthcheckWithJwt()
     {
