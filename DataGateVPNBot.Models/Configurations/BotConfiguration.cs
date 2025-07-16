@@ -8,5 +8,5 @@ public class BotConfiguration
     public bool UseCertificate { get; set; } = false;
     public bool AutoGenerateCertificate { get; set; } = false;
     public string? CertificatePfxPath { get; set; } = "certificates/datagatetgbot.pfx";
-    public string? CertificatePemPath { get; set; }
+    public string? CertificatePemPath { get; set; } = "certificates/datagatetgbot.pem";
 }

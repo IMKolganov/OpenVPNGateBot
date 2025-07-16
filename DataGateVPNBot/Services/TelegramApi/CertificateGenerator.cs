@@ -22,13 +22,21 @@ public class CertificateGenerator(ILogger<CertificateGenerator> logger, BotConfi
         if (string.IsNullOrWhiteSpace(certDir))
             certDir = Directory.GetCurrentDirectory();
 
+        if (!Directory.Exists(certDir))
+            Directory.CreateDirectory(certDir);
+
+
         var keyPath = Path.Combine(certDir, "datagatetgbot.key");
         var crtPath = Path.Combine(certDir, "datagatetgbot.crt");
         var pemPath = Path.Combine(certDir, "datagatetgbot.pem");
         var cnfPath = Path.Combine(certDir, "datagatetgbot.cnf");
 
         if (!IsOpenSslAvailable())
+        {
+            await errorService.SendMessageToAdminsAsync("🔐❌ OpenSSL is not installed or not available in PATH.", 
+                cancellationToken);
             throw new InvalidOperationException("OpenSSL is not installed or not available in PATH.");
+        }
 
         if (File.Exists(certPath) && File.Exists(crtPath))
         {

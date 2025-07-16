@@ -77,7 +77,12 @@ public class WebhookService(
             throw new NullReferenceException("HostAddress is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{botConfig.BotToken}/setWebhook";
-        var webhookUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/api/bot";
+        var host = botConfig.HostAddress
+            .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("http://", "", StringComparison.OrdinalIgnoreCase);
+
+        var portPart = botConfig.Port == 443 ? "" : $":{botConfig.Port}";
+        var webhookUrl = $"https://{host}{portPart}/api/bot";
 
         logger.LogInformation($"Set webhook URL: {url}");
         logger.LogInformation($"{webhookUrl}");
@@ -111,11 +116,12 @@ public class WebhookService(
 
         if (response.IsSuccessStatusCode)
         {
-            logger.LogInformation($"Webhook successfully set. Response: {result}");
+            logger.LogInformation($"Webhook successfully set. Response: {result} Request: {form}");
         }
         else
         {
             logger.LogError($"Failed to set webhook. Response: {result}");
+            throw new Exception($"Failed to set webhook. Response: {result} Request: {form}");
         }
     }
     

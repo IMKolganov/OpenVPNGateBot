@@ -22,9 +22,17 @@ public class StartupNotificationHandler(IServiceProvider serviceProvider, ILogge
 
                 if (!await webhookService.IsWebhookSetAsync(cancellationToken))
                 {
-                    logger.LogWarning("Webhook is not set. Attempting to set...");
-                    await webhookService.DeleteWebhookAsync(cancellationToken);
-                    await webhookService.SetWebhookAsync(cancellationToken);
+                    try
+                    {
+                        logger.LogWarning("Webhook is not set. Attempting to set...");
+                        await webhookService.DeleteWebhookAsync(cancellationToken);
+                        await webhookService.SetWebhookAsync(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                    }
+
                 }
 
                 logger.LogInformation("Startup initialization completed successfully.");

@@ -11,6 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="ACMESharpCore" Version="2.2.0.148" />
         <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
           <PrivateAssets>all</PrivateAssets>
@@ -30,16 +31,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="datagatetgbot.key">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="datagatetgbot.pem">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+      <ProjectReference Include="..\DataGateVPNBot.Models\DataGateVPNBot.Models.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DataGateVPNBot.Models\DataGateVPNBot.Models.csproj" />
+      <Folder Include="certificates\" />
     </ItemGroup>
 
 </Project>
