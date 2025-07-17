@@ -25,7 +25,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://gate.rackot.ru:5502;https://gate.rackot.ru:443",
+      "applicationUrl": "http://gate.rackot.ru:80;https://gate.rackot.ru:443",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging"
       }

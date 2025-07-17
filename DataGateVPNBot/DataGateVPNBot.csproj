@@ -37,6 +37,7 @@
 
     <ItemGroup>
       <Folder Include="certificates\" />
+      <Folder Include="wwwroot\.well-known\acme-challenge\" />
     </ItemGroup>
 
 </Project>

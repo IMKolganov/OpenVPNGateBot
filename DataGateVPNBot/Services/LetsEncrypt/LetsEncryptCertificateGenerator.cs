@@ -43,12 +43,14 @@ public class LetsEncryptCertificateGenerator(ILogger<LetsEncryptCertificateGener
         var acme = new AcmeContext(WellKnownServers.LetsEncryptV2, accountKey);
         await acme.NewAccount(email, true);
 
-        var order = await acme.NewOrder(new[] { normalizedDomain });
+        var order = await acme.NewOrder([normalizedDomain]);
         var authz = (await order.Authorizations()).First();
         var httpChallenge = await authz.Http();
 
         var token = httpChallenge.Token;
         var keyAuth = httpChallenge.KeyAuthz;
+        
+        AcmeChallengeStore.Add(token, keyAuth);
 
         // Write token for challenge
         var challengeDir = Path.Combine("wwwroot", ".well-known", "acme-challenge");
