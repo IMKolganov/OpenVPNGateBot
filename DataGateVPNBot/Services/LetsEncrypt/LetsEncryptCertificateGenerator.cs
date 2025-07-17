@@ -8,7 +8,7 @@ namespace DataGateVPNBot.Services.LetsEncrypt;
 public class LetsEncryptCertificateGenerator(ILogger<LetsEncryptCertificateGenerator> logger)
 {
     private const string PemPath = "certificates/datagatetgbot.pem";
-    private const string KeyPath = "certificates/domain.key";
+    private const string KeyPath = "certificates/datagatetgbot.key";
     private const string AccountPath = "certificates/account.pem";
 
     public async Task EnsureCertificateAsync(string domain, string email, CancellationToken cancellationToken)
