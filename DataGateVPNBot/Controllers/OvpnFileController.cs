@@ -31,7 +31,8 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFi
         }
     }
     
-    [HttpGet("DownloadClientOvpnFile/{vpnServerId:int}/{issuedOvpnFileId:int}/{fileName}")]
+    [AcceptVerbs("GET", "HEAD")]
+    [Route("DownloadClientOvpnFile/{vpnServerId:int}/{issuedOvpnFileId:int}/{fileName}")]
     public async Task<IActionResult> DownloadClientOvpnFile(
         [FromRoute] int vpnServerId,
         [FromRoute] int issuedOvpnFileId,
