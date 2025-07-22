@@ -1,3 +1,5 @@
+using Telegram.Bot.Types;
+
 namespace DataGateVPNBot.Handlers;
 
 public static class BotCommands
