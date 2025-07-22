@@ -15,6 +15,8 @@ public interface IOvpnFileService
         CancellationToken cancellationToken);
     Task<List<IAlbumInputMedia>> MakeOvpnFileAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken);
+    Task<List<IAlbumInputMedia>> MakeOvpnFileWithTokenAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken);
     Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId, CancellationToken cancellationToken);
     Task<bool> RevokeOvpnFileAsync(int vpnServerId, long telegramId, string fileName, CancellationToken cancellationToken);
     Task<bool> CheckMaxCountOvpnFilesForClient(int vpnServerId, long telegramId,

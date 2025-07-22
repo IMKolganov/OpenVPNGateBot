@@ -142,7 +142,8 @@ public class HttpRequestService(
             catch (OperationCanceledException ex) when (cts.Token.IsCancellationRequested)
             {
                 // await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-                logger.LogError("Request to {Url} timed out (Attempt {Attempt})", url, attempt);
+                logger.LogError("Request to {Url} timed out (Attempt {Attempt}) Error: {Error}", 
+                    url, attempt, ex.Message);
                 return default;
             }
             catch (HttpRequestException ex)

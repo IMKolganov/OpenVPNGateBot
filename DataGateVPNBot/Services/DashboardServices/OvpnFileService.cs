@@ -15,6 +15,7 @@ public class OvpnFileService(
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadClientOvpnFile";
     private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddClientOvpnFile";
+    private const string EndpointAddClientOvpnFileWithToken = "api/OpenVpnFiles/AddClientOvpnFileWithToken";
     private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeClientOvpnFile";
 
     public async Task<List<IssuedOvpnFileDto>?> GetAllOvpnFilesByExternalIdAsync(
@@ -115,6 +116,47 @@ public class OvpnFileService(
         var response =
             await httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, 
                 request, token, cancellationToken);
+
+        if (response is { Success: true, Data: not null, Data.IssuedOvpnFile.Id: > 0 })
+        {
+        }
+        else
+        {
+            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+        }
+
+        if (response == null)
+        {
+            logger.LogError("Failed to fetch Open VPN Servers from API.");
+        }
+
+        return response!.Data!;
+    }
+    
+    public async Task<AddOvpnFileWithTokenResponse> AddOvpnFileWithTokenAsync(AddClientOvpnFileRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.VpnServerId <= 0)
+            throw new ArgumentException("VpnServerId is required.");
+
+        if (string.IsNullOrEmpty(request.ExternalId))
+            throw new ArgumentException("ExternalId is required.");
+
+        if (string.IsNullOrEmpty(request.CommonName))
+            throw new ArgumentException("CommonName is required.");
+
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
+        }
+
+        logger.LogInformation("Sending request to create OVPN file for " +
+                              $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
+
+        var response =
+            await httpRequestService.PostAsync<ApiResponse<AddOvpnFileWithTokenResponse>>(
+                EndpointAddClientOvpnFileWithToken, request, token, cancellationToken);
 
         if (response is { Success: true, Data: not null, Data.IssuedOvpnFile.Id: > 0 })
         {

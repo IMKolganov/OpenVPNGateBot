@@ -6,8 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ApplicationIcon>logo/logo.ico</ApplicationIcon>
-        <AssemblyVersion>1.2.2.22</AssemblyVersion>
-        <FileVersion>1.2.2.22</FileVersion>
+        <AssemblyVersion>1.2.2.23</AssemblyVersion>
+        <FileVersion>1.2.2.23</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,7 +20,7 @@
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.32" />
+        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.33" />
         <PackageReference Include="Serilog" Version="4.3.0" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
@@ -37,6 +37,7 @@
 
     <ItemGroup>
       <Folder Include="certificates\" />
+      <Folder Include="Logs\" />
       <Folder Include="wwwroot\.well-known\acme-challenge\" />
     </ItemGroup>
 

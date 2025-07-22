@@ -11,7 +11,7 @@ public partial class TelegramUpdateHandler
     
     private async Task<Message> DashBoardApiGetToken(Message msg)
     {
-        string? token = await _authService.GetTokenAsync();
+        string? token = await authService.GetTokenAsync();
         
         if (token == null)
         {
@@ -55,7 +55,7 @@ public partial class TelegramUpdateHandler
         
         var inlineMarkup = new InlineKeyboardMarkup(rows);
         return await _botClient.SendMessage(
-            msg.Chat,
+            msg.From!.Id,
             await GetLocalizationTextAsync("ChooseOpenVpnServer", msg.Chat.Id, cancellationToken),
             replyMarkup: inlineMarkup, 
             cancellationToken: cancellationToken);
@@ -107,7 +107,7 @@ public partial class TelegramUpdateHandler
 
             if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
             {
-                return await GetOpenVpnServers(msg, "/make_new_file", cancellationToken);
+                return await GetOpenVpnServers(msg, BotCommands.CommandMakeNewFile, cancellationToken);
             }
 
             if (await ovpnFileService.CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken))
@@ -142,7 +142,63 @@ public partial class TelegramUpdateHandler
         }
         catch(Exception ex)
         {
-            await _errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            return await _botClient.SendMessage(
+                msg.Chat,
+                await GetLocalizationTextAsync("SomethingWentWrongWhenTryMakeNewFile", 
+                    msg.Chat.Id, cancellationToken) + " Details: " + ex.Message,
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+    }
+    
+    private async Task<Message> MakeNewVpnFileWithToken(Message msg, string? vpnServerIdArg, 
+            CancellationToken cancellationToken)
+    {
+        await _botClient.SendChatAction(msg.From!.Id, ChatAction.UploadDocument, cancellationToken: cancellationToken);
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+
+            if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+            {
+                return await GetOpenVpnServers(msg, BotCommands.CommandMakeNewFileWithToken, cancellationToken);
+            }
+
+            if (await ovpnFileService.CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken))
+            {
+                return await _botClient.SendMessage(
+                    msg.Chat,
+                    await GetLocalizationTextAsync("MaxConfigError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            var mediaGroupOpenVpnFiles =
+                await ovpnFileService.MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+            if (!mediaGroupOpenVpnFiles.Any())
+            {
+                return await _botClient.SendMessage(
+                    chatId: msg.Chat.Id,
+                    text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            _logger.LogInformation("Sending media group...");
+            var messages = await _botClient.SendMediaGroup(
+                chatId: msg.Chat.Id,
+                media: mediaGroupOpenVpnFiles,
+                cancellationToken: cancellationToken);
+            _logger.LogInformation("Media group sent successfully.");
+
+            return messages.FirstOrDefault() ??
+                   throw new InvalidOperationException("No messages returned after sending media group.");
+        }
+        catch(Exception ex)
+        {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             return await _botClient.SendMessage(
                 msg.Chat,
                 await GetLocalizationTextAsync("SomethingWentWrongWhenTryMakeNewFile", 
