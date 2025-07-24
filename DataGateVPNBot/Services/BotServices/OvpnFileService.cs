@@ -164,6 +164,9 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         var issuedOvpnFile = addOvpnFileResponse.IssuedOvpnFile;
 
         var token = addOvpnFileResponse.IssuedOvpnFileToken;
+        
+        var downloadUrl = BuildDownloadUrlWithToken("https://gate.rackot.ru", token.Token);
+        logger.LogInformation("Generated tokenized download URL: {DownloadUrl}", downloadUrl);
         try
         {
             logger.LogInformation(
@@ -182,7 +185,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
             var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.FileName);
             var media = new InputMediaDocument(inputFile)
             {
-                Caption = issuedOvpnFile.FileName
+                Caption = $"{issuedOvpnFile.FileName} Url: {downloadUrl}"
             };
             mediaGroupOpenVpnFiles.Add(media);
         }
@@ -393,5 +396,14 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         }
 
         throw new Exception($"No available CommonName for Telegram ID {telegramId}. Limit of 10 reached.");
+    }
+    
+    private string BuildDownloadUrlWithToken(string baseUrl, string token)
+    {
+        baseUrl = baseUrl.TrimEnd('/');
+
+        var url = $"{baseUrl}/openvpn-api/profile?token={Uri.EscapeDataString(token)}";
+
+        return url;
     }
 }

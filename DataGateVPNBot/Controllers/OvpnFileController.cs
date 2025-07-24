@@ -13,8 +13,8 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFi
     /// Short endpoint like https://host.ru/{token}
     /// Used by Telegram and OpenVPN Connect
     /// </summary>
-    [HttpGet("/{token}")]
-    public async Task<IActionResult> DownloadByToken([FromRoute] string token, CancellationToken cancellationToken)
+    [HttpGet("/DownloadByToken")]
+    public async Task<IActionResult> DownloadByToken([FromQuery] string token, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(token))
             return BadRequest("Token is required");

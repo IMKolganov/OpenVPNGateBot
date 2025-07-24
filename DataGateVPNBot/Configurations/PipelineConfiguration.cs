@@ -17,6 +17,7 @@ public static class PipelineConfiguration
         app.UseAuthorization();
         app.MapControllers();
         app.UseHttpsRedirection();
+        app.UseStaticFiles();
         // app.UseStaticFiles(new StaticFileOptions
         // {
         //     ServeUnknownFileTypes = true,

@@ -55,44 +55,42 @@ public class OvpnFileService(
         throw new Exception("Failed to fetch Open VPN Servers from API.");
     }
     
-    public async Task<List<IssuedOvpnFileDto>?> GetAllOvpnFilesByExternalIdAsync(
+    public async Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesByExternalIdAsync(
         GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
     {
-        var ovpnFiles = new List<IssuedOvpnFileDto>();
-        if (request.VpnServerId <= 0) 
+        if (request.VpnServerId <= 0)
             throw new ArgumentException("vpnServerId is required.");
 
         if (string.IsNullOrEmpty(request.ExternalId))
             throw new ArgumentException("externalId is required.");
-        
+
         var token = await authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
-        {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
-        }
 
         var url = $"{EndpointGetAllOpenVpnFiles}/{request.VpnServerId}/{request.ExternalId}";
 
-        logger.LogInformation($"Requesting OVPN files for Server ID: {request.VpnServerId}, " +
-                               $"External ID: {request.ExternalId}");
-        
-        var response = await httpRequestService.GetAsync<ApiResponse<List<IssuedOvpnFileDto>>>(url, token, 
-            cancellationToken);
-        if (response is { Success: true, Data: not null })
-        {
-            ovpnFiles = response.Data;
-        }
-        else
-        {
-            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
-        }
+        logger.LogInformation("Requesting OVPN files for Server ID: {VpnServerId}, External ID: {ExternalId}",
+            request.VpnServerId, request.ExternalId);
+
+        var response = await httpRequestService.GetAsync<ApiResponse<List<GetOvpnFileResponse>>>(url, token, cancellationToken);
 
         if (response == null)
         {
             logger.LogError("Failed to fetch Open VPN Servers from API.");
+            return [];
         }
 
-        return ovpnFiles;
+        if (response.Success && response.Data is not null)
+        {
+            return response.Data
+                .Where(x => x?.IssuedOvpnFile != null)
+                .Select(x => x.IssuedOvpnFile)
+                .ToList();
+        }
+
+        logger.LogWarning("Failed to get VPN servers: {Message}", response.Message);
+        return [];
     }
 
     public async Task<DownloadOvpnFileResponse> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request,
