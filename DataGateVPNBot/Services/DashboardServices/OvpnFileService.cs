@@ -121,7 +121,7 @@ public class OvpnFileService(
             return [];
         }
 
-        if (response.Success && response.Data is not null)
+        if (response is { Success: true, Data: not null })
         {
             return response.Data;
         }

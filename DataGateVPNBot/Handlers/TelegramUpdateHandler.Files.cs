@@ -283,11 +283,20 @@ public partial class TelegramUpdateHandler
 
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await GetOpenVpnServers(msg, "/delete_selected_file", cancellationToken);
+            return await GetOpenVpnServers(msg, BotCommands.CommandDeleteSelectedFile, cancellationToken);
         }
         
         var clientConfigFiles = await ovpnFileService.GetAllOvpnFilesListAsync(vpnServerId,
             msg.Chat.Id, cancellationToken);
+
+        if (clientConfigFiles.Count <= 0)
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("ErrorDeletedAllFile", msg.Chat.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(), 
+                cancellationToken: cancellationToken);
+        }
         
         var rows = new List<InlineKeyboardButton[]>();
         
@@ -295,7 +304,7 @@ public partial class TelegramUpdateHandler
         foreach (var fileInfo in clientConfigFiles)
         {
             currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, 
-                $"/delete_file {vpnServerId} {fileInfo.FileName}"));
+                $"{BotCommands.CommandDeleteSelectedFile} {vpnServerId} {fileInfo.FileName}"));
         
             if (currentRow.Count == 2)
             {

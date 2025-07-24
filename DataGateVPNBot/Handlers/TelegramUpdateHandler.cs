@@ -208,6 +208,11 @@ public partial class TelegramUpdateHandler(
                 var fileName = parts[2];
                 _logger.LogInformation("Deleting file: {FileName} from server {ServerId}", fileName, vpnServerId);
                 await DeleteFile(callbackQuery.From.Id, vpnServerId, fileName, cancellationToken);
+            }else if (parts.Length == 2)
+            {
+                var vpnServerId = data.Substring(BotCommands.CommandDeleteSelectedFile.Length + 1);
+                _logger.LogInformation("Delete selected file for vpnServerId: {VpnServerId}", vpnServerId);
+                await DeleteSelectedFile(message, vpnServerId, cancellationToken);
             }
             else
             {
@@ -237,12 +242,6 @@ public partial class TelegramUpdateHandler(
             var vpnServerId = data.Substring(BotCommands.CommandMakeNewFileWithToken.Length + 1);
             _logger.LogInformation("Make new file with token for vpnServerId: {VpnServerId}", vpnServerId);
             await MakeNewVpnFileWithToken(message, vpnServerId, cancellationToken);
-        }
-        else if (lowerData.StartsWith($"{BotCommands.CommandDeleteSelectedFile} "))
-        {
-            var vpnServerId = data.Substring(BotCommands.CommandDeleteSelectedFile.Length + 1);
-            _logger.LogInformation("Delete selected file for vpnServerId: {VpnServerId}", vpnServerId);
-            await DeleteSelectedFile(message, vpnServerId, cancellationToken);
         }
         else if (lowerData.StartsWith($"{BotCommands.CommandDeleteAllFiles} "))
         {
