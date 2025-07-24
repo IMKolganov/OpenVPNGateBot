@@ -27,12 +27,6 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
 
         return issuedOvpnFileResponses;
     }
-    
-    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileAsync(DownloadClientOvpnFileRequest request, 
-        CancellationToken cancellationToken)
-    {
-        return await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(request, cancellationToken);
-    }
 
     public async Task<DownloadOvpnFileResponse> DownloadOvpnFileByTokenAsync(string token,
         CancellationToken cancellationToken)
@@ -135,9 +129,97 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
 
         return mediaGroupOpenVpnFiles;
     }
-    
-    public async Task<List<IAlbumInputMedia>> MakeOvpnFileWithTokenAsync(int vpnServerId, long telegramId,
-        CancellationToken cancellationToken)
+
+    public async Task<List<IAlbumInputMedia>> GetOvpnFilesWithTokenAsync(int vpnServerId, long telegramId, 
+        string hostUrl, CancellationToken cancellationToken)
+    {
+        var getAllByExternalIdOvpnFilesRequest = new GetAllByExternalIdOvpnFilesRequest()
+        {
+            VpnServerId = vpnServerId, ExternalId = telegramId.ToString()
+        };
+        logger.LogInformation($"Fetching OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
+
+        var issuedOvpnFileResponses =
+            await ovpnFileService.GetAllOvpnFilesByExternalIdWithTokenAsync(
+                getAllByExternalIdOvpnFilesRequest, cancellationToken);
+
+        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x =>
+            !x.IssuedOvpnFile.IsRevoked).ToList() ?? [];
+
+        if (!issuedOvpnFileResponses.Any())
+        {
+            logger.LogInformation("No valid OVPN files found.");
+            return new List<IAlbumInputMedia>();
+        }
+
+        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
+
+        foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses)
+        {
+            var downloadUrl = string.Empty;
+            if (!string.IsNullOrWhiteSpace(issuedOvpnFileResponse.IssuedOvpnFileToken?.Token))
+            {
+                downloadUrl = BuildDownloadUrlWithToken(hostUrl, 
+                    issuedOvpnFileResponse.IssuedOvpnFileToken.Token);
+                logger.LogInformation("Generated tokenized download URL: {DownloadUrl}", downloadUrl);
+            }
+            
+            try
+            {
+                logger.LogInformation(
+                    $"Processing file: {issuedOvpnFileResponse.IssuedOvpnFile.FileName}, " +
+                    $"ServerId: {issuedOvpnFileResponse.IssuedOvpnFile.VpnServerId}, " +
+                    $"FileId: {issuedOvpnFileResponse.IssuedOvpnFile.Id}");
+                var downloadOvpnFileRequest = new DownloadClientOvpnFileRequest()
+                {
+                    VpnServerId = issuedOvpnFileResponse.IssuedOvpnFile.VpnServerId,
+                    IssuedOvpnFileId = issuedOvpnFileResponse.IssuedOvpnFile.Id
+                };
+
+                var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+                    downloadOvpnFileRequest, cancellationToken);
+
+                var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+                var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.FileName);
+                var media = new InputMediaDocument(inputFile)
+                {
+                    Caption = $"{issuedOvpnFileResponse.IssuedOvpnFile.FileName} Url: {downloadUrl}"
+                };
+                mediaGroupOpenVpnFiles.Add(media);
+            }
+            catch (Exception ex)
+            {
+                await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                logger.LogError($"Error processing file " +
+                                 $"{issuedOvpnFileResponse.IssuedOvpnFile.FileName}: {ex.Message}");
+
+                var errorMessage = new StringBuilder()
+                    .AppendLine($"Error processing file: {issuedOvpnFileResponse.IssuedOvpnFile.FileName}")
+                    .AppendLine($"ServerId: {issuedOvpnFileResponse.IssuedOvpnFile.VpnServerId}")
+                    .AppendLine($"FileId: {issuedOvpnFileResponse.IssuedOvpnFile.Id}")
+                    .AppendLine($"Error: {ex.Message}")
+                    .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
+                    .ToString();
+
+                var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
+                var errorFile = new InputFileStream(errorStream,
+                    $"{issuedOvpnFileResponse.IssuedOvpnFile.FileName}.error.txt");
+
+                var errorMedia = new InputMediaDocument(errorFile)
+                {
+                    Caption = $"Error file: {issuedOvpnFileResponse.IssuedOvpnFile.FileName}"
+                };
+
+                mediaGroupOpenVpnFiles.Add(errorMedia);
+            }
+        }
+
+        return mediaGroupOpenVpnFiles;
+    }
+
+
+    public async Task<List<IAlbumInputMedia>> MakeOvpnFileWithTokenAsync(int vpnServerId, long telegramId, 
+        string hostUrl, CancellationToken cancellationToken)
     {
         var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
         logger.LogInformation("Creating OVPN file with token. " +
@@ -165,7 +247,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
 
         var token = addOvpnFileResponse.IssuedOvpnFileToken;
         
-        var downloadUrl = BuildDownloadUrlWithToken("https://gate.rackot.ru", token.Token);
+        var downloadUrl = BuildDownloadUrlWithToken(hostUrl, token.Token);
         logger.LogInformation("Generated tokenized download URL: {DownloadUrl}", downloadUrl);
         try
         {

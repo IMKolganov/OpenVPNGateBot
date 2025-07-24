@@ -1,6 +1,5 @@
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
@@ -43,75 +42,75 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFi
         }
     }
 
-    /// <summary>
-    /// POST /api/OvpnFile/DownloadClientOvpnFile
-    /// </summary>
-    [HttpPost]
-    [Route("api/[controller]/DownloadClientOvpnFile")]
-    public async Task<ActionResult<ApiResponse<DownloadOvpnFileResponse>>> DownloadClientOvpnFile(
-        [FromBody] DownloadClientOvpnFileRequest request,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var response = await ovpnFileService.DownloadOvpnFileAsync(request, cancellationToken);
-            return Ok(ApiResponse<DownloadOvpnFileResponse>.SuccessResponse(response));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex,
-                "Failed to download OVPN file {IssuedOvpnFileId} for {VpnServerId}",
-                request.IssuedOvpnFileId, request.VpnServerId);
-
-            return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
-        }
-    }
-
-    /// <summary>
-    /// GET|HEAD /api/OvpnFile/DownloadClientOvpnFile/{vpnServerId}/{issuedOvpnFileId}/{fileName}
-    /// </summary>
-    [HttpGet]
-    [HttpHead]
-    [Route("api/[controller]/DownloadClientOvpnFile/{vpnServerId:int}/{issuedOvpnFileId:int}/{fileName}")]
-    public async Task<IActionResult> DownloadClientOvpnFileByIds(
-        [FromRoute] int vpnServerId,
-        [FromRoute] int issuedOvpnFileId,
-        [FromRoute] string fileName,
-        CancellationToken cancellationToken)
-    {
-        if (vpnServerId <= 0 || issuedOvpnFileId <= 0)
-            return BadRequest("Both vpnServerId and issuedOvpnFileId must be greater than zero.");
-
-        try
-        {
-            var request = new DownloadClientOvpnFileRequest
-            {
-                VpnServerId = vpnServerId,
-                IssuedOvpnFileId = issuedOvpnFileId
-            };
-
-            var response = await ovpnFileService.DownloadOvpnFileAsync(request, cancellationToken);
-
-            if (response.Content.Length == 0)
-                return NotFound("OVPN file is empty.");
-
-            var actualFileName = string.IsNullOrWhiteSpace(response.FileName)
-                ? $"client_{issuedOvpnFileId}.ovpn"
-                : Path.GetFileNameWithoutExtension(response.FileName) + ".ovpn";
-
-            return File(
-                fileContents: response.Content,
-                contentType: "application/x-openvpn-profile",
-                fileDownloadName: actualFileName
-            );
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex,
-                "Failed to serve OVPN file for issuedOvpnFileId={IssuedOvpnFileId}, vpnServerId={VpnServerId}",
-                issuedOvpnFileId, vpnServerId);
-
-            return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
-        }
-    }
+    // /// <summary>
+    // /// POST /api/OvpnFile/DownloadClientOvpnFile
+    // /// </summary>
+    // [HttpPost]
+    // [Route("api/[controller]/DownloadClientOvpnFile")]
+    // public async Task<ActionResult<ApiResponse<DownloadOvpnFileResponse>>> DownloadClientOvpnFile(
+    //     [FromBody] DownloadClientOvpnFileRequest request,
+    //     CancellationToken cancellationToken)
+    // {
+    //     try
+    //     {
+    //         var response = await ovpnFileService.DownloadOvpnFileAsync(request, cancellationToken);
+    //         return Ok(ApiResponse<DownloadOvpnFileResponse>.SuccessResponse(response));
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.LogError(ex,
+    //             "Failed to download OVPN file {IssuedOvpnFileId} for {VpnServerId}",
+    //             request.IssuedOvpnFileId, request.VpnServerId);
+    //
+    //         return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// GET|HEAD /api/OvpnFile/DownloadClientOvpnFile/{vpnServerId}/{issuedOvpnFileId}/{fileName}
+    // /// </summary>
+    // [HttpGet]
+    // [HttpHead]
+    // [Route("api/[controller]/DownloadClientOvpnFile/{vpnServerId:int}/{issuedOvpnFileId:int}/{fileName}")]
+    // public async Task<IActionResult> DownloadClientOvpnFileByIds(
+    //     [FromRoute] int vpnServerId,
+    //     [FromRoute] int issuedOvpnFileId,
+    //     [FromRoute] string fileName,
+    //     CancellationToken cancellationToken)
+    // {
+    //     if (vpnServerId <= 0 || issuedOvpnFileId <= 0)
+    //         return BadRequest("Both vpnServerId and issuedOvpnFileId must be greater than zero.");
+    //
+    //     try
+    //     {
+    //         var request = new DownloadClientOvpnFileRequest
+    //         {
+    //             VpnServerId = vpnServerId,
+    //             IssuedOvpnFileId = issuedOvpnFileId
+    //         };
+    //
+    //         var response = await ovpnFileService.DownloadOvpnFileAsync(request, cancellationToken);
+    //
+    //         if (response.Content.Length == 0)
+    //             return NotFound("OVPN file is empty.");
+    //
+    //         var actualFileName = string.IsNullOrWhiteSpace(response.FileName)
+    //             ? $"client_{issuedOvpnFileId}.ovpn"
+    //             : Path.GetFileNameWithoutExtension(response.FileName) + ".ovpn";
+    //
+    //         return File(
+    //             fileContents: response.Content,
+    //             contentType: "application/x-openvpn-profile",
+    //             fileDownloadName: actualFileName
+    //         );
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.LogError(ex,
+    //             "Failed to serve OVPN file for issuedOvpnFileId={IssuedOvpnFileId}, vpnServerId={VpnServerId}",
+    //             issuedOvpnFileId, vpnServerId);
+    //
+    //         return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
+    //     }
+    // }
 }

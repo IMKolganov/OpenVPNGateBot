@@ -7,7 +7,8 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5501;https://localhost:88",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "HOST_URL": "https://gate.rackot.ru/"
       }
     },
     "DataGateVPNBot Release": {
@@ -17,7 +18,8 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5050;https://localhost:8443",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": ""
+        "ASPNETCORE_ENVIRONMENT": "",
+        "HOST_URL": "https://gate.rackot.ru/"
       }
     },
     "DataGateVPNBot Local": {
@@ -27,7 +29,8 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://gate.rackot.ru:80;https://gate.rackot.ru:443",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Staging"
+        "ASPNETCORE_ENVIRONMENT": "Staging",
+        "HOST_URL": "https://gate.rackot.ru/"
       }
     }
   }

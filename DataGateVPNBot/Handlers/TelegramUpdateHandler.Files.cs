@@ -69,13 +69,50 @@ public partial class TelegramUpdateHandler
 
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await GetOpenVpnServers(msg, "/get_my_files", cancellationToken);
+            return await GetOpenVpnServers(msg, BotCommands.CommandGetMyFiles, cancellationToken);
         }
 
         _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
 
         var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesAsync(vpnServerId,
             msg.Chat.Id, cancellationToken);
+
+        if (!mediaGroupOpenVpnFiles.Any())
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+
+        _logger.LogInformation("Sending media group...");
+        var messages = await _botClient.SendMediaGroup(
+            chatId: msg.Chat.Id,
+            media: mediaGroupOpenVpnFiles,
+            cancellationToken: cancellationToken);
+        _logger.LogInformation("Media group sent successfully.");
+
+        return messages.FirstOrDefault() ??
+               throw new InvalidOperationException("No messages returned after sending media group.");
+    }
+    
+    private async Task<Message> GetMyFilesWithToken(Message msg, string? vpnServerIdArg, 
+        CancellationToken cancellationToken)
+    {
+        await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
+        using var scope = _serviceProvider.CreateScope();
+        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+
+        if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+        {
+            return await GetOpenVpnServers(msg, BotCommands.CommandGetMyFilesWithToken, cancellationToken);
+        }
+
+        _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
+
+        var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesWithTokenAsync(vpnServerId,
+            msg.Chat.Id, _hostUrl, cancellationToken);
 
         if (!mediaGroupOpenVpnFiles.Any())
         {
@@ -176,7 +213,7 @@ public partial class TelegramUpdateHandler
             }
 
             var mediaGroupOpenVpnFiles =
-                await ovpnFileService.MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+                await ovpnFileService.MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, _hostUrl, cancellationToken);
             if (!mediaGroupOpenVpnFiles.Any())
             {
                 return await _botClient.SendMessage(

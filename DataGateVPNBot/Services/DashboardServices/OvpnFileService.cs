@@ -14,6 +14,7 @@ public class OvpnFileService(
 {
     private const string EndpointGetOvpnFileByToken = "api/OpenVpnFiles/GetOvpnFileByToken";
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
+    private const string EndpointGetAllOpenVpnFilesWithToken = "api/OpenVpnFiles/GetAllByExternalIdOvpnFilesWithToken";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadClientOvpnFile";
     private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddClientOvpnFile";
     private const string EndpointAddClientOvpnFileWithToken = "api/OpenVpnFiles/AddClientOvpnFileWithToken";
@@ -87,6 +88,42 @@ public class OvpnFileService(
                 .Where(x => x?.IssuedOvpnFile != null)
                 .Select(x => x.IssuedOvpnFile)
                 .ToList();
+        }
+
+        logger.LogWarning("Failed to get VPN servers: {Message}", response.Message);
+        return [];
+    }
+    
+    public async Task<List<GetOvpnFileWithTokenResponse>> GetAllOvpnFilesByExternalIdWithTokenAsync(
+        GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
+    {
+        if (request.VpnServerId <= 0)
+            throw new ArgumentException("vpnServerId is required.");
+
+        if (string.IsNullOrEmpty(request.ExternalId))
+            throw new ArgumentException("externalId is required.");
+
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
+
+        var url = $"{EndpointGetAllOpenVpnFilesWithToken}/{request.VpnServerId}/{request.ExternalId}";
+
+        logger.LogInformation("Requesting OVPN files for Server ID: {VpnServerId}, External ID: {ExternalId}",
+            request.VpnServerId, request.ExternalId);
+
+        var response = await httpRequestService.GetAsync<ApiResponse<List<GetOvpnFileWithTokenResponse>>>(url, token, 
+            cancellationToken);
+
+        if (response == null)
+        {
+            logger.LogError("Failed to fetch Open VPN Servers from API.");
+            return [];
+        }
+
+        if (response.Success && response.Data is not null)
+        {
+            return response.Data;
         }
 
         logger.LogWarning("Failed to get VPN servers: {Message}", response.Message);

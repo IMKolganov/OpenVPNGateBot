@@ -25,9 +25,13 @@ public partial class TelegramUpdateHandler(
 {
     private readonly ILogger<TelegramUpdateHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ITelegramBotClient _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
-    private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-    private readonly ITelegramSettingsService _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
-
+    private readonly IServiceProvider _serviceProvider = serviceProvider ?? 
+                                                         throw new ArgumentNullException(nameof(serviceProvider));
+    private readonly ITelegramSettingsService _telegramSettingsService = 
+        telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
+    private readonly string _hostUrl = 
+        Environment.GetEnvironmentVariable("HOST_URL") ?? 
+        throw new InvalidOperationException("HOST_URL environment variable is not set");
     #region HandleErrorAsync: Error handling for Telegram Bot API
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception,
         HandleErrorSource source, CancellationToken cancellationToken)
@@ -134,6 +138,7 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandHowToUse => HowToUseVpn(msg, cancellationToken),
             BotCommands.CommandRegister => RegisterForVpn(msg, cancellationToken),
             BotCommands.CommandGetMyFiles => GetMyFiles(msg, argument, cancellationToken),
+            BotCommands.CommandGetMyFilesWithToken => GetMyFilesWithToken(msg, argument, cancellationToken),
             BotCommands.CommandMakeNewFile => MakeNewVpnFile(msg, argument, cancellationToken),
             BotCommands.CommandMakeNewFileWithToken => MakeNewVpnFileWithToken(msg, argument, cancellationToken),
             BotCommands.CommandDeleteSelectedFile => DeleteSelectedFile(msg, argument, cancellationToken),
@@ -143,8 +148,8 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandContacts => Contacts(msg, cancellationToken),
             BotCommands.CommandChangeLanguage => SelectLanguage(msg, cancellationToken),
             BotCommands.CommandRegisterCommands => RegisterCommandsAsync(msg, cancellationToken),
-            BotCommands.CommandEnglish or BotCommands.CommandRussian or BotCommands.CommandGreek => ChangeLanguage(msg, command,
-                cancellationToken),
+            BotCommands.CommandEnglish or BotCommands.CommandRussian or BotCommands.CommandGreek => ChangeLanguage(msg, 
+                command, cancellationToken),
             BotCommands.CommandDashboardApiGetToken => DashBoardApiGetToken(msg),
             BotCommands.CommandPhoto => SendPhoto(msg),
             BotCommands.CommandInlineButtons => SendInlineKeyboard(msg),
@@ -215,6 +220,12 @@ public partial class TelegramUpdateHandler(
             _logger.LogInformation("Get files for vpnServerId: {VpnServerId}", vpnServerId);
             await GetMyFiles(message, vpnServerId, cancellationToken);
         }
+        else if (lowerData.StartsWith($"{BotCommands.CommandGetMyFilesWithToken} "))
+        {
+            var vpnServerId = data.Substring(BotCommands.CommandGetMyFilesWithToken.Length + 1);
+            _logger.LogInformation("Get files for vpnServerId: {VpnServerId}", vpnServerId);
+            await GetMyFilesWithToken(message, vpnServerId, cancellationToken);
+        }
         else if (lowerData.StartsWith($"{BotCommands.CommandMakeNewFile} "))
         {
             var vpnServerId = data.Substring(BotCommands.CommandMakeNewFile.Length + 1);
@@ -273,9 +284,12 @@ public partial class TelegramUpdateHandler(
      
     private async Task<Message> RegisterCommandsAsync(Message msg, CancellationToken cancellationToken)
     {
-        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.English), languageCode: "en", cancellationToken: cancellationToken);
-        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Russian), languageCode: "ru", cancellationToken: cancellationToken);
-        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Greek), languageCode: "el", cancellationToken: cancellationToken);
+        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.English), 
+            languageCode: "en", cancellationToken: cancellationToken);
+        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Russian), 
+            languageCode: "ru", cancellationToken: cancellationToken);
+        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Greek), 
+            languageCode: "el", cancellationToken: cancellationToken);
         return await _botClient.SendMessage(
             chatId: msg.Chat.Id,
             text: "\u2705 All commands have been successfully registered...",
