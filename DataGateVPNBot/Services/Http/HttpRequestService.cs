@@ -93,9 +93,12 @@ public class HttpRequestService(
         return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
 
-   private async Task<T?> SendRequestAsync<T>(Func<Task<HttpResponseMessage>> httpRequest, string url,
+    private async Task<T?> SendRequestAsync<T>(Func<Task<HttpResponseMessage>> httpRequest, string url,
         CancellationToken cancellationToken)
     {
+        var errorDetails = new StringBuilder();
+        errorDetails.AppendLine($"Failed to complete HTTP request to {url} after 3 attempts.");
+
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -115,6 +118,10 @@ public class HttpRequestService(
                 {
                     logger.LogWarning("Request to {Url} failed (Attempt {Attempt}): {StatusCode} - {ReasonPhrase}",
                         url, attempt, response.StatusCode, response.ReasonPhrase);
+
+                    errorDetails.AppendLine($"Attempt {attempt}: {response.StatusCode} - {response.ReasonPhrase}");
+                    errorDetails.AppendLine($"Response body: {responseContent}");
+
                     if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                     {
                         response.Dispose();
@@ -144,6 +151,7 @@ public class HttpRequestService(
                 // await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
                 logger.LogError("Request to {Url} timed out (Attempt {Attempt}) Error: {Error}", 
                     url, attempt, ex.Message);
+                errorDetails.AppendLine($"Attempt {attempt}: Timeout after {_defaultTimeout.TotalSeconds} seconds.");
                 return default;
             }
             catch (HttpRequestException ex)
@@ -151,18 +159,20 @@ public class HttpRequestService(
                 await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
                 logger.LogError("Network error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
+                errorDetails.AppendLine($"Attempt {attempt}: HttpRequestException - {ex.Message}");
             }
             catch (Exception ex)
             {
                 await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
                 logger.LogError("Unexpected error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
+                errorDetails.AppendLine($"Attempt {attempt}: Exception - {ex.GetType().Name}: {ex.Message}");
             }
         }
-        
-        var exception = new HttpRequestException($"Failed to complete HTTP request to {url} after 3 attempts.");
+
+        var exception = new HttpRequestException(errorDetails.ToString());
         await errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
         throw exception;
-        // return default;
     }
+
 }
