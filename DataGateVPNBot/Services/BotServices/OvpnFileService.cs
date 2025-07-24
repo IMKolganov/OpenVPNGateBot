@@ -28,9 +28,32 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         return issuedOvpnFileResponses;
     }
     
-    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileAsync(DownloadClientOvpnFileRequest request, CancellationToken cancellationToken)
+    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileAsync(DownloadClientOvpnFileRequest request, 
+        CancellationToken cancellationToken)
     {
         return await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(request, cancellationToken);
+    }
+
+    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileByTokenAsync(string token,
+        CancellationToken cancellationToken)
+    {
+        var issuedOvpnFileResponse = await ovpnFileService.GetOvpnFileByTokenAsync(token, cancellationToken);
+
+        if (issuedOvpnFileResponse == null)
+        {
+            throw new FileNotFoundException($"Ovpn file not found: {token}");
+        }
+
+        var downloadOvpnFileRequest = new DownloadClientOvpnFileRequest()
+        {
+            VpnServerId = issuedOvpnFileResponse.VpnServerId,
+            IssuedOvpnFileId = issuedOvpnFileResponse.Id
+        };
+        
+        var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+            downloadOvpnFileRequest, cancellationToken);
+        
+        return downloadOvpnFileResponse;
     }
 
 

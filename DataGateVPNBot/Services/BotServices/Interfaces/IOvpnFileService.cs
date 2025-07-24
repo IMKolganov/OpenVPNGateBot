@@ -11,6 +11,8 @@ public interface IOvpnFileService
         CancellationToken cancellationToken);
     Task<DownloadOvpnFileResponse> DownloadOvpnFileAsync(DownloadClientOvpnFileRequest request,
         CancellationToken cancellationToken);
+    Task<DownloadOvpnFileResponse> DownloadOvpnFileByTokenAsync(string token,
+        CancellationToken cancellationToken);
     Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken);
     Task<List<IAlbumInputMedia>> MakeOvpnFileAsync(int vpnServerId, long telegramId,

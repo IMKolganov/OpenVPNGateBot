@@ -7,20 +7,29 @@ namespace DataGateVPNBot.Controllers;
 [Route("openvpn-api")]
 public class OpenVpnApiController : ControllerBase
 {
+    /// <summary>
+    /// This endpoint responds to HEAD requests from the OpenVPN Connect app.
+    /// It returns a 200 OK and sets custom headers to inform the client about the web auth method.
+    /// </summary>
+    /// <remarks>
+    /// This is a workaround. I don't know any other way to interact reliably with OpenVPN Connect.
+    /// The app expects this endpoint to exist and return 200, otherwise it refuses to proceed with profile import.
+    /// </remarks>
     [HttpHead("profile")]
     public IActionResult OpenVpnProfileProbe()
     {
+        // Extract incoming headers (not used yet, but may be useful for diagnostics or logging)
         var h = Request.Headers;
-        // Response.Headers.Append("WEBAUTH", "false");
 
+        // Required by OpenVPN Connect: tells it not to expect any auth interaction
         Response.Headers.Append("Ovpn-WebAuth", "none");
+
+        // Optional alternative:
         // Response.Headers.Append("Ovpn-WebAuth-Optional", "FlowerVPN,name=Smartcard SAML authentication,external");
 
-        
-        
-        
-        return Ok(); // Must return 200
+        return Ok(); // Must return 200 for OpenVPN Connect to proceed
     }
+
 
     [HttpGet("profile")]
     public IActionResult OpenVpnProfilePage()
@@ -33,7 +42,7 @@ public class OpenVpnApiController : ControllerBase
         var redirectUri =
             "openvpn://import-profile/https://gate.rackot.ru/api/OvpnFile/DownloadClientOvpnFile/1/178/tg-1-5767006971-3.ovpn";
 
-var scriptBlock = $@"
+        var scriptBlock = $@"
     <script>
         let secondsLeft = 3;
 
@@ -66,7 +75,7 @@ var scriptBlock = $@"
     </script>
 ";
 
-var html = $@"
+        var html = $@"
 <!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -127,5 +136,4 @@ var html = $@"
 
         return Content(html, "text/html");
     }
-
 }

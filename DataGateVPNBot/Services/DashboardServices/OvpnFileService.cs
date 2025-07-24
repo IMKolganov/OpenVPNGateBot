@@ -12,12 +12,49 @@ public class OvpnFileService(
     IHttpRequestService httpRequestService,
     AuthService authService)
 {
+    private const string EndpointGetOvpnFileByToken = "api/OpenVpnFiles/GetOvpnFileByToken";
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
     private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadClientOvpnFile";
     private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddClientOvpnFile";
     private const string EndpointAddClientOvpnFileWithToken = "api/OpenVpnFiles/AddClientOvpnFileWithToken";
     private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeClientOvpnFile";
 
+    public async Task<IssuedOvpnFileDto?> GetOvpnFileByTokenAsync(string fileToken,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(fileToken))
+        {
+            throw new ArgumentNullException(nameof(fileToken));
+        }
+        
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
+        }
+
+        var url = $"{EndpointGetOvpnFileByToken}/{fileToken}";
+        
+        var response = await httpRequestService.GetAsync<ApiResponse<GetOvpnFileResponse>>(url, token, 
+            cancellationToken);
+        
+        if (response is { Success: true, Data: not null })
+        {
+            return response.Data.IssuedOvpnFile;
+        }
+        else
+        {
+            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+        }
+
+        if (response == null)
+        {
+            logger.LogError("Failed to fetch Open VPN Servers from API.");
+        }
+        
+        throw new Exception("Failed to fetch Open VPN Servers from API.");
+    }
+    
     public async Task<List<IssuedOvpnFileDto>?> GetAllOvpnFilesByExternalIdAsync(
         GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
     {

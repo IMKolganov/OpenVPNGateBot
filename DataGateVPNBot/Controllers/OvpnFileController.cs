@@ -7,15 +7,51 @@ using OpenVPNGateMonitor.SharedModels.Responses;
 namespace DataGateVPNBot.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
 public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFileController> logger) : ControllerBase
 {
-    [HttpPost("DownloadClientOvpnFile")]
+    /// <summary>
+    /// Short endpoint like https://host.ru/{token}
+    /// Used by Telegram and OpenVPN Connect
+    /// </summary>
+    [HttpGet("/{token}")]
+    public async Task<IActionResult> DownloadByToken([FromRoute] string token, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest("Token is required");
+
+        try
+        {
+            var response = await ovpnFileService.DownloadOvpnFileByTokenAsync(token, cancellationToken);
+
+            if (response?.Content == null || response.Content.Length == 0)
+                return NotFound("OVPN file is empty or not found.");
+
+            var actualFileName = string.IsNullOrWhiteSpace(response.FileName)
+                ? $"client_{token}.ovpn"
+                : Path.GetFileNameWithoutExtension(response.FileName) + ".ovpn";
+
+            return File(
+                fileContents: response.Content,
+                contentType: "application/x-openvpn-profile",
+                fileDownloadName: actualFileName
+            );
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to serve OVPN file for token {Token}", token);
+            return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// POST /api/OvpnFile/DownloadClientOvpnFile
+    /// </summary>
+    [HttpPost]
+    [Route("api/[controller]/DownloadClientOvpnFile")]
     public async Task<ActionResult<ApiResponse<DownloadOvpnFileResponse>>> DownloadClientOvpnFile(
         [FromBody] DownloadClientOvpnFileRequest request,
         CancellationToken cancellationToken)
     {
-        //todo: make links list with life around 1 hour with GUID
         try
         {
             var response = await ovpnFileService.DownloadOvpnFileAsync(request, cancellationToken);
@@ -30,13 +66,17 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFi
             return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
         }
     }
-    
-    [AcceptVerbs("GET", "HEAD")]
-    [Route("DownloadClientOvpnFile/{vpnServerId:int}/{issuedOvpnFileId:int}/{fileName}")]
-    public async Task<IActionResult> DownloadClientOvpnFile(
+
+    /// <summary>
+    /// GET|HEAD /api/OvpnFile/DownloadClientOvpnFile/{vpnServerId}/{issuedOvpnFileId}/{fileName}
+    /// </summary>
+    [HttpGet]
+    [HttpHead]
+    [Route("api/[controller]/DownloadClientOvpnFile/{vpnServerId:int}/{issuedOvpnFileId:int}/{fileName}")]
+    public async Task<IActionResult> DownloadClientOvpnFileByIds(
         [FromRoute] int vpnServerId,
         [FromRoute] int issuedOvpnFileId,
-        [FromRoute] string fileName, // not used
+        [FromRoute] string fileName,
         CancellationToken cancellationToken)
     {
         if (vpnServerId <= 0 || issuedOvpnFileId <= 0)
