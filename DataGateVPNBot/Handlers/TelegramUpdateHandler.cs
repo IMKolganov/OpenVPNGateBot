@@ -176,7 +176,7 @@ public partial class TelegramUpdateHandler(
 
     private async Task<Message> Start(Message msg, CancellationToken cancellationToken)
     {
-        // Register new user if applicable
+        // Register a new user if applicable
         await RegisterNewUserAsync(msg, cancellationToken);
 
         return await SelectLanguage(msg, cancellationToken);

@@ -1,4 +1,5 @@
 using DataGateVPNBot.Services.BotServices.Interfaces;
+using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
@@ -6,7 +7,8 @@ using OpenVPNGateMonitor.SharedModels.Responses;
 namespace DataGateVPNBot.Controllers;
 
 [ApiController]
-public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFileController> logger) : ControllerBase
+public class OvpnFileController(IOvpnFileService ovpnFileService, IErrorService errorService,
+    ILogger<OvpnFileController> logger) : ControllerBase
 {
     /// <summary>
     /// Short endpoint like https://host.ru/{token}
@@ -37,6 +39,7 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, ILogger<OvpnFi
         }
         catch (Exception ex)
         {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             logger.LogError(ex, "Failed to serve OVPN file for token {Token}", token);
             return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
         }

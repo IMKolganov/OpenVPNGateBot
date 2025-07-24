@@ -273,6 +273,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         }
         catch (Exception ex)
         {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             logger.LogError("Error processing file with token {FileName}: {ErrorMessage}", issuedOvpnFile.FileName,
                 ex.Message);
 
@@ -347,6 +348,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         }
         catch (Exception ex)
         {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedOvpnFile.FileName,
                 ex.Message);
 
