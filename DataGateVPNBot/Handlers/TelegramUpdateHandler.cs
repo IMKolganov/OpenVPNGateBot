@@ -93,7 +93,6 @@ public partial class TelegramUpdateHandler(
 
         await RegisterNewUserAsync(msg, cancellationToken); // optional user registration
 
-        // Проверка локализации (если нет — предложить выбрать язык)
         var isLocalizationCommand = command is BotCommands.CommandStart
             or BotCommands.CommandChangeLanguage
             or BotCommands.CommandEnglish
@@ -110,7 +109,6 @@ public partial class TelegramUpdateHandler(
 
         _logger.LogInformation("Processing command {Command} from user {UserId}", command, msg.From!.Id);
 
-        // Ограниченные команды — только в личке
         var privateOnlyCommands = new HashSet<string>
         {
             BotCommands.CommandRegister,
@@ -137,9 +135,11 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandAboutBot => AboutBot(msg, cancellationToken),
             BotCommands.CommandHowToUse => HowToUseVpn(msg, cancellationToken),
             BotCommands.CommandRegister => RegisterForVpn(msg, cancellationToken),
-            BotCommands.CommandGetMyFiles => GetMyFiles(msg, argument, cancellationToken),
+            BotCommands.CommandGetMyFiles => GetMyFilesWithToken(msg, argument, cancellationToken),
             BotCommands.CommandGetMyFilesWithToken => GetMyFilesWithToken(msg, argument, cancellationToken),
-            BotCommands.CommandMakeNewFile => MakeNewVpnFile(msg, argument, cancellationToken),
+            BotCommands.CommandGetMyFilesWithoutToken => GetMyFiles(msg, argument, cancellationToken),
+            BotCommands.CommandMakeNewFile => MakeNewVpnFileWithToken(msg, argument, cancellationToken),
+            BotCommands.CommandMakeNewFileWithoutToken => MakeNewVpnFile(msg, argument, cancellationToken),
             BotCommands.CommandMakeNewFileWithToken => MakeNewVpnFileWithToken(msg, argument, cancellationToken),
             BotCommands.CommandDeleteSelectedFile => DeleteSelectedFile(msg, argument, cancellationToken),
             BotCommands.CommandDeleteAllFiles => DeleteAllFiles(msg, argument, cancellationToken),

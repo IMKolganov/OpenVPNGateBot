@@ -8,7 +8,9 @@ public static class BotCommands
     public const string CommandRegister = "/register";
     public const string CommandGetMyFiles = "/get_my_files";
     public const string CommandGetMyFilesWithToken = "/get_my_files_with_token";
+    public const string CommandGetMyFilesWithoutToken = "/get_my_files_without_token";
     public const string CommandMakeNewFile = "/make_new_file";
+    public const string CommandMakeNewFileWithoutToken = "/make_new_file_without_token";
     public const string CommandMakeNewFileWithToken = "/make_new_file_with_token";
     public const string CommandDeleteSelectedFile = "/delete_selected_file";
     public const string CommandDeleteAllFiles = "/delete_all_files";
