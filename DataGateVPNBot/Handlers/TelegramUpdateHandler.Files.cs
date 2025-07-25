@@ -11,7 +11,7 @@ public partial class TelegramUpdateHandler
     
     private async Task<Message> DashBoardApiGetToken(Message msg)
     {
-        string? token = await _authService.GetTokenAsync();
+        string? token = await authService.GetTokenAsync();
         
         if (token == null)
         {
@@ -55,7 +55,7 @@ public partial class TelegramUpdateHandler
         
         var inlineMarkup = new InlineKeyboardMarkup(rows);
         return await _botClient.SendMessage(
-            msg.Chat,
+            msg.From!.Id,
             await GetLocalizationTextAsync("ChooseOpenVpnServer", msg.Chat.Id, cancellationToken),
             replyMarkup: inlineMarkup, 
             cancellationToken: cancellationToken);
@@ -69,13 +69,50 @@ public partial class TelegramUpdateHandler
 
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await GetOpenVpnServers(msg, "/get_my_files", cancellationToken);
+            return await GetOpenVpnServers(msg, BotCommands.CommandGetMyFiles, cancellationToken);
         }
 
         _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
 
         var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesAsync(vpnServerId,
             msg.Chat.Id, cancellationToken);
+
+        if (!mediaGroupOpenVpnFiles.Any())
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+
+        _logger.LogInformation("Sending media group...");
+        var messages = await _botClient.SendMediaGroup(
+            chatId: msg.Chat.Id,
+            media: mediaGroupOpenVpnFiles,
+            cancellationToken: cancellationToken);
+        _logger.LogInformation("Media group sent successfully.");
+
+        return messages.FirstOrDefault() ??
+               throw new InvalidOperationException("No messages returned after sending media group.");
+    }
+    
+    private async Task<Message> GetMyFilesWithToken(Message msg, string? vpnServerIdArg, 
+        CancellationToken cancellationToken)
+    {
+        await _botClient.SendChatAction(msg.Chat.Id, ChatAction.Typing, cancellationToken: cancellationToken);
+        using var scope = _serviceProvider.CreateScope();
+        var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+
+        if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+        {
+            return await GetOpenVpnServers(msg, BotCommands.CommandGetMyFilesWithToken, cancellationToken);
+        }
+
+        _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
+
+        var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesWithTokenAsync(vpnServerId,
+            msg.Chat.Id, botConfig.HostAddress, cancellationToken);
 
         if (!mediaGroupOpenVpnFiles.Any())
         {
@@ -107,7 +144,7 @@ public partial class TelegramUpdateHandler
 
             if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
             {
-                return await GetOpenVpnServers(msg, "/make_new_file", cancellationToken);
+                return await GetOpenVpnServers(msg, BotCommands.CommandMakeNewFile, cancellationToken);
             }
 
             if (await ovpnFileService.CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken))
@@ -142,7 +179,64 @@ public partial class TelegramUpdateHandler
         }
         catch(Exception ex)
         {
-            await _errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            return await _botClient.SendMessage(
+                msg.Chat,
+                await GetLocalizationTextAsync("SomethingWentWrongWhenTryMakeNewFile", 
+                    msg.Chat.Id, cancellationToken) + " Details: " + ex.Message,
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+    }
+    
+    private async Task<Message> MakeNewVpnFileWithToken(Message msg, string? vpnServerIdArg, 
+            CancellationToken cancellationToken)
+    {
+        await _botClient.SendChatAction(msg.From!.Id, ChatAction.UploadDocument, cancellationToken: cancellationToken);
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var ovpnFileService = scope.ServiceProvider.GetRequiredService<IOvpnFileService>();
+
+            if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
+            {
+                return await GetOpenVpnServers(msg, BotCommands.CommandMakeNewFileWithToken, cancellationToken);
+            }
+
+            if (await ovpnFileService.CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken))
+            {
+                return await _botClient.SendMessage(
+                    msg.Chat,
+                    await GetLocalizationTextAsync("MaxConfigError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            var mediaGroupOpenVpnFiles =
+                await ovpnFileService.MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, botConfig.HostAddress, 
+                    cancellationToken);
+            if (!mediaGroupOpenVpnFiles.Any())
+            {
+                return await _botClient.SendMessage(
+                    chatId: msg.Chat.Id,
+                    text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            _logger.LogInformation("Sending media group...");
+            var messages = await _botClient.SendMediaGroup(
+                chatId: msg.Chat.Id,
+                media: mediaGroupOpenVpnFiles,
+                cancellationToken: cancellationToken);
+            _logger.LogInformation("Media group sent successfully.");
+
+            return messages.FirstOrDefault() ??
+                   throw new InvalidOperationException("No messages returned after sending media group.");
+        }
+        catch(Exception ex)
+        {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             return await _botClient.SendMessage(
                 msg.Chat,
                 await GetLocalizationTextAsync("SomethingWentWrongWhenTryMakeNewFile", 
@@ -190,11 +284,20 @@ public partial class TelegramUpdateHandler
 
         if (!int.TryParse(vpnServerIdArg, out int vpnServerId))
         {
-            return await GetOpenVpnServers(msg, "/delete_selected_file", cancellationToken);
+            return await GetOpenVpnServers(msg, BotCommands.CommandDeleteSelectedFile, cancellationToken);
         }
         
         var clientConfigFiles = await ovpnFileService.GetAllOvpnFilesListAsync(vpnServerId,
             msg.Chat.Id, cancellationToken);
+
+        if (clientConfigFiles.Count <= 0)
+        {
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: await GetLocalizationTextAsync("ErrorDeletedAllFile", msg.Chat.Id, cancellationToken),
+                replyMarkup: new ReplyKeyboardRemove(), 
+                cancellationToken: cancellationToken);
+        }
         
         var rows = new List<InlineKeyboardButton[]>();
         
@@ -202,7 +305,7 @@ public partial class TelegramUpdateHandler
         foreach (var fileInfo in clientConfigFiles)
         {
             currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, 
-                $"/delete_file {vpnServerId} {fileInfo.FileName}"));
+                $"{BotCommands.CommandDeleteSelectedFile} {vpnServerId} {fileInfo.FileName}"));
         
             if (currentRow.Count == 2)
             {

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
+using DataGateVPNBot.Services.Interfaces;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotIncomingMessageLog.Dto;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotIncomingMessageLog.Requests;
 using Telegram.Bot;
@@ -9,7 +10,7 @@ using Telegram.Bot.Types;
 namespace DataGateVPNBot.Services.BotServices;
 
 public class IncomingMessageLogService(IIncomingMessageLogSenderService incomingMessageLogSenderService, 
-    ILogger<IncomingMessageLogService> log) : IIncomingMessageLogService
+    IErrorService errorService, ILogger<IncomingMessageLogService> log) : IIncomingMessageLogService
 {
     public async Task Log(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
@@ -44,6 +45,7 @@ public class IncomingMessageLogService(IIncomingMessageLogSenderService incoming
         }
         catch (Exception ex)
         {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             log.LogError(ex, "Error processing file from Telegram message.");
             request.Message.MessageText += $"\n[Error processing file: {ex.Message}]";
         }
@@ -54,6 +56,7 @@ public class IncomingMessageLogService(IIncomingMessageLogSenderService incoming
         }
         catch (Exception ex)
         {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             log.LogError(ex, "Error sending incoming message log to backend.");
         }
 
@@ -63,6 +66,7 @@ public class IncomingMessageLogService(IIncomingMessageLogSenderService incoming
         }
         catch (Exception ex)
         {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             log.LogError(ex, "Error saving incoming message log to file.");
         }
     }

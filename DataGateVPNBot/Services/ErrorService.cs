@@ -6,27 +6,17 @@ using Telegram.Bot;
 
 namespace DataGateVPNBot.Services;
 
-public class ErrorService : IErrorService
+public class ErrorService(
+    IServiceProvider serviceProvider,
+    IHostEnvironment environment,
+    ILogger<ErrorService> logger)
+    : IErrorService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IHostEnvironment _environment;
-    private readonly ILogger<ErrorService> _logger;
-
-    public ErrorService( 
-        IServiceProvider serviceProvider,
-        IHostEnvironment environment,
-        ILogger<ErrorService> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _environment = environment;
-        _logger = logger;
-    }
-
     public void LogErrorToDatabase(Exception exception, HttpContext? context)
     {
         try
         {
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = serviceProvider.CreateScope();
             // var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             // var errorLogRepository = unitOfWork.GetRepository<ErrorLog>();
         
@@ -54,23 +44,23 @@ public class ErrorService : IErrorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to log error to the database.");
+            logger.LogError(ex, "Failed to log error to the database.");
         }
     }
     
     public async Task SendMessageToAdminsAsync(string message, CancellationToken cancellationToken)
     {
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
         var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
         var admins =  await telegramUsersService.GetAdminsAsync(cancellationToken);
         
         if (admins.TelegramBotAdmins is { Count: 0 })
         {
-            _logger.LogWarning("Admin chat ID is not configured.");
+            logger.LogWarning("Admin chat ID is not configured.");
             return;
         }
-        _logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
+        logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
         foreach (var admin in admins.TelegramBotAdmins)
         {
             await botClient.SendMessage(admin.TelegramId, message, cancellationToken: cancellationToken);
@@ -79,7 +69,7 @@ public class ErrorService : IErrorService
 
     public async Task NotifyAdminsAboutExceptionAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default)
     {
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
         var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
@@ -87,11 +77,11 @@ public class ErrorService : IErrorService
 
         if (admins.TelegramBotAdmins is { Count: 0 })
         {
-            _logger.LogWarning("No admins are configured to receive error notifications.");
+            logger.LogWarning("No admins are configured to receive error notifications.");
             return;
         }
 
-        _logger.LogInformation($"Notifying {admins!.TelegramBotAdmins.Count} admins about an error.");
+        logger.LogInformation($"Notifying {admins!.TelegramBotAdmins.Count} admins about an error.");
 
         foreach (var admin in admins.TelegramBotAdmins)
         {
@@ -125,31 +115,31 @@ public class ErrorService : IErrorService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send error notification to admin with Telegram ID {admin.TelegramId}.");
+                logger.LogError(ex, $"Failed to send error notification to admin with Telegram ID {admin.TelegramId}.");
             }
         }
     }
     
     public async Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken)
     {
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
         var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
         var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
         var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
         if (admins.TelegramBotAdmins is { Count: 0 })
         {
-            _logger.LogWarning("Admin chat ID is not configured.");
+            logger.LogWarning("Admin chat ID is not configured.");
             return;
         }
-        _logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
+        logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
         foreach (var admin in admins.TelegramBotAdmins)
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
 
             var startupMessage = $"🚀 Bot started successfully!\n" +
                                  $"Application version: {version}\n" +
-                                 $"Environment: {_environment.EnvironmentName}\n" +
+                                 $"Environment: {environment.EnvironmentName}\n" +
                                  $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
 
             await botClient.SendMessage(admin.TelegramId, startupMessage, cancellationToken: cancellationToken);

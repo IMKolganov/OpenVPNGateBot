@@ -427,3 +427,7 @@ dashboardapi.json
 *.crt
 *.key
 *.cnf
+*.pem
+
+
+wwwroot/

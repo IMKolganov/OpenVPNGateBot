@@ -1,5 +1,7 @@
+using System.Net;
 using System.Text.Json;
 using DataGateVPNBot.Models.Configurations;
+using DataGateVPNBot.Services.LetsEncrypt;
 
 namespace DataGateVPNBot.Services.TelegramApi;
 
@@ -7,7 +9,8 @@ public class WebhookService(
     HttpClient httpClient,
     ILogger<WebhookService> logger,
     BotConfiguration botConfig,
-    CertificateGenerator certificateGenerator)
+    OpensslCertificateGenerator opensslCertificateGenerator,
+    LetsEncryptCertificateGenerator letsEncryptCertificateGenerator)
 {
     public async Task<bool> IsWebhookSetAsync(CancellationToken cancellationToken)
     {
@@ -38,7 +41,7 @@ public class WebhookService(
             var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) &&
                                        certElement.GetBoolean();
 
-            var expectedUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/bot";
+            var expectedUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/api/bot";
 
             logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
 
@@ -77,7 +80,12 @@ public class WebhookService(
             throw new NullReferenceException("HostAddress is missing in configuration.");
 
         var url = $"https://api.telegram.org/bot{botConfig.BotToken}/setWebhook";
-        var webhookUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/bot";
+        var host = botConfig.HostAddress
+            .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("http://", "", StringComparison.OrdinalIgnoreCase);
+
+        var portPart = botConfig.Port == 443 ? "" : $":{botConfig.Port}";
+        var webhookUrl = $"https://{host}{portPart}/api/bot";
 
         logger.LogInformation($"Set webhook URL: {url}");
         logger.LogInformation($"{webhookUrl}");
@@ -91,10 +99,20 @@ public class WebhookService(
 
             if (botConfig.AutoGenerateCertificate)
             {
-                logger.LogInformation("Auto-generating certificate...");
-                await certificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, cancellationToken);
+                if (IsDomainName(botConfig.HostAddress))
+                {
+                    logger.LogInformation("Auto-generating Let's Encrypt certificate (domain detected)...");
+                    await letsEncryptCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, 
+                        "imkolganov@gmail.com",
+                        cancellationToken);
+                }
+                else
+                {
+                    logger.LogInformation("Auto-generating self-signed certificate (IP detected)...");
+                    await opensslCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, cancellationToken);
+                }
             }
-
+            
             if (string.IsNullOrEmpty(pemPath))
                 throw new NullReferenceException("CertificatePemPath is missing in configuration.");
 
@@ -111,11 +129,12 @@ public class WebhookService(
 
         if (response.IsSuccessStatusCode)
         {
-            logger.LogInformation($"Webhook successfully set. Response: {result}");
+            logger.LogInformation($"Webhook successfully set. Response: {result} Request: {form}");
         }
         else
         {
             logger.LogError($"Failed to set webhook. Response: {result}");
+            throw new Exception($"Failed to set webhook. Response: {result} Request: {form}");
         }
     }
     
@@ -150,4 +169,15 @@ public class WebhookService(
         }
     }
 
+    private static bool IsDomainName(string input)
+    {
+        if (input.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            input.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            input = new Uri(input).Host;
+        }
+
+        return Uri.CheckHostName(input) == UriHostNameType.Dns &&
+               !IPAddress.TryParse(input, out _);
+    }
 }

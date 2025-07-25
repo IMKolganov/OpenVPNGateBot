@@ -17,7 +17,7 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5050;https://localhost:8443",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": ""
+        "ASPNETCORE_ENVIRONMENT": "Production"
       }
     },
     "DataGateVPNBot Local": {
@@ -25,7 +25,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://213.133.91.43:5502;https://213.133.91.43:443",
+      "applicationUrl": "http://gate.rackot.ru:80;https://gate.rackot.ru:443",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging"
       }

@@ -6,11 +6,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ApplicationIcon>logo/logo.ico</ApplicationIcon>
-        <AssemblyVersion>1.2.2.19</AssemblyVersion>
-        <FileVersion>1.2.2.19</FileVersion>
+        <AssemblyVersion>1.2.2.24</AssemblyVersion>
+        <FileVersion>1.2.2.24</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="ACMESharpCore" Version="2.2.0.148" />
+        <PackageReference Include="Certes" Version="3.0.4" />
         <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
           <PrivateAssets>all</PrivateAssets>
@@ -18,7 +20,7 @@
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.32" />
+        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.36" />
         <PackageReference Include="Serilog" Version="4.3.0" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
@@ -30,16 +32,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="datagatetgbot.key">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="datagatetgbot.pem">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+      <ProjectReference Include="..\DataGateVPNBot.Models\DataGateVPNBot.Models.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DataGateVPNBot.Models\DataGateVPNBot.Models.csproj" />
+      <Folder Include="certificates\" />
+      <Folder Include="Logs\" />
+      <Folder Include="wwwroot\.well-known\acme-challenge\" />
     </ItemGroup>
 
 </Project>
