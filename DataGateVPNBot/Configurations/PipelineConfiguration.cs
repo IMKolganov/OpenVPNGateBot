@@ -43,6 +43,8 @@ public static class PipelineConfiguration
             () => Results.Text(statusCode: 200, 
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
         
+        app.MapGet("/.well-known/healthcheck", () => Results.Ok());
+        
         app.MapGet("/.well-known/acme-challenge/{token}", (string token) =>
         {
             if (AcmeChallengeStore.TryGet(token, out var keyAuth))
