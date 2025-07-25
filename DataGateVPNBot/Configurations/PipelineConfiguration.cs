@@ -13,6 +13,7 @@ public static class PipelineConfiguration
             app.UseSwaggerUI();
         }
 
+        app.UseRouting();
         app.UseAuthorization();
         app.MapControllers();
         app.UseStaticFiles();
