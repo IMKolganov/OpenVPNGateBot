@@ -112,7 +112,7 @@ public partial class TelegramUpdateHandler
         _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
 
         var mediaGroupOpenVpnFiles = await ovpnFileService.GetOvpnFilesWithTokenAsync(vpnServerId,
-            msg.Chat.Id, _hostUrl, cancellationToken);
+            msg.Chat.Id, botConfig.HostAddress, cancellationToken);
 
         if (!mediaGroupOpenVpnFiles.Any())
         {
@@ -213,7 +213,8 @@ public partial class TelegramUpdateHandler
             }
 
             var mediaGroupOpenVpnFiles =
-                await ovpnFileService.MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, _hostUrl, cancellationToken);
+                await ovpnFileService.MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, botConfig.HostAddress, 
+                    cancellationToken);
             if (!mediaGroupOpenVpnFiles.Any())
             {
                 return await _botClient.SendMessage(

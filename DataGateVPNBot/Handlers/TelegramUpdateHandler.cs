@@ -1,3 +1,4 @@
+using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
@@ -20,6 +21,7 @@ public partial class TelegramUpdateHandler(
     IServiceProvider serviceProvider,
     ITelegramSettingsService telegramSettingsService,
     AuthService authService,
+    BotConfiguration botConfig,
     IErrorService errorService)
     : IUpdateHandler
 {
@@ -29,9 +31,6 @@ public partial class TelegramUpdateHandler(
                                                          throw new ArgumentNullException(nameof(serviceProvider));
     private readonly ITelegramSettingsService _telegramSettingsService = 
         telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
-    private readonly string _hostUrl = 
-        Environment.GetEnvironmentVariable("HOST_URL") ?? 
-        throw new InvalidOperationException("HOST_URL environment variable is not set");
     #region HandleErrorAsync: Error handling for Telegram Bot API
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception,
         HandleErrorSource source, CancellationToken cancellationToken)
