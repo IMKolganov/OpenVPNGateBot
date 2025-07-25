@@ -5,26 +5,16 @@ using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
-public class ServerService
+public class ServerService(
+    ILogger<ServerService> logger,
+    IHttpRequestService httpRequestService,
+    AuthService authService)
 {
-    private readonly ILogger<ServerService> _logger;
-    private readonly IHttpRequestService _httpRequestService;
-    private readonly AuthService _authService;
     private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnServers/GetAllServers";
-    
-    public ServerService(ILogger<ServerService> logger,
-        IHttpRequestService httpRequestService,
-        AuthService authService
-        )
-    {
-        _logger = logger;
-        _httpRequestService = httpRequestService;
-        _authService = authService;
-    }
 
     public async Task<List<OpenVpnServerResponse>?> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
-        var token = await _authService.GetTokenAsync();
+        var token = await authService.GetTokenAsync();
         var servers = new List<OpenVpnServerResponse>();
         if (string.IsNullOrEmpty(token))
         {
@@ -33,7 +23,7 @@ public class ServerService
 
         var url = $"{EndpointGetAllOpenVpnFiles}";
         
-        var response = await _httpRequestService.GetAsync<ApiResponse<List<OpenVpnServerResponse>>>(url, token, cancellationToken);
+        var response = await httpRequestService.GetAsync<ApiResponse<List<OpenVpnServerResponse>>>(url, token, cancellationToken);
 
         if (response is { Success: true, Data: not null })
         {
@@ -41,12 +31,12 @@ public class ServerService
         }
         else
         {
-            _logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
+            logger.LogWarning($"Failed to get VPN servers: {response?.Message}");
         }
 
         if (response == null)
         {
-            _logger.LogError("Failed to fetch Open VPN Servers from API.");
+            logger.LogError("Failed to fetch Open VPN Servers from API.");
         }
 
         return servers;
