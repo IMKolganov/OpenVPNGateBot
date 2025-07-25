@@ -12,7 +12,7 @@ public static class WebHostConfiguration
 
         builder.WebHost.ConfigureKestrel(options =>
         {
-            options.ListenAnyIP(80); // HTTP — for Let's Encrypt also for debug
+            options.ListenAnyIP(80);
 
             var certPath = config["CERTIFICATE_PEM_PATH"] ?? "/app/certificates/datagatetgbot.pem";
             var keyPath = config["CERTIFICATE_KEY_PATH"] ?? "/app/certificates/datagatetgbot.key";
@@ -21,34 +21,24 @@ public static class WebHostConfiguration
             {
                 try
                 {
-                    var certificate = X509Certificate2.CreateFromPemFile(certPath, keyPath)
-                        .CopyWithPrivateKey(LoadPrivateRsaKey(keyPath));
+                    var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pkcs12)); // make cert usable for Kestrel
 
                     options.ListenAnyIP(443, listen =>
                     {
-                        listen.UseHttps(certificate);
+                        listen.UseHttps(cert);
                     });
-
-                    logger.Information("✅ HTTPS enabled using certificate from {CertPath}", certPath);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "❌ Failed to load certificate from PEM/KEY: {CertPath}, {KeyPath}", certPath, keyPath);
+                    logger.Error(ex, "❌ Failed to load certificate from PEM/KEY: {Cert}, {Key}", certPath, keyPath);
                 }
             }
             else
             {
-                logger.Warning("⚠️ Missing certificate files: {CertPath} or {KeyPath}", certPath, keyPath);
+                logger.Warning("⚠ No certificate files found at '{Cert}' and '{Key}'. HTTPS will not be enabled.",
+                    certPath, keyPath);
             }
         });
-    }
-
-    private static RSA LoadPrivateRsaKey(string keyPath)
-    {
-        var keyText = File.ReadAllText(keyPath);
-
-        RSA rsa = RSA.Create();
-        rsa.ImportFromPem(keyText.ToCharArray());
-        return rsa;
     }
 }
