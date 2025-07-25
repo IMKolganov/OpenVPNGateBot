@@ -25,7 +25,7 @@ public class WebhookService(
 
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogError($"Failed to fetch webhook info: {response.StatusCode}");
+            logger.LogError("Failed to fetch webhook info: {StatusCode}", response.StatusCode);
             return false;
         }
 
@@ -36,34 +36,35 @@ public class WebhookService(
         if (root.TryGetProperty("ok", out var ok) && ok.GetBoolean())
         {
             var result = root.GetProperty("result");
-
             var currentUrl = result.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
-            var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) &&
-                                       certElement.GetBoolean();
+            var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) 
+                                       && certElement.GetBoolean();
 
-            var expectedUrl = $"https://{botConfig.HostAddress}:{botConfig.Port}/api/bot";
+            var expectedUrl = BuildWebhookUrl();
 
-            logger.LogInformation($"Current webhook URL: {currentUrl}, Custom Certificate: {hasCustomCertificate}");
+            logger.LogInformation("Current webhook URL: {CurrentUrl}, Custom Certificate: {CustomCert}", 
+                currentUrl, hasCustomCertificate);
 
             if (!string.Equals(currentUrl, expectedUrl, StringComparison.OrdinalIgnoreCase))
             {
-                logger.LogWarning($"Webhook URL mismatch! Expected: {expectedUrl}, Got: {currentUrl}");
+                logger.LogWarning("Webhook URL mismatch! Expected: {Expected}, Got: {Actual}", expectedUrl, currentUrl);
                 return false;
             }
 
             if (botConfig.UseCertificate != hasCustomCertificate)
             {
-                logger.LogWarning($"Webhook certificate mismatch! Expected custom cert: {botConfig.UseCertificate}, Got: {hasCustomCertificate}");
+                logger.LogWarning("Webhook certificate mismatch! Expected custom cert: {Expected}, Got: {Actual}",
+                    botConfig.UseCertificate, hasCustomCertificate);
                 return false;
             }
 
-            logger.LogInformation("Webhook is correctly set.");
             if (botConfig.AutoGenerateCertificate && !File.Exists(botConfig.CertificatePemPath))
             {
                 logger.LogWarning("AutoGenerateCertificate is enabled, but certificate file is missing.");
                 return false;
             }
-            
+
+            logger.LogInformation("Webhook is correctly set.");
             return true;
         }
 
@@ -79,16 +80,11 @@ public class WebhookService(
         if (string.IsNullOrEmpty(botConfig.HostAddress))
             throw new NullReferenceException("HostAddress is missing in configuration.");
 
-        var url = $"https://api.telegram.org/bot{botConfig.BotToken}/setWebhook";
-        var host = botConfig.HostAddress
-            .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
-            .Replace("http://", "", StringComparison.OrdinalIgnoreCase);
+        var setWebhookUrl = $"https://api.telegram.org/bot{botConfig.BotToken}/setWebhook";
+        var webhookUrl = BuildWebhookUrl();
 
-        var portPart = botConfig.Port == 443 ? "" : $":{botConfig.Port}";
-        var webhookUrl = $"https://{host}{portPart}/api/bot";
-
-        logger.LogInformation($"Set webhook URL: {url}");
-        logger.LogInformation($"{webhookUrl}");
+        logger.LogInformation("Set webhook URL: {Url}", setWebhookUrl);
+        logger.LogInformation("Webhook will be set to: {WebhookUrl}", webhookUrl);
 
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(webhookUrl), "url");
@@ -103,8 +99,7 @@ public class WebhookService(
                 {
                     logger.LogInformation("Auto-generating Let's Encrypt certificate (domain detected)...");
                     await letsEncryptCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, 
-                        "imkolganov@gmail.com",
-                        cancellationToken);
+                        "imkolganov@gmail.com", cancellationToken);
                 }
                 else
                 {
@@ -112,50 +107,46 @@ public class WebhookService(
                     await opensslCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, cancellationToken);
                 }
             }
-            
+
             if (string.IsNullOrEmpty(pemPath))
                 throw new NullReferenceException("CertificatePemPath is missing in configuration.");
 
             if (!File.Exists(pemPath))
                 throw new FileNotFoundException($"Certificate file '{pemPath}' not found.");
 
-            logger.LogInformation($"Using certificate: {pemPath}");
+            logger.LogInformation("Using certificate: {PemPath}", pemPath);
             var certStream = File.OpenRead(pemPath);
             form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
         }
 
-        var response = await httpClient.PostAsync(url, form, cancellationToken);
+        var response = await httpClient.PostAsync(setWebhookUrl, form, cancellationToken);
         var result = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
-            logger.LogInformation($"Webhook successfully set. Response: {result} Request: {form}");
+            logger.LogInformation("Webhook successfully set. Response: {Result}", result);
         }
         else
         {
-            logger.LogError($"Failed to set webhook. Response: {result}");
-            throw new Exception($"Failed to set webhook. Response: {result} Request: {form}");
+            logger.LogError("Failed to set webhook. Response: {Result}", result);
+            throw new Exception($"Failed to set webhook. Response: {result}");
         }
     }
-    
+
     public async Task DeleteWebhookAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration.");
 
-        if (string.IsNullOrEmpty(botConfig.HostAddress))
-            throw new NullReferenceException("HostAddress is missing in configuration.");
-
         var url = $"https://api.telegram.org/bot{botConfig.BotToken}/deleteWebhook";
-
-        logger.LogInformation($"Sending request to delete webhook. URL: {url}");
+        logger.LogInformation("Sending request to delete webhook. URL: {Url}", url);
 
         try
         {
             var response = await httpClient.GetAsync(url, cancellationToken);
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            logger.LogInformation($"Delete webhook response: {result}");
+            logger.LogInformation("Delete webhook response: {Result}", result);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -167,6 +158,17 @@ public class WebhookService(
             logger.LogError(ex, "Exception occurred while deleting webhook");
             throw;
         }
+    }
+
+    private string BuildWebhookUrl()
+    {
+        var host = botConfig.HostAddress
+            .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("http://", "", StringComparison.OrdinalIgnoreCase)
+            .TrimEnd('/');
+
+        var portPart = botConfig.Port == 443 ? "" : $":{botConfig.Port}";
+        return $"https://{host}{portPart}/api/bot";
     }
 
     private static bool IsDomainName(string input)
