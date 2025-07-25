@@ -14,6 +14,12 @@ builder.Services.ConfigureServices();
 builder.Services.ConfigureDashboardApi();
 
 builder.ConfigureWebHost(logger);
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
 
 var app = builder.Build();
 

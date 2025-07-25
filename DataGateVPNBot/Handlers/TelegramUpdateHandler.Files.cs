@@ -1,4 +1,5 @@
 ﻿using DataGateVPNBot.Services.BotServices.Interfaces;
+using DataGateVPNBot.Services.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -179,6 +180,8 @@ public partial class TelegramUpdateHandler
         }
         catch(Exception ex)
         {
+            using var scope = serviceProvider.CreateScope();
+            var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
             await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             return await _botClient.SendMessage(
                 msg.Chat,
@@ -236,6 +239,8 @@ public partial class TelegramUpdateHandler
         }
         catch(Exception ex)
         {
+            using var scope = serviceProvider.CreateScope();
+            var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
             await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
             return await _botClient.SendMessage(
                 msg.Chat,

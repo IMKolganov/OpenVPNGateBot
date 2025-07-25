@@ -5,10 +5,12 @@ using DataGateVPNBot.Services.Interfaces;
 namespace DataGateVPNBot.Services.TelegramApi;
 
 public class OpensslCertificateGenerator(ILogger<OpensslCertificateGenerator> logger, BotConfiguration config, 
-    IErrorService  errorService)
+    IServiceProvider serviceProvider)
 {
     public async Task EnsureCertificateAsync(string hostAddress, CancellationToken cancellationToken)
     {
+        using var scope = serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
         await errorService.SendMessageToAdminsAsync("🔐 Verifying certificate...", cancellationToken);
 
         var certPath = !string.IsNullOrEmpty(config.CertificatePfxPath)

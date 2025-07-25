@@ -7,7 +7,7 @@ namespace DataGateVPNBot.Services.Http;
 
 public class HttpRequestService(
     IHttpClientFactoryService httpClientFactoryService,
-    IErrorService errorService,
+    IServiceProvider serviceProvider,
     ILogger<HttpRequestService> logger)
     : IHttpRequestService
 {
@@ -95,6 +95,8 @@ public class HttpRequestService(
     private async Task<T?> SendRequestAsync<T>(Func<Task<HttpResponseMessage>> httpRequest, string url,
         CancellationToken cancellationToken)
     {
+        using var scope = serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
         var errorDetails = new StringBuilder();
         errorDetails.AppendLine($"Failed to complete HTTP request to {url} after 3 attempts.");
 
