@@ -21,8 +21,7 @@ public partial class TelegramUpdateHandler(
     IServiceProvider serviceProvider,
     ITelegramSettingsService telegramSettingsService,
     AuthService authService,
-    BotConfiguration botConfig,
-    IErrorService errorService)
+    BotConfiguration botConfig)
     : IUpdateHandler
 {
     private readonly ILogger<TelegramUpdateHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -38,6 +37,7 @@ public partial class TelegramUpdateHandler(
         _logger.LogCritical("HandleError: {Exception}", exception);
         using var scope = _serviceProvider.CreateScope();
 
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
         errorService.LogErrorToDatabase(exception);//todo:fix it
         await errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
         if (exception is RequestException)
