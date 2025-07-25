@@ -13,10 +13,8 @@ public static class PipelineConfiguration
             app.UseSwaggerUI();
         }
 
-        app.UseHttpsRedirection();
         app.UseAuthorization();
         app.MapControllers();
-        app.UseHttpsRedirection();
         app.UseStaticFiles();
         // app.UseStaticFiles(new StaticFileOptions
         // {
