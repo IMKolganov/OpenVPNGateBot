@@ -46,11 +46,19 @@ public static class DashboardApiConfiguration
 
         // HTTP Client
         services.AddHttpClient("DashboardClient", (provider, client) =>
-        {
-            client.BaseAddress = new Uri(dashboardConfig.Url);
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        });
+            {
+                client.BaseAddress = new Uri(dashboardConfig.Url);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromSeconds(30),
+
+                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(15),
+
+                MaxConnectionsPerServer = 10
+            });
 
         // HTTP
         services.AddSingleton<IHttpClientFactoryService, HttpClientFactoryService>();

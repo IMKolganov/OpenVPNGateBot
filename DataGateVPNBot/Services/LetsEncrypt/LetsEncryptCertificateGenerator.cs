@@ -65,7 +65,7 @@ public class LetsEncryptCertificateGenerator(ILogger<LetsEncryptCertificateGener
 
         // Wait for status = valid
         logger.LogInformation("⏳ Waiting for challenge validation...");
-        var retries = 10;
+        var retries = 30;
         while (retries-- > 0)
         {
             var updatedAuthz = await authz.Resource();
@@ -75,7 +75,7 @@ public class LetsEncryptCertificateGenerator(ILogger<LetsEncryptCertificateGener
                 logger.LogInformation("✅ Challenge validated successfully.");
                 break;
             }
-            
+
             if (updatedAuthz.Status == AuthorizationStatus.Invalid)
             {
                 var httpChallengeError = updatedAuthz.Challenges
@@ -85,10 +85,10 @@ public class LetsEncryptCertificateGenerator(ILogger<LetsEncryptCertificateGener
                 var detail = httpChallengeError?.Detail ?? "Unknown challenge validation error";
                 var errorType = httpChallengeError?.Type ?? "Unknown type";
 
-                throw new InvalidOperationException($"❌ Challenge validation failed:\nType: {errorType}\nDetail: {detail}");
+                logger.LogWarning("⚠️ Challenge status is INVALID but will retry: {Detail}", detail);
             }
 
-            await Task.Delay(2000, cancellationToken);
+            await Task.Delay(10000, cancellationToken);
         }
 
         // Generate certificate
