@@ -57,6 +57,6 @@ public static class TelegramConfiguration
         services.AddSingleton<OpensslCertificateGenerator>();
         services.AddSingleton<LetsEncryptCertificateGenerator>();
         services.AddHttpClient<WebhookService>();
-        services.AddHostedService<StartupNotificationHandler>();
+        services.AddHostedService<StartupBackgroundService>();
     }
 }
