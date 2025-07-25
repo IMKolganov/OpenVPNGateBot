@@ -73,7 +73,7 @@ public partial class TelegramUpdateHandler
             throw new Exception("No default VPN server found.");
         }
 
-        await MakeNewVpnFile(msg, defaultServerId.ToString(), cancellationToken);
+        await MakeNewVpnFileWithToken(msg, defaultServerId.ToString(), cancellationToken);
         await InstallClient(msg, cancellationToken);
         await Usage(msg, cancellationToken);
 
