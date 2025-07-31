@@ -63,7 +63,7 @@ public partial class TelegramUpdateHandler(
             // EditedChannelPost:
             // ShippingQuery:
             // PreCheckoutQuery:
-            _ => UnknownUpdateHandlerAsync(update)
+            _ => UnknownUpdateHandlerAsync(update, cancellationToken)
         });
     }
     #endregion
@@ -197,6 +197,8 @@ public partial class TelegramUpdateHandler(
 
         var message = callbackQuery.Message ?? throw new InvalidOperationException("Message is null.");
         var lowerData = data.ToLowerInvariant();
+        
+        await LogIncomingMessage(message, cancellationToken);
 
         if (lowerData.StartsWith($"{BotCommands.CommandDeleteSelectedFile} "))
         {
@@ -274,12 +276,16 @@ public partial class TelegramUpdateHandler(
             cancellationToken: cancellationToken);
     }
 
-    private Task UnknownUpdateHandlerAsync(Update update)
+    private async Task UnknownUpdateHandlerAsync(Update update, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Unknown update type: {UpdateType}", update.Type);
-        return Task.CompletedTask;
+        var ex = new InvalidOperationException($"Unknown update type received: {update.Type}");
+        
+        using var scope = _serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+        await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+        _logger.LogWarning("⚠️ Unknown update sent to admin: {UpdateType}", update.Type);
     }
-     
+
     private async Task<Message> RegisterCommandsAsync(Message msg, CancellationToken cancellationToken)
     {
         await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.English), 

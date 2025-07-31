@@ -53,10 +53,9 @@ public static class DashboardApiConfiguration
             })
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
+                ConnectTimeout = TimeSpan.FromSeconds(5),
                 PooledConnectionLifetime = TimeSpan.FromSeconds(30),
-
                 PooledConnectionIdleTimeout = TimeSpan.FromSeconds(15),
-
                 MaxConnectionsPerServer = 10
             });
 

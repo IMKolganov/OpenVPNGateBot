@@ -96,8 +96,17 @@ public class TelegramBotUserService(
 
     public async Task<GetAdminsResponse> GetAdminsAsync(CancellationToken cancellationToken)
     {
+        
+        string? token;
         var telegramBotAdmins = new GetAdminsResponse();
-        var token = await authService.GetTokenAsync();
+        try
+        {
+            token = await authService.GetTokenAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new AuthenticationException("Failed to obtain token from API.", ex);
+        }
         if (string.IsNullOrEmpty(token))
         {
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");

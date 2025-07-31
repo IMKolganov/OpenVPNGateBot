@@ -12,6 +12,8 @@ public class ErrorService(
     ILogger<ErrorService> logger)
     : IErrorService
 {
+    private static bool _isSendingException = false;
+
     public void LogErrorToDatabase(Exception exception, HttpContext? context)
     {
         try
@@ -67,59 +69,74 @@ public class ErrorService(
         }
     }
 
-    public async Task NotifyAdminsAboutExceptionAsync(Exception exception, HttpContext? context = null, CancellationToken cancellationToken = default)
+
+    public async Task NotifyAdminsAboutExceptionAsync(Exception exception, HttpContext? context = null,
+        CancellationToken cancellationToken = default)
     {
-        using var scope = serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-
-        var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
-
-        if (admins.TelegramBotAdmins is { Count: 0 })
+        if (_isSendingException)
         {
-            logger.LogWarning("No admins are configured to receive error notifications.");
+            logger.LogWarning("Skipping recursive call to NotifyAdminsAboutExceptionAsync.");
             return;
         }
 
-        logger.LogInformation($"Notifying {admins!.TelegramBotAdmins.Count} admins about an error.");
+        _isSendingException = true;
 
-        foreach (var admin in admins.TelegramBotAdmins)
+        try
         {
-            try
-            {
-                var source = "Unknown";
-                if (context is { Request: not null })
-                {
-                    source = context?.Request?.Path.Value ?? "Unknown";
-                }
-                
-                var stackTrace = exception.StackTrace ?? "No stack trace available.";
-                if (stackTrace.Length > 3000)
-                {
-                    stackTrace = stackTrace.Substring(0, 3000) + "... (truncated)";
-                }
-                
-                var errorMessage = $"🚨 *Error Notification*\n" +
-                                   $"Path: `{source}`\n" +
-                                   $"Message: `{exception.Message}`\n" +
-                                   $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
-                                   $"Stack Trace:\n```{stackTrace}```";
+            using var scope = serviceProvider.CreateScope();
+            var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
+            var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
-                if (errorMessage.Length > 4096)
-                {
-                    errorMessage = errorMessage.Substring(0, 4093) + "...";
-                }
-                
-                await botClient.SendMessage(admin.TelegramId, errorMessage,
-                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown, cancellationToken: cancellationToken);
-            }
-            catch (Exception ex)
+            var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
+
+            if (admins.TelegramBotAdmins is { Count: 0 })
             {
-                logger.LogError(ex, $"Failed to send error notification to admin with Telegram ID {admin.TelegramId}.");
+                logger.LogWarning("No admins are configured to receive error notifications.");
+                return;
+            }
+
+            logger.LogInformation($"Notifying {admins.TelegramBotAdmins.Count} admins about an error.");
+
+            foreach (var admin in admins.TelegramBotAdmins)
+            {
+                try
+                {
+                    var source = context?.Request?.Path.Value ?? "Unknown";
+                    var stackTrace = exception.StackTrace ?? "No stack trace available.";
+
+                    if (stackTrace.Length > 3000)
+                        stackTrace = stackTrace[..3000] + "... (truncated)";
+
+                    var errorMessage = $"🚨 *Error Notification*\n" +
+                                       $"Path: `{source}`\n" +
+                                       $"Message: `{exception.Message}`\n" +
+                                       $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
+                                       $"Stack Trace:\n```{stackTrace}```";
+
+                    if (errorMessage.Length > 4096)
+                        errorMessage = errorMessage[..4093] + "...";
+
+                    await botClient.SendMessage(admin.TelegramId, errorMessage,
+                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown,
+                        cancellationToken: cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex,
+                        $"Failed to send error notification to admin with Telegram ID {admin.TelegramId}.");
+                }
             }
         }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed inside NotifyAdminsAboutExceptionAsync itself.");
+        }
+        finally
+        {
+            _isSendingException = false;
+        }
     }
-    
+
     public async Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken)
     {
         using var scope = serviceProvider.CreateScope();

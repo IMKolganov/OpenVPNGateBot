@@ -4,20 +4,14 @@ using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnServers.Resp
 
 namespace DataGateVPNBot.Services.BotServices;
 
-public class OpenVpnServersService : IOpenVpnServersService
+public class OpenVpnServersService(ServerService serverService, ILogger<OvpnFileService> logger)
+    : IOpenVpnServersService
 {
-    private readonly ServerService _serverService;
-    private readonly ILogger<OvpnFileService> _logger;
-
-    public OpenVpnServersService(ServerService serverService, ILogger<OvpnFileService> logger)
-    {
-        _serverService = serverService;
-        _logger = logger;
-    }
+    private readonly ILogger<OvpnFileService> _logger = logger;
 
     public async Task<List<OpenVpnServerResponse>> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
-        return await _serverService.GetOpenVpnServersListAsync(cancellationToken) 
+        return await serverService.GetOpenVpnServersListAsync(cancellationToken) 
                ?? throw new NullReferenceException("OpenVPN servers list is null");
     }
 }

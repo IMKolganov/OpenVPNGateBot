@@ -1,4 +1,4 @@
-namespace DataGateVPNBot.Services;
+namespace DataGateVPNBot.Services.Http;
 
 public interface IHttpClientFactoryService
 {
