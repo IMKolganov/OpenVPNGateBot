@@ -71,6 +71,71 @@ public class IncomingMessageLogService(IIncomingMessageLogSenderService incoming
         }
     }
 
+    public async Task Log(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken cancellationToken)
+    {
+        var request = new AddMessageRequest
+        {
+            Message = new MessageDto
+            {
+                TelegramId = callbackQuery.From?.Id ?? 0,
+                Username = callbackQuery.From?.Username,
+                FirstName = callbackQuery.From?.FirstName,
+                LastName = callbackQuery.From?.LastName,
+                MessageText = $"{callbackQuery.Message?.Text ?? string.Empty} - {callbackQuery.Data ?? string.Empty}" ,
+                ReceivedAt = DateTime.UtcNow
+            }
+        };
+
+        try
+        {
+            if (callbackQuery.Message?.Document != null)
+            {
+                await ProcessFileAsync(botClient, 
+                    callbackQuery.Message?.Document.FileId ?? string.Empty, 
+                    callbackQuery.Message?.Document.FileName,
+                    callbackQuery.Message?.Document.FileSize, 
+                    "Document", 
+                    request.Message, 
+                    cancellationToken);
+            }
+            else if (callbackQuery.Message?.Photo?.Any() == true)
+            {
+                var largestPhoto = callbackQuery.Message?.Photo.OrderByDescending(p => p.FileSize).First();
+                var photoFileName = $"photo_{request.Message.TelegramId}_{Guid.NewGuid():N}.jpg";
+
+                if (largestPhoto != null)
+                    await ProcessFileAsync(botClient, largestPhoto.FileId, photoFileName, largestPhoto.FileSize,
+                        "Photo", request.Message, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            log.LogError(ex, "Error processing file from Telegram message.");
+            request.Message.MessageText += $"\n[Error processing file: {ex.Message}]";
+        }
+
+        try
+        {
+            await incomingMessageLogSenderService.TelegramBotIncomingMessageLogAddMessageAsync(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            log.LogError(ex, "Error sending incoming message log to backend.");
+        }
+
+        try
+        {
+            await SaveToFileAsync(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+            log.LogError(ex, "Error saving incoming message log to file.");
+        }
+    }
+
     private async Task ProcessFileAsync(
         ITelegramBotClient botClient,
         string fileId,

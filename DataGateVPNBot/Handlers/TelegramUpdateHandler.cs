@@ -198,7 +198,7 @@ public partial class TelegramUpdateHandler(
         var message = callbackQuery.Message ?? throw new InvalidOperationException("Message is null.");
         var lowerData = data.ToLowerInvariant();
         
-        await LogIncomingMessage(message, cancellationToken);
+        await LogIncomingMessage(callbackQuery, cancellationToken);
 
         if (lowerData.StartsWith($"{BotCommands.CommandDeleteSelectedFile} "))
         {
@@ -320,6 +320,13 @@ public partial class TelegramUpdateHandler(
     }
 
     private async Task LogIncomingMessage(Message msg, CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var incomingMessageLogService = scope.ServiceProvider.GetRequiredService<IIncomingMessageLogService>();
+        await incomingMessageLogService.Log(_botClient, msg, cancellationToken);
+    }
+    
+    private async Task LogIncomingMessage(CallbackQuery msg, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var incomingMessageLogService = scope.ServiceProvider.GetRequiredService<IIncomingMessageLogService>();
