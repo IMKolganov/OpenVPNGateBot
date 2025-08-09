@@ -33,7 +33,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://gate.rackot.ru:80;https://gate.rackot.ru:443",
+      "applicationUrl": "http://localhost:80;https://localhost:443",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging",
         "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",

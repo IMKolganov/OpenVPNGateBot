@@ -16,6 +16,7 @@ public static class PipelineConfiguration
         app.UseRouting();
         app.UseAuthorization();
         app.MapControllers();
+        app.UseDefaultFiles();
         app.UseStaticFiles();
         // app.UseStaticFiles(new StaticFileOptions
         // {
@@ -39,11 +40,11 @@ public static class PipelineConfiguration
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
         var environmentName = app.Environment.EnvironmentName;
         
-        app.MapGet("/",
+        app.MapGet("/status",
             () => Results.Text(statusCode: 200, 
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
         
-        app.MapGet("/.well-known/healthcheck", () => Results.Ok());
+        app.MapGet("/.well-known/healthcheck", () => Results.Ok("healthcheck for .well-known"));
         
         app.MapGet("/.well-known/acme-challenge/{token}", (string token) =>
         {

@@ -9,6 +9,7 @@ public class StartupBackgroundService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        return;
         await WaitForServerAsync(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
