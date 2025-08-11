@@ -22,12 +22,11 @@ public class GlobalExceptionMiddleware(
             var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
             errorService.LogErrorToDatabase(ex, context); //todo: fix it
             await errorService.NotifyAdminsAboutExceptionAsync(ex, context);
-            await HandleExceptionAsync(context); //ex);
-
+            await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context)//, Exception exception)
+    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
@@ -36,7 +35,7 @@ public class GlobalExceptionMiddleware(
         {
             context.Response.StatusCode,
             Message = "An unexpected error occurred. Please try again later.",
-            // Detail = exception.Message
+            Detail = exception.Message
         };
 
         return context.Response.WriteAsync(JsonConvert.SerializeObject(response));

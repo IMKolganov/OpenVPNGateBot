@@ -27,6 +27,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.Elasticsearch" Version="10.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.3" />
         <PackageReference Include="Telegram.Bot" Version="22.6.0" />
         <PackageReference Include="Telegram.Bot.AspNetCore" Version="22.5.0" />
     </ItemGroup>
@@ -37,7 +38,9 @@
 
     <ItemGroup>
       <Folder Include="certificates\" />
+      <Folder Include="Documentations\" />
       <Folder Include="Logs\" />
+      <Folder Include="Scripts\" />
       <Folder Include="wwwroot\.well-known\acme-challenge\" />
     </ItemGroup>
 

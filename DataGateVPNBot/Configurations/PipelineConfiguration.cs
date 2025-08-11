@@ -13,39 +13,32 @@ public static class PipelineConfiguration
             app.UseSwaggerUI();
         }
 
+        app.UseCors(policy =>
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+        );
+
         app.UseRouting();
         app.UseAuthorization();
         app.MapControllers();
         app.UseDefaultFiles();
         app.UseStaticFiles();
-        // app.UseStaticFiles(new StaticFileOptions
-        // {
-        //     ServeUnknownFileTypes = true,
-        //     OnPrepareResponse = ctx =>
-        //     {
-        //         var path = ctx.File.PhysicalPath;
-        //         if (path != null && !path.Contains(@"\.well-known\acme-challenge\"))
-        //         {
-        //             ctx.Context.Response.StatusCode = 404;
-        //             ctx.Context.Response.Body = Stream.Null;
-        //         }
-        //     }
-        // });
-        
+
         app.UseStatusCodePagesWithReExecute("/error/{0}");
-        app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found", 
+        app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found",
                 detail: "The requested resource was not found."))
             .ExcludeFromDescription();
 
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
         var environmentName = app.Environment.EnvironmentName;
-        
+
         app.MapGet("/status",
-            () => Results.Text(statusCode: 200, 
+            () => Results.Text(statusCode: 200,
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
-        
+
         app.MapGet("/.well-known/healthcheck", () => Results.Ok("healthcheck for .well-known"));
-        
+
         app.MapGet("/.well-known/acme-challenge/{token}", (string token) =>
         {
             if (AcmeChallengeStore.TryGet(token, out var keyAuth))

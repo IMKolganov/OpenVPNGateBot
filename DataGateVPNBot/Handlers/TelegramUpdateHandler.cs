@@ -292,7 +292,7 @@ public partial class TelegramUpdateHandler(
     }
 
     private async Task<Message> RegisterButtonsAsync(Message msg, CancellationToken cancellationToken)
-    {
+    {//todo: for future
         await botClient.SetChatMenuButton(
             menuButton: new MenuButtonWebApp
             {
