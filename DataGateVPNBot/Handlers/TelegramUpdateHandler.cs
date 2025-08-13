@@ -3,6 +3,7 @@ using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Requests;
@@ -22,7 +23,7 @@ public partial class TelegramUpdateHandler(
     IServiceProvider serviceProvider,
     ITelegramSettingsService telegramSettingsService,
     AuthService authService,
-    BotConfiguration botConfig)
+    IOptions<BotConfiguration> options)
     : IUpdateHandler
 {
     private readonly ILogger<TelegramUpdateHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -31,6 +32,7 @@ public partial class TelegramUpdateHandler(
                                                          throw new ArgumentNullException(nameof(serviceProvider));
     private readonly ITelegramSettingsService _telegramSettingsService = 
         telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
+    private readonly BotConfiguration _botConfig = (options ?? throw new ArgumentNullException(nameof(options))).Value;
     #region HandleErrorAsync: Error handling for Telegram Bot API
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception,
         HandleErrorSource source, CancellationToken cancellationToken)

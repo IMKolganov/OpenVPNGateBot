@@ -2,25 +2,28 @@ using System.Net;
 using System.Text.Json;
 using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.LetsEncrypt;
+using Microsoft.Extensions.Options;
 
 namespace DataGateVPNBot.Services.TelegramApi;
 
 public class WebhookService(
     HttpClient httpClient,
     ILogger<WebhookService> logger,
-    BotConfiguration botConfig,
+    IOptions<BotConfiguration> options,
     OpensslCertificateGenerator opensslCertificateGenerator,
     LetsEncryptCertificateGenerator letsEncryptCertificateGenerator)
 {
+    private readonly BotConfiguration _botConfig = options.Value;
+    
     public async Task<bool> IsWebhookSetAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(botConfig.BotToken))
+        if (string.IsNullOrEmpty(_botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration.");
 
-        if (string.IsNullOrEmpty(botConfig.HostAddress))
+        if (string.IsNullOrEmpty(_botConfig.HostAddress))
             throw new NullReferenceException("HostAddress is missing in configuration.");
 
-        var url = $"https://api.telegram.org/bot{botConfig.BotToken}/getWebhookInfo";
+        var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/getWebhookInfo";
         var response = await httpClient.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -51,14 +54,14 @@ public class WebhookService(
                 return false;
             }
 
-            if (botConfig.UseCertificate != hasCustomCertificate)
+            if (_botConfig.UseCertificate != hasCustomCertificate)
             {
                 logger.LogWarning("Webhook certificate mismatch! Expected custom cert: {Expected}, Got: {Actual}",
-                    botConfig.UseCertificate, hasCustomCertificate);
+                    _botConfig.UseCertificate, hasCustomCertificate);
                 return false;
             }
 
-            if (botConfig.AutoGenerateCertificate && !File.Exists(botConfig.CertificatePemPath))
+            if (_botConfig.AutoGenerateCertificate && !File.Exists(_botConfig.CertificatePemPath))
             {
                 logger.LogWarning("AutoGenerateCertificate is enabled, but certificate file is missing.");
                 return false;
@@ -74,13 +77,13 @@ public class WebhookService(
 
     public async Task SetWebhookAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(botConfig.BotToken))
+        if (string.IsNullOrEmpty(_botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration.");
 
-        if (string.IsNullOrEmpty(botConfig.HostAddress))
+        if (string.IsNullOrEmpty(_botConfig.HostAddress))
             throw new NullReferenceException("HostAddress is missing in configuration.");
 
-        var setWebhookUrl = $"https://api.telegram.org/bot{botConfig.BotToken}/setWebhook";
+        var setWebhookUrl = $"https://api.telegram.org/bot{_botConfig.BotToken}/setWebhook";
         var webhookUrl = BuildWebhookUrl();
 
         logger.LogInformation("Set webhook URL: {Url}", setWebhookUrl);
@@ -89,22 +92,22 @@ public class WebhookService(
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(webhookUrl), "url");
 
-        if (botConfig.UseCertificate || botConfig.AutoGenerateCertificate)
+        if (_botConfig.UseCertificate || _botConfig.AutoGenerateCertificate)
         {
-            var pemPath = botConfig.CertificatePemPath;
+            var pemPath = _botConfig.CertificatePemPath;
 
-            if (botConfig.AutoGenerateCertificate)
+            if (_botConfig.AutoGenerateCertificate)
             {
-                if (IsDomainName(botConfig.HostAddress))
+                if (IsDomainName(_botConfig.HostAddress))
                 {
                     logger.LogInformation("Auto-generating Let's Encrypt certificate (domain detected)...");
-                    await letsEncryptCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, 
+                    await letsEncryptCertificateGenerator.EnsureCertificateAsync(_botConfig.HostAddress, 
                         "imkolganov@gmail.com", cancellationToken);
                 }
                 else
                 {
                     logger.LogInformation("Auto-generating self-signed certificate (IP detected)...");
-                    await opensslCertificateGenerator.EnsureCertificateAsync(botConfig.HostAddress, cancellationToken);
+                    await opensslCertificateGenerator.EnsureCertificateAsync(_botConfig.HostAddress, cancellationToken);
                 }
             }
 
@@ -135,10 +138,10 @@ public class WebhookService(
 
     public async Task DeleteWebhookAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(botConfig.BotToken))
+        if (string.IsNullOrEmpty(_botConfig.BotToken))
             throw new NullReferenceException("BotToken is missing in configuration.");
 
-        var url = $"https://api.telegram.org/bot{botConfig.BotToken}/deleteWebhook";
+        var url = $"https://api.telegram.org/bot{_botConfig.BotToken}/deleteWebhook";
         logger.LogInformation("Sending request to delete webhook. URL: {Url}", url);
 
         try
@@ -162,12 +165,12 @@ public class WebhookService(
 
     private string BuildWebhookUrl()
     {
-        var host = botConfig.HostAddress
+        var host = _botConfig.HostAddress
             .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
             .Replace("http://", "", StringComparison.OrdinalIgnoreCase)
             .TrimEnd('/');
 
-        var portPart = botConfig.Port == 443 ? "" : $":{botConfig.Port}";
+        var portPart = _botConfig.Port == 443 ? "" : $":{_botConfig.Port}";
         return $"https://{host}{portPart}/api/bot";
     }
 

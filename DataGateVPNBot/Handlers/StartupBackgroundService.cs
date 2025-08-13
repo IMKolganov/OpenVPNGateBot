@@ -9,7 +9,7 @@ public class StartupBackgroundService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        return;
+        return;//todo: REMOVE! DO NOT COMMIT!
         await WaitForServerAsync(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
