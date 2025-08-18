@@ -3,6 +3,8 @@ using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Requests;
 using OpenVPNGateMonitor.SharedModels.Enums;
@@ -21,7 +23,7 @@ public partial class TelegramUpdateHandler(
     IServiceProvider serviceProvider,
     ITelegramSettingsService telegramSettingsService,
     AuthService authService,
-    BotConfiguration botConfig)
+    IOptions<BotConfiguration> options)
     : IUpdateHandler
 {
     private readonly ILogger<TelegramUpdateHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -30,6 +32,7 @@ public partial class TelegramUpdateHandler(
                                                          throw new ArgumentNullException(nameof(serviceProvider));
     private readonly ITelegramSettingsService _telegramSettingsService = 
         telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
+    private readonly BotConfiguration _botConfig = (options ?? throw new ArgumentNullException(nameof(options))).Value;
     #region HandleErrorAsync: Error handling for Telegram Bot API
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception,
         HandleErrorSource source, CancellationToken cancellationToken)
@@ -278,12 +281,32 @@ public partial class TelegramUpdateHandler(
 
     private async Task UnknownUpdateHandlerAsync(Update update, CancellationToken cancellationToken)
     {
-        var ex = new InvalidOperationException($"Unknown update type received: {update.Type}");
-        
+        var updateDetails = JsonConvert.SerializeObject(update, Formatting.Indented);
+
+        var ex = new InvalidOperationException(
+            $"Unknown update type received: {update.Type}\nDetails:\n{updateDetails}");
+
         using var scope = _serviceProvider.CreateScope();
         var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
         await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-        _logger.LogWarning("⚠️ Unknown update sent to admin: {UpdateType}", update.Type);
+
+        _logger.LogWarning("⚠️ Unknown update sent to admin: {UpdateType}\n{Details}", update.Type, updateDetails);
+    }
+
+    private async Task<Message> RegisterButtonsAsync(Message msg, CancellationToken cancellationToken)
+    {//todo: for future
+        await botClient.SetChatMenuButton(
+            menuButton: new MenuButtonWebApp
+            {
+                Text = "Open VPN App",
+                WebApp = new WebAppInfo { Url = "https://yourdomain.com/mini/" }
+            },
+            cancellationToken: cancellationToken);
+
+        return await _botClient.SendMessage(
+            chatId: msg.Chat.Id,
+            text: "\u2705 Button have been successfully registered...",
+            replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
     }
 
     private async Task<Message> RegisterCommandsAsync(Message msg, CancellationToken cancellationToken)

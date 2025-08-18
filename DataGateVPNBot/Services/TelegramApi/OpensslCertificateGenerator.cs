@@ -1,14 +1,17 @@
 using System.Diagnostics;
 using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace DataGateVPNBot.Services.TelegramApi;
 
-public class OpensslCertificateGenerator(ILogger<OpensslCertificateGenerator> logger, BotConfiguration config, 
-    IServiceProvider serviceProvider)
+public class OpensslCertificateGenerator(ILogger<OpensslCertificateGenerator> logger, 
+    IOptions<BotConfiguration> options, IServiceProvider serviceProvider)
 {
     public async Task EnsureCertificateAsync(string hostAddress, CancellationToken cancellationToken)
     {
+        var config = options.Value;
+
         using var scope = serviceProvider.CreateScope();
         var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
         await errorService.SendMessageToAdminsAsync("🔐 Verifying certificate...", cancellationToken);

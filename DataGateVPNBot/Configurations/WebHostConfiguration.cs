@@ -22,7 +22,7 @@ public static class WebHostConfiguration
                 try
                 {
                     var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-                    cert = new X509Certificate2(cert.Export(X509ContentType.Pkcs12)); // make cert usable for Kestrel
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pkcs12)); //todo: make cert usable for Kestrel
 
                     options.ListenAnyIP(443, listen =>
                     {
