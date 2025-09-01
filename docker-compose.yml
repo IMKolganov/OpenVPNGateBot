@@ -18,6 +18,8 @@ services:
       CERTIFICATE_PFX_PATH: /app/resources/certs/datagatetgbot.pfx
       CERTIFICATE_PEM_PATH: /app/resources/certs/datagatetgbot.pem
       CERTIFICATE_KEY_PATH: /app/resources/certs/datagatetgbot.key
+      CERTIFICATE_ACCOUNT_PATH: /app/resources/certs/account.pem
+      CHALLENGE_DIR: /app/resources/wwwroot/.well-known/acme-challenge
 
       # 🔧 Dashboard API config
       DASHBOARDAPI_URL: ${DASHBOARDAPI_URL:-http://backend:5581/api}
