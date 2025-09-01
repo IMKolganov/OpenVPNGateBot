@@ -18,7 +18,7 @@ public class OpensslCertificateGenerator(ILogger<OpensslCertificateGenerator> lo
 
         var certPath = !string.IsNullOrEmpty(config.CertificatePfxPath)
             ? config.CertificatePfxPath
-            : "certificates/datagatetgbot.pfx";
+            : "app/resources/certs/datagatetgbot.pfx";
 
         if (string.IsNullOrEmpty(certPath))
             throw new InvalidOperationException("CertificatePath is not set in the configuration.");

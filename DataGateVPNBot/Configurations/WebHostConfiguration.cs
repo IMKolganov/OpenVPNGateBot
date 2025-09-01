@@ -14,8 +14,8 @@ public static class WebHostConfiguration
         {
             options.ListenAnyIP(80);
 
-            var certPath = config["CERTIFICATE_PEM_PATH"] ?? "/app/certificates/datagatetgbot.pem";
-            var keyPath = config["CERTIFICATE_KEY_PATH"] ?? "/app/certificates/datagatetgbot.key";
+            var certPath = config["CERTIFICATE_PEM_PATH"] ?? "/app/resources/certs/datagatetgbot.pem";
+            var keyPath = config["CERTIFICATE_KEY_PATH"] ?? "/app/resources/certs/datagatetgbot.key";
 
             if (File.Exists(certPath) && File.Exists(keyPath))
             {

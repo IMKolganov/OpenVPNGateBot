@@ -10,8 +10,8 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",
         "ASPNETCORE_Kestrel__Endpoints__Https__Url": "https://*:443",
-        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/certificates/datagatetgbot.pem",
-        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/certificates/datagatetgbot.key"
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/resources/certs/datagatetgbot.pem",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/resources/certs/datagatetgbot.key"
       }
     },
     "DataGateVPNBot Release": {
@@ -24,8 +24,8 @@
         "ASPNETCORE_ENVIRONMENT": "Production",
         "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",
         "ASPNETCORE_Kestrel__Endpoints__Https__Url": "https://*:443",
-        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/certificates/datagatetgbot.pem",
-        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/certificates/datagatetgbot.key"
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/resources/certs/datagatetgbot.pem",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/resources/certs/datagatetgbot.key"
       }
     },
     "DataGateVPNBot Local": {
@@ -38,8 +38,8 @@
         "ASPNETCORE_ENVIRONMENT": "Staging",
         "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",
         "ASPNETCORE_Kestrel__Endpoints__Https__Url": "https://*:443",
-        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/certificates/datagatetgbot.pem",
-        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/certificates/datagatetgbot.key"
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/resources/certs/datagatetgbot.pem",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/resources/certs/datagatetgbot.key"
       }
     }
   }

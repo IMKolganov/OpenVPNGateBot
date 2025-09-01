@@ -6,8 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ApplicationIcon>logo/logo.ico</ApplicationIcon>
-        <AssemblyVersion>1.2.2.36</AssemblyVersion>
-        <FileVersion>1.2.2.36</FileVersion>
+        <AssemblyVersion>1.2.2.37</AssemblyVersion>
+        <FileVersion>1.2.2.37</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
