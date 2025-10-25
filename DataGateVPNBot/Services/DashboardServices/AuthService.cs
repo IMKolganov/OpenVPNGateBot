@@ -1,5 +1,6 @@
-using System.Text.Json;
 using DataGateVPNBot.Services.Http;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.Auth.Responses;
+using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -29,26 +30,43 @@ public class AuthService(
             ClientSecret = clientSecret
         };
 
-        var response = await httpRequestService.PostAsync<JsonElement>("/api/Auth/token", requestBody);
-
-        if (response.ValueKind == JsonValueKind.Object &&
-            response.TryGetProperty("token", out var tokenProperty))
+        try
         {
-            var newToken = tokenProperty.GetString();
-            if (!string.IsNullOrEmpty(newToken))
+            var response = await httpRequestService.PostAsync<ApiResponse<TokenResponse>>(
+                "/api/Auth/token", requestBody);
+
+            if (response == null)
             {
-                _cachedToken = newToken;
-                _tokenExpiry = DateTime.UtcNow.Add(_tokenExpiration);
-                logger.LogInformation("Token cached in memory.");
-                return newToken;
+                logger.LogWarning("Empty response from API.");
+                return null;
             }
-        }
-        else
-        {
-            logger.LogWarning("Invalid response structure or missing 'token' field.");
-        }
 
-        logger.LogError("Failed to obtain a valid token from API.");
-        return null;
+            if (!response.Success || response.Data == null)
+            {
+                logger.LogWarning("Token request failed: {Message}", response.Message);
+                return null;
+            }
+
+            var newToken = response.Data.Token;
+            if (string.IsNullOrEmpty(newToken))
+            {
+                logger.LogWarning("Received empty token string.");
+                return null;
+            }
+
+            _cachedToken = newToken;
+
+            _tokenExpiry = response.Data.Expiration.UtcDateTime != default
+                ? response.Data.Expiration.UtcDateTime
+                : DateTime.UtcNow.Add(_tokenExpiration);
+
+            logger.LogInformation("✅ Token cached until {Expiry}", _tokenExpiry);
+            return newToken;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Failed to obtain token from API.");
+            return null;
+        }
     }
 }
