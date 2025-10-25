@@ -24,14 +24,21 @@ RUN echo "Using build configuration: $BUILD_CONFIGURATION" && \
 # Use the ASP.NET runtime for the final image (framework-dependent)
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 
-# Switch to the default 'app' user (already exists in aspnet image)
-USER app
+# Use root initially to allow setting permissions
+USER root
 
-# Set the working directory
 WORKDIR /app
 
-# Copy the published application from the previous stage
+# Copy published app
 COPY --from=publish /app/publish .
 
-# Run via dotnet runtime
-ENTRYPOINT ["dotnet", "DataGateVPNBot.dll"]
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+
+# 🔧 Convert CRLF to LF just in case
+RUN sed -i 's/\r$//' /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+# Don't switch to app here — entrypoint.sh will drop privileges
+ENTRYPOINT ["/entrypoint.sh"]

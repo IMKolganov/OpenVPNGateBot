@@ -38,6 +38,7 @@ public class OpenVpnApiController : ControllerBase
         if (string.IsNullOrEmpty(token))
             return BadRequest("Missing token");
 
+        //todo:move
         var redirectUri =
             $"openvpn://import-profile/https://gate.rackot.ru/DownloadByToken?token={token}";
 
