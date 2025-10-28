@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Requests;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
 using OpenVPNGateMonitor.SharedModels.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -327,13 +328,15 @@ public partial class TelegramUpdateHandler(
     {
         using var scope = _serviceProvider.CreateScope();
         var registrationService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-        var request = new RegisterUserRequest()
-            { 
-                TelegramId = msg.From!.Id, 
-                FirstName = msg.From.FirstName, 
-                LastName = msg.From.LastName, 
-                Username = msg.From.Username
-            };
+        var request = new RegisterUserFromTgBotRequest
+        {
+            TelegramId = msg.From!.Id,
+            FirstName = msg.From.FirstName,
+            LastName = msg.From.LastName,
+            Username = msg.From.Username,
+            LanguageCode = msg.From.LanguageCode,
+            IsPremium = msg.From.IsPremium
+        };
 
         if (!await registrationService.UserExistsAsync(request.TelegramId, cancellationToken))
         {

@@ -2,8 +2,9 @@ using System.Security.Authentication;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Http;
 using DataGateVPNBot.Services.Interfaces;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Responses;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
@@ -20,7 +21,7 @@ public class TelegramBotUserService(
     private const string EndpointUserExists = "api/TelegramBotUser/UserExists";
 
 
-    public async Task<RegisterUserResponse> RegisterUserAsync(RegisterUserRequest request, 
+    public async Task<UsersResponse> RegisterUserAsync(RegisterUserFromTgBotRequest request, 
         CancellationToken cancellationToken)
     {
         if (request.TelegramId <= 0) 
@@ -35,7 +36,7 @@ public class TelegramBotUserService(
         logger.LogInformation($"Sending request to create TelegramBotUser TelegramId: {request.TelegramId}");
 
         var response =
-            await httpRequestService.PostAsync<ApiResponse<RegisterUserResponse>>(EndpointRegisterUser, request, 
+            await httpRequestService.PostAsync<ApiResponse<UsersResponse>>(EndpointRegisterUser, request, 
                 token, cancellationToken);
 
         if (response is { Success: true, Data: not null })
