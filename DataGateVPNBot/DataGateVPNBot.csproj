@@ -6,25 +6,25 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ApplicationIcon>logo/logo.ico</ApplicationIcon>
-        <AssemblyVersion>1.2.2.40</AssemblyVersion>
-        <FileVersion>1.2.2.40</FileVersion>
+        <AssemblyVersion>1.2.2.41</AssemblyVersion>
+        <FileVersion>1.2.2.41</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="ACMESharpCore" Version="2.2.0.148" />
         <PackageReference Include="Certes" Version="3.0.4" />
-        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.2.0" />
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.2.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.51" />
+        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.61" />
         <PackageReference Include="Serilog" Version="4.3.0" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
         <PackageReference Include="Serilog.Sinks.Elasticsearch" Version="10.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
         <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.6" />

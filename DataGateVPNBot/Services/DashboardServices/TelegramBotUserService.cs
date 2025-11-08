@@ -16,9 +16,9 @@ public class TelegramBotUserService(
     IErrorService errorService)
     : ITelegramBotUserService
 {
-    private const string EndpointRegisterUser = "api/User/RegisterUserFromTgBot";
-    private const string EndpointGetAdmins = "api/TelegramBotUser/GetAdmins";
-    private const string EndpointUserExists = "api/TelegramBotUser/UserExists";
+    private const string EndpointRegisterUser = "api/users/register-from-tgbot";
+    private const string EndpointGetAdmins = "api/tgbot-users/get-admins";
+    private const string EndpointUserExists = "api/tgbot-users/check-exists";
 
 
     public async Task<UsersResponse> RegisterUserAsync(RegisterUserFromTgBotRequest request, 

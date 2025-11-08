@@ -1,6 +1,7 @@
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
@@ -15,21 +16,21 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, IErrorService 
     /// Used by Telegram and OpenVPN Connect
     /// </summary>
     [HttpGet("/DownloadByToken")]
-    public async Task<IActionResult> DownloadByToken([FromQuery] string token, CancellationToken cancellationToken)
+    public async Task<IActionResult> DownloadByToken([FromQuery] ByTokenRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(token))
+        if (string.IsNullOrWhiteSpace(request.Token))
             return BadRequest("Token is required");
 
         try
         {
-            var response = await ovpnFileService.DownloadOvpnFileByTokenAsync(token, cancellationToken);
+            var response = await ovpnFileService.DownloadOvpnFileByTokenAsync(request, ct);
 
             if (response?.Content == null || response.Content.Length == 0)
                 return NotFound("OVPN file is empty or not found.");
 
-            var actualFileName = string.IsNullOrWhiteSpace(response.FileName)
-                ? $"client_{token}.ovpn"
-                : Path.GetFileNameWithoutExtension(response.FileName) + ".ovpn";
+            var actualFileName = string.IsNullOrWhiteSpace(response.IssuedOvpn.FileName)
+                ? $"client_{request.Token}.ovpn"
+                : Path.GetFileNameWithoutExtension(response.IssuedOvpn.FileName) + ".ovpn";
 
             return File(
                 fileContents: response.Content,
@@ -39,9 +40,9 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, IErrorService 
         }
         catch (Exception ex)
         {
-            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-            logger.LogError(ex, "Failed to serve OVPN file for token {Token}", token);
-            return BadRequest(ApiResponse<DownloadOvpnFileResponse>.ErrorResponse(ex.Message));
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, null, ct);
+            logger.LogError(ex, "Failed to serve OVPN file for token {Token}", request.Token);
+            return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message));
         }
     }
 

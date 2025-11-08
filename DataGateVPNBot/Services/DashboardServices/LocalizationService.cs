@@ -10,11 +10,11 @@ namespace DataGateVPNBot.Services.DashboardServices;
 public class LocalizationService(ILogger<LocalizationService> logger, IHttpRequestService httpRequestService,
     AuthService authService) : ILocalizationService
 {
-    private const string EndpointSetTelegramUserLanguage = "api/TelegramBotLocalization/SetTelegramUserLanguage";
-    private const string EndpointGetTelegramUserLanguage = "api/TelegramBotLocalization/GetTelegramUserLanguage";
+    private const string EndpointSetTelegramUserLanguage = "api/tgbot-localizations/set-tg-user-language";
+    private const string EndpointGetTelegramUserLanguage = "api/tgbot-localizations/get-tg-user-language";
     private const string EndpointIsExistTelegramUserLanguagePreference = 
-        "api/TelegramBotLocalization/IsExistTelegramUserLanguagePreference";
-    private const string EndpointGetTextForTelegramUser = "api/TelegramBotLocalization/GetTextForTelegramUser";
+        "api/tgbot-localizations/is-exist-tg-user-language-preference";
+    private const string EndpointGetTextForTelegramUser = "api/tgbot-localizations/get-text-for-tg-user";
 
     public async Task<SetTelegramUserLanguageResponse> SetTelegramUserLanguageAsync(
         SetTelegramUserLanguageRequest request, CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses.Dto;
 using Telegram.Bot.Types;
@@ -8,7 +9,7 @@ public interface IOvpnFileService
 {
     Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId, 
         CancellationToken cancellationToken);
-    Task<DownloadOvpnFileResponse> DownloadOvpnFileByTokenAsync(string token,
+    Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(ByTokenRequest token,
         CancellationToken cancellationToken);
     Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken);

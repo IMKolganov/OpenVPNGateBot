@@ -10,7 +10,7 @@ public class ServerService(
     IHttpRequestService httpRequestService,
     AuthService authService)
 {
-    private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnServers/GetAllServers";
+    private const string EndpointGetAllOpenVpnFiles = "api/open-vpn-servers/get-all";
 
     public async Task<List<OpenVpnServerResponse>?> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
     {

@@ -12,7 +12,7 @@ public class IncomingMessageLogSenderService(
     IHttpRequestService httpRequestService,
     AuthService authService) : IIncomingMessageLogSenderService
 {
-    private const string EndpointTelegramBotIncomingMessageLogAddMessage = "api/TelegramBotIncomingMessageLog/AddMessage";
+    private const string EndpointTelegramBotIncomingMessageLogAddMessage = "api/tgbot-incoming-message-logs/add";
 
     public async Task<AddMessageResponse> TelegramBotIncomingMessageLogAddMessageAsync(
         AddMessageRequest request, CancellationToken cancellationToken)

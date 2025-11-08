@@ -64,8 +64,8 @@ public partial class TelegramUpdateHandler
         var serverResponses = await openVpnServersService.GetAllOpenVpnServersListAsync(cancellationToken);
 
         var defaultServerId = serverResponses
-            .Where(x => x.IsDefault)
-            .Select(x => x.Id)
+            .Where(x => x.OpenVpnServer.IsDefault)
+            .Select(x => x.OpenVpnServer.Id)
             .FirstOrDefault();
 
         if (defaultServerId <= 0)

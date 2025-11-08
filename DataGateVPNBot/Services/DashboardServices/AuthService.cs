@@ -13,6 +13,7 @@ public class AuthService(
     private string? _cachedToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
     private readonly TimeSpan _tokenExpiration = TimeSpan.FromMinutes(55);
+    private const string EndpointAuthByToken = "api/auth/token";
 
     public async Task<string?> GetTokenAsync()
     {
@@ -33,7 +34,7 @@ public class AuthService(
         try
         {
             var response = await httpRequestService.PostAsync<ApiResponse<TokenResponse>>(
-                "/api/Auth/token", requestBody);
+                EndpointAuthByToken, requestBody);
 
             if (response == null)
             {

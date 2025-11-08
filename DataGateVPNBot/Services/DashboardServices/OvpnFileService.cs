@@ -12,20 +12,20 @@ public class OvpnFileService(
     IHttpRequestService httpRequestService,
     AuthService authService)
 {
-    private const string EndpointGetOvpnFileByToken = "api/OpenVpnFiles/GetOvpnFileByToken";
-    private const string EndpointGetAllOpenVpnFiles = "api/OpenVpnFiles/GetAllByExternalIdOvpnFiles";
-    private const string EndpointGetAllOpenVpnFilesWithToken = "api/OpenVpnFiles/GetAllByExternalIdOvpnFilesWithToken";
-    private const string EndpointDownloadOpenVpnFiles = "api/OpenVpnFiles/DownloadClientOvpnFile";
-    private const string EndpointAddOpenVpnFile = "api/OpenVpnFiles/AddClientOvpnFile";
-    private const string EndpointAddClientOvpnFileWithToken = "api/OpenVpnFiles/AddClientOvpnFileWithToken";
-    private const string EndpointRevokeOvpnFile = "api/OpenVpnFiles/RevokeClientOvpnFile";
+    private const string EndpointGetOvpnFileByToken = "api/open-vpn-files/by-token";
+    private const string EndpointGetAllOpenVpnFiles = "api/open-vpn-files/get-all";
+    private const string EndpointGetAllOpenVpnFilesWithToken = "api/open-vpn-files/get-all-with-token";
+    private const string EndpointDownloadOpenVpnFiles = "api/open-vpn-files/download-file";
+    private const string EndpointAddOpenVpnFile = "api/open-vpn-files/add";
+    private const string EndpointAddClientOvpnFileWithToken = "api/open-vpn-files/add-with-token";
+    private const string EndpointRevokeOvpnFile = "api/open-vpn-files/revoke-file";
 
-    public async Task<IssuedOvpnFileDto?> GetOvpnFileByTokenAsync(string fileToken,
+    public async Task<IssuedOvpnFileDto?> GetOvpnFileByTokenAsync(ByTokenRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(fileToken))
+        if (string.IsNullOrEmpty(request.Token))
         {
-            throw new ArgumentNullException(nameof(fileToken));
+            throw new ArgumentNullException(nameof(request.Token));
         }
         
         var token = await authService.GetTokenAsync();
@@ -34,9 +34,9 @@ public class OvpnFileService(
             throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
         }
 
-        var url = $"{EndpointGetOvpnFileByToken}/{fileToken}";
+        var url = $"{EndpointGetOvpnFileByToken}/{request.Token}";
         
-        var response = await httpRequestService.GetAsync<ApiResponse<GetOvpnFileResponse>>(url, token, 
+        var response = await httpRequestService.GetAsync<ApiResponse<OvpnFileResponse>>(url, token, 
             cancellationToken);
         
         if (response is { Success: true, Data: not null })
@@ -57,7 +57,7 @@ public class OvpnFileService(
     }
     
     public async Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesByExternalIdAsync(
-        GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
+        ByExternalIdAndVpnServerIdRequest request, CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
             throw new ArgumentException("vpnServerId is required.");
@@ -74,7 +74,7 @@ public class OvpnFileService(
         logger.LogInformation("Requesting OVPN files for Server ID: {VpnServerId}, External ID: {ExternalId}",
             request.VpnServerId, request.ExternalId);
 
-        var response = await httpRequestService.GetAsync<ApiResponse<List<GetOvpnFileResponse>>>(url, token, cancellationToken);
+        var response = await httpRequestService.GetAsync<ApiResponse<OvpnFilesResponse>>(url, token, cancellationToken);
 
         if (response == null)
         {
@@ -82,20 +82,16 @@ public class OvpnFileService(
             return [];
         }
 
-        if (response.Success && response.Data is not null)
+        if (response is { Success: true, Data: not null })
         {
-            return response.Data
-                .Where(x => x?.IssuedOvpnFile != null)
-                .Select(x => x.IssuedOvpnFile)
-                .ToList();
+            return response.Data.IssuedOvpnFiles;
         }
-
         logger.LogWarning("Failed to get VPN servers: {Message}", response.Message);
         return [];
     }
     
-    public async Task<List<GetOvpnFileWithTokenResponse>> GetAllOvpnFilesByExternalIdWithTokenAsync(
-        GetAllByExternalIdOvpnFilesRequest request, CancellationToken cancellationToken)
+    public async Task<OvpnFilesWithTokensResponse?> GetAllOvpnFilesByExternalIdWithTokenAsync(
+        ByExternalIdAndVpnServerIdRequest request, CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
             throw new ArgumentException("vpnServerId is required.");
@@ -112,13 +108,13 @@ public class OvpnFileService(
         logger.LogInformation("Requesting OVPN files for Server ID: {VpnServerId}, External ID: {ExternalId}",
             request.VpnServerId, request.ExternalId);
 
-        var response = await httpRequestService.GetAsync<ApiResponse<List<GetOvpnFileWithTokenResponse>>>(url, token, 
+        var response = await httpRequestService.GetAsync<ApiResponse<OvpnFilesWithTokensResponse>>(url, token, 
             cancellationToken);
 
         if (response == null)
         {
             logger.LogError("Failed to fetch Open VPN Servers from API.");
-            return [];
+            return null;
         }
 
         if (response is { Success: true, Data: not null })
@@ -127,10 +123,10 @@ public class OvpnFileService(
         }
 
         logger.LogWarning("Failed to get VPN servers: {Message}", response.Message);
-        return [];
+        return null;
     }
 
-    public async Task<DownloadOvpnFileResponse> DownloadOvpnFileByIdAndServerIdAsync(DownloadClientOvpnFileRequest request,
+    public async Task<DownloadFileResponse> DownloadOvpnFileByIdAndServerIdAsync(DownloadFileRequest request,
         CancellationToken cancellationToken)
     {
         if (request.IssuedOvpnFileId <= 0)
@@ -150,7 +146,7 @@ public class OvpnFileService(
             "Requesting OVPN file content for IssuedOvpnFileId: {IssuedOvpnFileId}, Server ID: {VpnServerId}",
             request.IssuedOvpnFileId, request.VpnServerId);
 
-        var response = await httpRequestService.PostAsync<ApiResponse<DownloadOvpnFileResponse>>(
+        var response = await httpRequestService.PostAsync<ApiResponse<DownloadFileResponse>>(
             EndpointDownloadOpenVpnFiles,
             request,
             token,
@@ -164,7 +160,7 @@ public class OvpnFileService(
         return response.Data;
     }
 
-    public async Task<AddOvpnFileResponse> AddOvpnFileAsync(AddClientOvpnFileRequest request,
+    public async Task<OvpnFileResponse> AddOvpnFileAsync(AddFileRequest request,
         CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
@@ -186,7 +182,7 @@ public class OvpnFileService(
                                $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
 
         var response =
-            await httpRequestService.PostAsync<ApiResponse<AddOvpnFileResponse>>(EndpointAddOpenVpnFile, 
+            await httpRequestService.PostAsync<ApiResponse<OvpnFileResponse>>(EndpointAddOpenVpnFile, 
                 request, token, cancellationToken);
 
         if (response is { Success: true, Data: not null, Data.IssuedOvpnFile.Id: > 0 })
@@ -205,7 +201,7 @@ public class OvpnFileService(
         return response!.Data!;
     }
     
-    public async Task<AddOvpnFileWithTokenResponse> AddOvpnFileWithTokenAsync(AddClientOvpnFileRequest request,
+    public async Task<OvpnFileWithTokenResponse> AddOvpnFileWithTokenAsync(AddFileRequest request,
         CancellationToken cancellationToken)
     {
         if (request.VpnServerId <= 0)
@@ -227,7 +223,7 @@ public class OvpnFileService(
                               $"ExternalId: {request.ExternalId}, VpnServerId: {request.VpnServerId}");
 
         var response =
-            await httpRequestService.PostAsync<ApiResponse<AddOvpnFileWithTokenResponse>>(
+            await httpRequestService.PostAsync<ApiResponse<OvpnFileWithTokenResponse>>(
                 EndpointAddClientOvpnFileWithToken, request, token, cancellationToken);
 
         if (response is { Success: true, Data: not null, Data.IssuedOvpnFile.Id: > 0 })
@@ -246,7 +242,7 @@ public class OvpnFileService(
         return response!.Data!;
     }
     
-    public async Task<RevokeOvpnFileResponse> RevokeOvpnFileAsync(RevokeClientOvpnFileRequest request, 
+    public async Task<OvpnFileResponse> RevokeOvpnFileAsync(RevokeFileRequest request, 
         CancellationToken cancellationToken)
     {
         var token = await authService.GetTokenAsync();
@@ -259,7 +255,7 @@ public class OvpnFileService(
                                $"CommonName: {request.CommonName}, ServerId: {request.VpnServerId}");
 
         var response =
-            await httpRequestService.PostAsync<ApiResponse<RevokeOvpnFileResponse>>(EndpointRevokeOvpnFile, 
+            await httpRequestService.PostAsync<ApiResponse<OvpnFileResponse>>(EndpointRevokeOvpnFile, 
                 request, token, cancellationToken);
         
         if (response is { Success: true, Data: not null })
