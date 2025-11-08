@@ -20,18 +20,18 @@ public class VpnServerController(
     private readonly ILogger<VpnServerController> _logger = logger;
 
     [HttpPost("GetAllVpnServers")]
-    public async Task<ActionResult<ApiResponse<List<OpenVpnServerResponse>>>> GetAllVpnServersPost(
+    public async Task<ActionResult<ApiResponse<OpenVpnServersResponse>>> GetAllVpnServersPost(
         CancellationToken cancellationToken)
     {
         var list = await openVpnServersService.GetAllOpenVpnServersListAsync(cancellationToken);
-        return Ok(ApiResponse<List<OpenVpnServerResponse>>.SuccessResponse(list));
+        return Ok(ApiResponse<OpenVpnServersResponse>.SuccessResponse(list));
     }
 
     [HttpGet("GetAllVpnServers")]
-    public async Task<ActionResult<ApiResponse<List<OpenVpnServerResponse>>>> GetAllVpnServersGet(
+    public async Task<ActionResult<ApiResponse<OpenVpnServersResponse>>> GetAllVpnServersGet(
         CancellationToken cancellationToken)
     {
         var list = await openVpnServersService.GetAllOpenVpnServersListAsync(cancellationToken);
-        return Ok(ApiResponse<List<OpenVpnServerResponse>>.SuccessResponse(list));
+        return Ok(ApiResponse<OpenVpnServersResponse>.SuccessResponse(list));
     }
 }

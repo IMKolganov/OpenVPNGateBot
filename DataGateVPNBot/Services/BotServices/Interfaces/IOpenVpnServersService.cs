@@ -4,5 +4,5 @@ namespace DataGateVPNBot.Services.BotServices.Interfaces;
 
 public interface IOpenVpnServersService
 {
-    Task<List<OpenVpnServerResponse>> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken);
+    Task<OpenVpnServersResponse> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken);
 }

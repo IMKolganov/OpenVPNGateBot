@@ -37,10 +37,10 @@ public partial class TelegramUpdateHandler
         
         var rows = new List<InlineKeyboardButton[]>();
         var currentRow = new List<InlineKeyboardButton>();
-        foreach (var server in serverResponses)
+        foreach (var server in serverResponses.OpenVpnServers)
         {
-            currentRow.Add(InlineKeyboardButton.WithCallbackData(server.OpenVpnServer.ServerName, 
-                $"{command} {server.OpenVpnServer.Id}"));
+            currentRow.Add(InlineKeyboardButton.WithCallbackData(server.ServerName, 
+                $"{command} {server.Id}"));
         
             if (currentRow.Count == 2)
             {

@@ -9,7 +9,7 @@ public class OpenVpnServersService(ServerService serverService, ILogger<OvpnFile
 {
     private readonly ILogger<OvpnFileService> _logger = logger;
 
-    public async Task<List<OpenVpnServerResponse>> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken)
+    public async Task<OpenVpnServersResponse> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
         return await serverService.GetOpenVpnServersListAsync(cancellationToken) 
                ?? throw new NullReferenceException("OpenVPN servers list is null");
