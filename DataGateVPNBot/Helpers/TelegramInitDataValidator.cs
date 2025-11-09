@@ -1,114 +1,86 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace DataGateVPNBot.Helpers;
 
-public static class TelegramInitDataValidator
+public sealed class TelegramInitDataValidator(string botToken)
 {
-    public static bool Validate(string initData, string botToken, TimeSpan expIn, out string? error)
+    private readonly byte[] _secretKey = ComputeHmac(Encoding.UTF8.GetBytes("WebAppData"), botToken);
+
+    // secretKey = HMAC_SHA256("WebAppData", botToken)
+
+    public TelegramInitData ValidateAndParse(string initDataRaw, int expiresInSeconds)
     {
-        error = null;
-        if (string.IsNullOrEmpty(initData)) { error = "unexpected init data format"; return false; }
-        if (string.IsNullOrEmpty(botToken)) { error = "bot token is required"; return false; }
+        var kv = ParseQuery(initDataRaw);
 
-        var q = TryParseQueryPublic(initData);
+        if (!kv.TryGetValue("hash", out var givenHash) || string.IsNullOrWhiteSpace(givenHash))
+            throw new InvalidOperationException("hash is missing");
 
-        string? tgHash = null;
-        DateTimeOffset? authDate = null;
-        var pairs = new List<string>(q.Count);
+        // Build data-check-string
+        var dataCheck = string.Join("\n",
+            kv.Where(p => !p.Key.Equals("hash", StringComparison.Ordinal))
+                .OrderBy(p => p.Key, StringComparer.Ordinal)
+                .Select(p => $"{p.Key}={p.Value}")
+        );
 
-        foreach (var kv in q)
+        var expected = ComputeHmac(_secretKey, dataCheck);
+        var expectedHex = ToHexLower(expected);
+
+        if (!FixedTimeEquals(givenHash, expectedHex))
+            throw new InvalidOperationException("Invalid hash (signature mismatch)");
+
+        // Expiry check
+        if (kv.TryGetValue("auth_date", out var authStr) && long.TryParse(authStr, out var authUnix))
         {
-            var k = kv.Key;
-            var values = kv.Value;
-            if (values.Count == 0) continue;
-
-            if (k == "hash")
-            {
-                tgHash = values[0];
-                continue;
-            }
-            if (k == "auth_date")
-            {
-                if (!long.TryParse(values[0], out var unix))
-                {
-                    error = "parse auth_date to int64: auth_date is invalid";
-                    return false;
-                }
-                authDate = DateTimeOffset.FromUnixTimeSeconds(unix);
-            }
-
-            pairs.Add($"{k}={values[0]}");
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (now - authUnix > expiresInSeconds)
+                throw new InvalidOperationException("initData expired");
         }
 
-        if (string.IsNullOrEmpty(tgHash))
-        {
-            error = "hash sign is missing";
-            return false;
-        }
-
-        if (expIn > TimeSpan.Zero)
-        {
-            if (authDate is null)
-            {
-                error = "auth_date is missing";
-                return false;
-            }
-            if (authDate.Value.Add(expIn) < DateTimeOffset.UtcNow)
-            {
-                error = "init data is expired";
-                return false;
-            }
-        }
-
-        pairs.Sort(StringComparer.Ordinal);
-        var dcs = string.Join("\n", pairs);
-
-        var calc = ComputeHashPublic(dcs, botToken);
-        if (!HexEqual(calc, tgHash))
-        {
-            error = "hash sign is invalid";
-            return false;
-        }
-        return true;
+        return TelegramInitData.FromDictionary(kv);
     }
 
-    private static Dictionary<string, List<string>> TryParseQueryPublic(string query)
+    private static Dictionary<string, string> ParseQuery(string raw)
     {
-        var parsed = QueryHelpers.ParseQuery(query);
-        var dict = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach (var kv in parsed)
-            dict[kv.Key] = kv.Value.ToArray().ToList()!;
-        return dict;
-    }
-
-    private static byte[] SeedHmacWebAppData(string botToken)
-    {
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("WebAppData"));
-        return hmac.ComputeHash(Encoding.UTF8.GetBytes(botToken));
-    }
-
-    private static string ComputeHashPublic(string dataCheckString, string botToken)
-    {
-        var secret = SeedHmacWebAppData(botToken);
-        using var h = new HMACSHA256(secret);
-        var bytes = h.ComputeHash(Encoding.UTF8.GetBytes(dataCheckString));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
-
-    private static bool HexEqual(string a, string b)
-    {
-        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
-        if (a.Length != b.Length) return false;
-
-        int diff = 0;
-        for (int i = 0; i < a.Length; i++)
+        var d = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var part in raw.Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
-            int ca = a[i] | 0x20;
-            int cb = b[i] | 0x20;
-            diff |= (ca ^ cb);
+            var i = part.IndexOf('=');
+            if (i <= 0) continue;
+            var k = Uri.UnescapeDataString(part[..i]);
+            var v = Uri.UnescapeDataString(part[(i + 1)..]);
+            d[k] = v;
         }
+        return d;
+    }
+
+    private static byte[] ComputeHmac(byte[] key, string data)
+        => ComputeHmac(key, Encoding.UTF8.GetBytes(data));
+
+    private static byte[] ComputeHmac(byte[] key, byte[] data)
+    {
+        using var hmac = new HMACSHA256(key);
+        return hmac.ComputeHash(data);
+    }
+
+    private static string ToHexLower(byte[] bytes)
+    {
+        var sb = new StringBuilder(bytes.Length * 2);
+        foreach (var b in bytes)
+            sb.Append(b.ToString("x2"));
+        return sb.ToString();
+    }
+
+    private static bool FixedTimeEquals(string a, string b)
+    {
+        var aLower = a.Trim().ToLowerInvariant();
+        var bLower = b.Trim().ToLowerInvariant();
+        if (aLower.Length != bLower.Length) return false;
+
+        var diff = 0;
+        for (int i = 0; i < aLower.Length; i++)
+            diff |= aLower[i] ^ bLower[i];
+
         return diff == 0;
     }
 }

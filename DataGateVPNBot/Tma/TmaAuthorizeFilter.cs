@@ -51,15 +51,10 @@ public sealed class TmaAuthorizeFilter : IAsyncActionFilter
             context.Result = new UnauthorizedObjectResult(new { message = "Init data not found" });
             return;
         }
+        var validator = new TelegramInitDataValidator(_botToken);
+        var parsed = validator.ValidateAndParse(raw, expiresInSeconds: 3600);
 
-        if (!TelegramInitDataValidator.Validate(raw, _botToken, _expIn, out var error))
-        {
-            _logger.LogWarning("TMA initData validation failed from {Source}: {Error}", source, error);
-            context.Result = new UnauthorizedObjectResult(new { message = "Invalid init data", detail = error });
-            return;
-        }
-
-        http.Items["TmaInitDataRaw"] = raw;
+        http.Items["TmaInitDataRaw"] = parsed;
 
         await next();
     }
