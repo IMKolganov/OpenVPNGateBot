@@ -387,31 +387,56 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
     public async Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation($"Revoking all OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
-        var issuedOvpnFileResponses = await GetAllOvpnFilesListAsync(vpnServerId,
-            telegramId, cancellationToken);
+        logger.LogInformation("Revoking all OVPN files for telegramId: {TelegramId}, ServerId: {ServerId}", telegramId,
+            vpnServerId);
 
-        if (!issuedOvpnFileResponses.Any())
+        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+        if (files.Count == 0)
         {
-            logger.LogWarning($"No OVPN files found to revoke for telegramId {telegramId} on server {vpnServerId}.");
+            logger.LogWarning("No OVPN files found to revoke for telegramId {TelegramId} on server {ServerId}.",
+                telegramId, vpnServerId);
             return false;
         }
-        
-        foreach (var file in issuedOvpnFileResponses)
+
+        var total = files.Count;
+        var success = 0;
+
+        foreach (var file in files)
         {
-            var request = new RevokeFileRequest()
+            var request = new RevokeFileRequest
             {
                 VpnServerId = file.VpnServerId,
                 OvpnFileId = file.Id,
                 CommonName = file.CommonName,
+                IsRevoked = file.IsRevoked
             };
-            var revoked = await ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
-            logger.LogInformation("Revoking OVPN file for telegramId: " +
-                                  "{telegramId}, ServerId: {vpnServerId}, CommonName: {CommonName}",
-                telegramId, vpnServerId, file.CommonName);
-            return true;
+
+            try
+            {
+                var revoked = await ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
+                if (revoked.IssuedOvpnFile.IsRevoked)
+                {
+                    success++;
+                    logger.LogInformation("Revoked OVPN file: {CommonName} (ServerId: {ServerId})", file.CommonName,
+                        vpnServerId);
+                }
+                else
+                {
+                    logger.LogWarning("Failed to revoke OVPN file: {CommonName} (ServerId: {ServerId})",
+                        file.CommonName, vpnServerId);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error revoking OVPN file: {CommonName} (ServerId: {ServerId})", file.CommonName,
+                    vpnServerId);
+            }
         }
-        throw new Exception("Should never get here");
+
+        var allRevoked = success == total;
+        logger.LogInformation("Revocation summary for telegramId {TelegramId}, server {ServerId}: {Success}/{Total}",
+            telegramId, vpnServerId, success, total);
+        return allRevoked;
     }
 
     public async Task<bool> RevokeOvpnFileAsync(int vpnServerId, long telegramId, string fileName,
@@ -439,6 +464,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
             VpnServerId = fileToRevoke.VpnServerId,
             OvpnFileId = fileToRevoke.Id,
             CommonName = fileToRevoke.CommonName,
+            IsRevoked = fileToRevoke.IsRevoked
         };
 
         var revoked = await ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
