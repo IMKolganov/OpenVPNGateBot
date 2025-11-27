@@ -1,0 +1,109 @@
+﻿name: TelegramBot → Docker Hub (amd64/arm64 images + latest)
+
+on:
+  push:
+    branches:
+      - 'dockerhub/release/*'   # e.g. dockerhub/release/v1.0.2.63
+  workflow_dispatch:
+    inputs:
+      latest_on:
+        description: "Which arch should carry the 'latest' tag? (amd64|arm64)"
+        required: false
+        default: "amd64"
+
+concurrency:
+  group: dockerhub-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/openvpn-gate-monitor-telegrambot
+  BUILD_CONFIGURATION: Release
+  LATEST_ON: ${{ github.event.inputs.latest_on || 'amd64' }}
+
+jobs:
+  # ---------------- amd64 ----------------
+  build_amd64:
+    runs-on: ubuntu-24.04
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Push the architecture tag
+      - name: Build & push amd64 tag
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          # If your Dockerfile reads these build args, uncomment:
+          # build-args: |
+          #   BUILD_CONFIGURATION=${{ env.BUILD_CONFIGURATION }}
+          #   TARGETARCH=x64
+          tags: |
+            ${{ env.IMAGE_REPO }}:amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Optionally also publish 'latest' as a plain image (no manifest)
+      - name: Also tag as latest (amd64)
+        if: env.LATEST_ON == 'amd64'
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --file ./Dockerfile \
+            --tag "${{ env.IMAGE_REPO }}:latest" \
+            .
+
+  # ---------------- arm64 ----------------
+  build_arm64:
+    runs-on: ubuntu-24.04-arm   # native ARM64 hosted runner (public repos)
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Push the architecture tag
+      - name: Build & push arm64 tag
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64/v8
+          push: true
+          # build-args: |
+          #   BUILD_CONFIGURATION=${{ env.BUILD_CONFIGURATION }}
+          #   TARGETARCH=arm64
+          tags: |
+            ${{ env.IMAGE_REPO }}:arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Optionally also publish 'latest' as a plain image (no manifest)
+      - name: Also tag as latest (arm64)
+        if: env.LATEST_ON == 'arm64'
+        run: |
+          docker buildx build \
+            --platform linux/arm64/v8 \
+            --push \
+            --file ./Dockerfile \
+            --tag "${{ env.IMAGE_REPO }}:latest" \
+            .
