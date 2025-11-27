@@ -6,7 +6,6 @@ using DataGateVPNBot.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Requests;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
 using OpenVPNGateMonitor.SharedModels.Enums;
 using Telegram.Bot;

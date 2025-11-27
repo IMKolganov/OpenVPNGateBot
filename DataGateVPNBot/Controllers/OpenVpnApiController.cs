@@ -40,7 +40,7 @@ public class OpenVpnApiController : ControllerBase
 
         //todo:move
         var redirectUri =
-            $"openvpn://import-profile/https://gate.rackot.ru/DownloadByToken?token={token}";
+            $"openvpn://import-profile/https://datagate.rackot.ru/DownloadByToken?token={token}";
 
         var scriptBlock = $@"
     <script>

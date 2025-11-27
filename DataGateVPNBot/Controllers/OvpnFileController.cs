@@ -2,7 +2,6 @@ using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Controllers;
