@@ -1,7 +1,7 @@
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
+using OpenVPNGateMonitor.SharedModels.DataGateVPNBot.OvpnFile.Requests;
 using OpenVPNGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Controllers;
@@ -22,7 +22,7 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, IErrorService 
 
         try
         {
-            var response = await ovpnFileService.DownloadOvpnFileByTokenAsync(request, ct);
+            var response = await ovpnFileService.DownloadOvpnFileByTokenAsync(request.Token, ct);
 
             if (response?.Content == null || response.Content.Length == 0)
                 return NotFound("OVPN file is empty or not found.");

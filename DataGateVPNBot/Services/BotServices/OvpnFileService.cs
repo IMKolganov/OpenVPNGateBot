@@ -28,10 +28,10 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         return issuedOvpnFileResponses;
     }
 
-    public async Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(ByTokenRequest token,
-        CancellationToken cancellationToken)
+    public async Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(string token, CancellationToken ct)
     {
-        var issuedOvpnFileResponse = await ovpnFileService.GetOvpnFileByTokenAsync(token, cancellationToken);
+        var byToken = new ByTokenRequest(){ Token = token };
+        var issuedOvpnFileResponse = await ovpnFileService.GetOvpnFileByTokenAsync(byToken, ct);
 
         if (issuedOvpnFileResponse == null)
         {
@@ -45,7 +45,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         };
         
         var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-            downloadOvpnFileRequest, cancellationToken);
+            downloadOvpnFileRequest, ct);
         
         return downloadOvpnFileResponse;
     }

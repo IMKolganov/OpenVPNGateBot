@@ -9,7 +9,7 @@ public interface IOvpnFileService
 {
     Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId, 
         CancellationToken cancellationToken);
-    Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(ByTokenRequest token,
+    Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(string token,
         CancellationToken cancellationToken);
     Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken);
