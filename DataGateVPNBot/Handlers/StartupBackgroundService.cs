@@ -42,14 +42,15 @@ public class StartupBackgroundService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Startup task failed. Retrying in 10 seconds...");
+                logger.LogError(ex, "Startup task failed. Retrying in 10 seconds... " +
+                                    $"ErrorMessage: {ex.Message}");
                 try
                 {
                     await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
                 }
-                catch (TaskCanceledException)
+                catch (TaskCanceledException exCanceled)
                 {
-                    logger.LogWarning("Startup retry loop cancelled.");
+                    logger.LogWarning("Startup retry loop cancelled. ErrorMessage: {ErrorMessage}", exCanceled.Message);
                     break;
                 }
             }
