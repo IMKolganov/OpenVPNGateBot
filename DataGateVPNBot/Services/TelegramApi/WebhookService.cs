@@ -1,7 +1,5 @@
-using System.Net;
 using System.Text.Json;
 using DataGateVPNBot.Models.Configurations;
-using DataGateVPNBot.Services.LetsEncrypt;
 using Microsoft.Extensions.Options;
 
 namespace DataGateVPNBot.Services.TelegramApi;
@@ -9,9 +7,8 @@ namespace DataGateVPNBot.Services.TelegramApi;
 public class WebhookService(
     HttpClient httpClient,
     ILogger<WebhookService> logger,
-    IOptions<BotConfiguration> options,
-    OpensslCertificateGenerator opensslCertificateGenerator,
-    LetsEncryptCertificateGenerator letsEncryptCertificateGenerator)
+    IOptions<BotConfiguration> options
+)
 {
     private readonly BotConfiguration _botConfig = options.Value;
     
@@ -91,37 +88,11 @@ public class WebhookService(
 
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(webhookUrl), "url");
-
-        if (_botConfig.UseCertificate || _botConfig.AutoGenerateCertificate)
-        {
-            var pemPath = _botConfig.CertificatePemPath;
-
-            if (_botConfig.AutoGenerateCertificate)
-            {
-                if (IsDomainName(_botConfig.HostAddress))
-                {
-                    logger.LogInformation("Auto-generating Let's Encrypt certificate (domain detected)...");
-                    await letsEncryptCertificateGenerator.EnsureCertificateAsync(_botConfig.HostAddress, 
-                        "imkolganov@gmail.com", cancellationToken);
-                }
-                else
-                {
-                    logger.LogInformation("Auto-generating self-signed certificate (IP detected)...");
-                    await opensslCertificateGenerator.EnsureCertificateAsync(_botConfig.HostAddress, cancellationToken);
-                }
-            }
-
-            if (string.IsNullOrEmpty(pemPath))
-                throw new NullReferenceException("CertificatePemPath is missing in configuration.");
-
-            if (!File.Exists(pemPath))
-                throw new FileNotFoundException($"Certificate file '{pemPath}' not found.");
-
-            logger.LogInformation("Using certificate: {PemPath}", pemPath);
-            var certStream = File.OpenRead(pemPath);
-            form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
-        }
-
+        logger.LogInformation("Using certificate: {PemPath}", _botConfig.CertificatePemPath);
+        var certStream = File.OpenRead(_botConfig.CertificatePemPath ?? 
+                                       throw new InvalidOperationException("Certificate file is missing."));
+        form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
+        
         var response = await httpClient.PostAsync(setWebhookUrl, form, cancellationToken);
         var result = await response.Content.ReadAsStringAsync(cancellationToken);
 
@@ -174,15 +145,5 @@ public class WebhookService(
         return $"https://{host}{portPart}/api/bot";
     }
 
-    private static bool IsDomainName(string input)
-    {
-        if (input.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            input.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            input = new Uri(input).Host;
-        }
 
-        return Uri.CheckHostName(input) == UriHostNameType.Dns &&
-               !IPAddress.TryParse(input, out _);
-    }
 }
