@@ -1,5 +1,5 @@
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
@@ -38,23 +38,60 @@ namespace DataGateVPNBot.Services.LetsEncrypt
 
         public async Task EnsureCertificateAsync(string domain, string email, CancellationToken cancellationToken)
         {
-            if (File.Exists(_pemPath))
+            var pemExists = File.Exists(_pemPath);
+            var keyExists = File.Exists(_keyPath);
+
+            _logger.LogInformation(
+                "Checking existing certificate and key. PemPath={PemPath}, PemExists={PemExists}, KeyPath={KeyPath}, KeyExists={KeyExists}",
+                _pemPath,
+                pemExists,
+                _keyPath,
+                keyExists);
+
+            if (pemExists && keyExists)
             {
-                // Reads certificate from PEM file explicitly (no content-type guessing)
-                using var cert = X509Certificate2.CreateFromPemFile(_pemPath);
-
-                var notAfterUtc = cert.NotAfter.ToUniversalTime();
-                var nowUtc = DateTime.UtcNow;
-
-                _logger.LogInformation("🔍 Current cert valid until (UTC): {Expiry}", notAfterUtc);
-
-                if (notAfterUtc > nowUtc.AddDays(14))
+                try
                 {
-                    _logger.LogInformation("✅ Certificate still valid, skipping generation. ");
-                    return;
-                }
+                    var certPem = await File.ReadAllTextAsync(_pemPath, cancellationToken);
+                    var keyPem = await File.ReadAllTextAsync(_keyPath, cancellationToken);
 
-                _logger.LogWarning("⚠️ Certificate expired or expiring soon – regenerating...");
+                    _logger.LogInformation(
+                        "Loaded existing PEM files. CertLength={CertLength}, KeyLength={KeyLength}",
+                        certPem.Length,
+                        keyPem.Length);
+
+                    using var certWithKey = X509Certificate2.CreateFromPem(certPem, keyPem);
+
+                    var notAfterUtc = certWithKey.NotAfter.ToUniversalTime();
+                    var nowUtc = DateTime.UtcNow;
+
+                    _logger.LogInformation(
+                        "Current cert (with key) valid until (UTC): {Expiry}",
+                        notAfterUtc);
+
+                    if (notAfterUtc > nowUtc.AddDays(14))
+                    {
+                        _logger.LogInformation(
+                            "Certificate with matching key is still valid. Skipping LetsEncrypt generation.");
+                        return;
+                    }
+
+                    _logger.LogWarning(
+                        "Certificate with matching key is expiring soon or expired. Will request new certificate.");
+                }
+                catch (CryptographicException ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Existing PEM+KEY pair is invalid. Will generate new certificate.");
+                }
+            }
+            else if (pemExists || keyExists)
+            {
+                _logger.LogWarning(
+                    "Only one of PEM/KEY exists (PemExists={PemExists}, KeyExists={KeyExists}). Will generate new certificate.",
+                    pemExists,
+                    keyExists);
             }
             
             // Ensure directories for cert files and challenge files
@@ -62,7 +99,9 @@ namespace DataGateVPNBot.Services.LetsEncrypt
             EnsureDirectoryForFile(_keyPath);
             EnsureDirectory(_challengeDir);
 
-            _logger.LogInformation("🚀 Starting Let's Encrypt certificate generation for {Domain}...", domain);
+            _logger.LogInformation(
+                "Starting LetsEncrypt certificate generation for domain={Domain}...",
+                domain);
 
             // Normalize domain (strip protocol and port)
             var normalizedDomain = NormalizeDomain(domain);
@@ -71,13 +110,19 @@ namespace DataGateVPNBot.Services.LetsEncrypt
             IKey accountKey;
             if (File.Exists(_accountPath))
             {
-                _logger.LogInformation("🔐 Using existing ACME account key: {AccountPath}", _accountPath);
+                _logger.LogInformation(
+                    "Using existing ACME account key. AccountPath={AccountPath}",
+                    _accountPath);
+
                 var pem = await File.ReadAllTextAsync(_accountPath, cancellationToken);
                 accountKey = KeyFactory.FromPem(pem);
             }
             else
             {
-                _logger.LogInformation("🆕 Creating new ACME account key at: {AccountPath}", _accountPath);
+                _logger.LogInformation(
+                    "Creating new ACME account key. AccountPath={AccountPath}",
+                    _accountPath);
+
                 accountKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
                 await File.WriteAllTextAsync(_accountPath, accountKey.ToPem(), cancellationToken);
             }
@@ -97,13 +142,14 @@ namespace DataGateVPNBot.Services.LetsEncrypt
 
             var challengePath = Path.Combine(_challengeDir, token);
             await File.WriteAllTextAsync(challengePath, keyAuth, cancellationToken);
-            _logger.LogInformation("📥 Challenge token written to: {Path}", challengePath);
 
-            // Trigger validation
+            _logger.LogInformation(
+                "📥 Challenge token written. Path={Path}",
+                challengePath);
+
             await httpChallenge.Validate();
 
-            // Poll for validation
-            _logger.LogInformation("⏳ Waiting for challenge validation...");
+            _logger.LogInformation("Waiting for challenge validation...");
             var retries = 30;
             while (retries-- > 0)
             {
@@ -111,7 +157,7 @@ namespace DataGateVPNBot.Services.LetsEncrypt
 
                 if (updatedAuthz.Status == AuthorizationStatus.Valid)
                 {
-                    _logger.LogInformation("✅ Challenge validated successfully.");
+                    _logger.LogInformation("Challenge validated successfully.");
                     break;
                 }
 
@@ -123,17 +169,20 @@ namespace DataGateVPNBot.Services.LetsEncrypt
 
                     var detail = httpChallengeError?.Detail ?? "Unknown challenge validation error";
                     var errorType = httpChallengeError?.Type ?? "Unknown type";
-                    _logger.LogWarning("⚠️ Challenge INVALID (type: {Type}): {Detail}. Will retry...", errorType, detail);
+
+                    _logger.LogWarning(
+                        "Challenge invalid. Type={Type}, Detail={Detail}. Will retry...",
+                        errorType,
+                        detail);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             }
 
-            // Generate certificate
             var domainKey = KeyFactory.NewKey(KeyAlgorithm.RS256);
             var csr = new CsrInfo
             {
-                CommonName = normalizedDomain,
+                CommonName = normalizedDomain,//todo: move to settings
                 CountryName = "CY",
                 State = "Nicosia",
                 Locality = "Nicosia",
@@ -146,9 +195,10 @@ namespace DataGateVPNBot.Services.LetsEncrypt
             await File.WriteAllTextAsync(_pemPath, certChain.ToPem(), cancellationToken);
             await File.WriteAllTextAsync(_keyPath, domainKey.ToPem(), cancellationToken);
 
-            _logger.LogInformation("🎉 Let's Encrypt certificate created:");
-            _logger.LogInformation("  PEM: {PemPath}", _pemPath);
-            _logger.LogInformation("  KEY: {KeyPath}", _keyPath);
+            _logger.LogInformation(
+                "LetsEncrypt certificate created. PemPath={PemPath}, KeyPath={KeyPath}",
+                _pemPath,
+                _keyPath);
         }
 
         private static string NormalizeDomain(string domain)
