@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
+using DataGateVPNBot.Services.Interfaces;
 using Directory = System.IO.Directory;
 
 namespace DataGateVPNBot.Services.LetsEncrypt
@@ -10,6 +11,7 @@ namespace DataGateVPNBot.Services.LetsEncrypt
     public class LetsEncryptCertificateGenerator
     {
         private readonly ILogger<LetsEncryptCertificateGenerator> _logger;
+        private readonly IErrorService _errorService;
         private readonly string _pemPath;
         private readonly string _keyPath;
         private readonly string _accountPath;
@@ -17,9 +19,11 @@ namespace DataGateVPNBot.Services.LetsEncrypt
 
         public LetsEncryptCertificateGenerator(
             ILogger<LetsEncryptCertificateGenerator> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IErrorService errorService)
         {
             _logger = logger;
+            _errorService = errorService;
 
             // Resolve paths from environment/configuration with sensible defaults
             _pemPath = configuration["CERTIFICATE_PEM_PATH"] 
@@ -199,6 +203,10 @@ namespace DataGateVPNBot.Services.LetsEncrypt
                 "LetsEncrypt certificate created. PemPath={PemPath}, KeyPath={KeyPath}",
                 _pemPath,
                 _keyPath);
+            
+            await _errorService.SendMessageToAdminsAsync(
+                "♻️ Restarting the application to apply the new certificate...", cancellationToken);
+            Environment.Exit(0);
         }
 
         private static string NormalizeDomain(string domain)
