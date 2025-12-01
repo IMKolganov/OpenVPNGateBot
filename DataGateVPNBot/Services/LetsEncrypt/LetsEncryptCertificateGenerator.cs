@@ -1,3 +1,5 @@
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
@@ -36,12 +38,25 @@ namespace DataGateVPNBot.Services.LetsEncrypt
 
         public async Task EnsureCertificateAsync(string domain, string email, CancellationToken cancellationToken)
         {
-            if (File.Exists(_pemPath) && File.Exists(_keyPath))
+            if (File.Exists(_pemPath))
             {
-                _logger.LogInformation("✅ Certificate already exists at {Pem} & {Key}, skipping generation.", _pemPath, _keyPath);
-                return;
-            }
+                // Reads certificate from PEM file explicitly (no content-type guessing)
+                using var cert = X509Certificate2.CreateFromPemFile(_pemPath);
 
+                var notAfterUtc = cert.NotAfter.ToUniversalTime();
+                var nowUtc = DateTime.UtcNow;
+
+                _logger.LogInformation("🔍 Current cert valid until (UTC): {Expiry}", notAfterUtc);
+
+                if (notAfterUtc > nowUtc.AddDays(14))
+                {
+                    _logger.LogInformation("✅ Certificate still valid, skipping generation. ");
+                    return;
+                }
+
+                _logger.LogWarning("⚠️ Certificate expired or expiring soon – regenerating...");
+            }
+            
             // Ensure directories for cert files and challenge files
             EnsureDirectoryForFile(_pemPath);
             EnsureDirectoryForFile(_keyPath);
