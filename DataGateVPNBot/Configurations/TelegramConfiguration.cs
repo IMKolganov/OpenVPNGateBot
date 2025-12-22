@@ -52,7 +52,7 @@ public static class TelegramConfiguration
         });
 
         services.AddSingleton<OpensslCertificateGenerator>();
-        services.AddSingleton<LetsEncryptCertificateGenerator>();
+        services.AddTransient<LetsEncryptCertificateGenerator>();
         services.AddHttpClient<WebhookService>();
         services.AddHostedService<StartupBackgroundService>();
     }
