@@ -1,6 +1,5 @@
 using System.Net;
 using System.Reflection;
-using DataGateVPNBot.Services.UntilsServices;
 using Microsoft.AspNetCore.HttpOverrides;
 
 namespace DataGateVPNBot.Configurations;
@@ -25,7 +24,7 @@ public static class PipelineConfiguration
             else
             {
                 options.KnownNetworks.Clear();
-                options.KnownNetworks.Add(new IPNetwork(IPAddress.Loopback, 8));
+                options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Loopback, 8));
             }
             app.UseForwardedHeaders(options);
         }
@@ -49,7 +48,7 @@ public static class PipelineConfiguration
         var environmentName = app.Environment.EnvironmentName;
         
         app.MapGet("/",
-            (ILogger<EasyRsaService> logger) => Results.Text(statusCode: 200, 
+            (ILogger<Program> logger) => Results.Text(statusCode: 200,
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
 
         app.Logger.LogInformation($"Application version: {version}; Environment: {environmentName};");
