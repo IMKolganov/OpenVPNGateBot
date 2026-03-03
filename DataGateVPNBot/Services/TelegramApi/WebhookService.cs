@@ -88,11 +88,20 @@ public class WebhookService(
 
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(webhookUrl), "url");
-        logger.LogInformation("Using certificate: {PemPath}", _botConfig.CertificatePemPath);
-        var certStream = File.OpenRead(_botConfig.CertificatePemPath ?? 
-                                       throw new InvalidOperationException("Certificate file is missing."));
-        form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
-        
+        if (_botConfig.UseCertificate)
+        {
+            logger.LogInformation("Using certificate: {PemPath}", _botConfig.CertificatePemPath);
+            var certPath = _botConfig.CertificatePemPath ?? throw new InvalidOperationException("Certificate file path is missing.");
+            if (!File.Exists(certPath))
+                throw new InvalidOperationException($"Certificate file not found: {certPath}");
+            var certStream = File.OpenRead(certPath);
+            form.Add(new StreamContent(certStream), "certificate", "datagatetgbot.pem");
+        }
+        else
+        {
+            logger.LogInformation("UseCertificate=false: setting webhook without custom certificate (e.g. nginx handles TLS).");
+        }
+
         var response = await httpClient.PostAsync(setWebhookUrl, form, cancellationToken);
         var result = await response.Content.ReadAsStringAsync(cancellationToken);
 
