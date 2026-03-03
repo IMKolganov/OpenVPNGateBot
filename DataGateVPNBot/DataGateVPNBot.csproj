@@ -6,8 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <ApplicationIcon>logo/logo.ico</ApplicationIcon>
-        <AssemblyVersion>1.2.3.1</AssemblyVersion>
-        <FileVersion>1.2.3.1</FileVersion>
+        <AssemblyVersion>1.2.3.2</AssemblyVersion>
+        <FileVersion>1.2.3.2</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,7 +20,7 @@
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.64" />
+        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.91" />
         <PackageReference Include="Serilog" Version="4.3.0" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />

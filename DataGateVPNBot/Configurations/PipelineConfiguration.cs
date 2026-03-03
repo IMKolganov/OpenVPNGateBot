@@ -38,7 +38,8 @@ public static class PipelineConfiguration
         app.UseHttpsRedirection();
         app.UseAuthorization();
         app.MapControllers();
-        
+        app.MapGet("/.well-known/healthcheck", () => Results.Ok()).ExcludeFromDescription();
+
         app.UseStatusCodePagesWithReExecute("/error/{0}");
         app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found", 
                 detail: "The requested resource was not found."))

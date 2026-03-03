@@ -92,7 +92,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
                 var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                     downloadOvpnFileRequest, cancellationToken);
 
-                var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+                var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
                 var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
                 var media = new InputMediaDocument(inputFile)
                 {
@@ -189,7 +189,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
                 var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                     downloadOvpnFileRequest, cancellationToken);
 
-                var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+                var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
                 var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
                 var media = new InputMediaDocument(inputFile)
                 {
@@ -273,7 +273,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
             var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                 downloadRequest, cancellationToken);
 
-            var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+            var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
             var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
             var media = new InputMediaDocument(inputFile)
             {
@@ -348,7 +348,7 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
             var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
                 downloadRequest, cancellationToken);
 
-            var stream = new MemoryStream(downloadOvpnFileResponse.Content);
+            var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
             var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
             var media = new InputMediaDocument(inputFile)
             {
