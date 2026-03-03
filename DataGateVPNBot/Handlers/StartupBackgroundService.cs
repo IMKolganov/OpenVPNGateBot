@@ -1,4 +1,4 @@
-﻿using DataGateVPNBot.Extensions;
+using DataGateVPNBot.Extensions;
 using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.Interfaces;
 using DataGateVPNBot.Services.LetsEncrypt;
@@ -168,7 +168,10 @@ public class StartupBackgroundService(
 
     private async Task WaitForServerAsync(CancellationToken token)
     {
-        const string healthUrl = "http://localhost/.well-known/healthcheck";
+        var healthPort = GetHealthCheckPort();
+        var healthUrl = healthPort == 80
+            ? "http://localhost/.well-known/healthcheck"
+            : $"http://localhost:{healthPort}/.well-known/healthcheck";
 
         logger.LogInformation("Waiting for health endpoint. Url={HealthUrl}", healthUrl);
 
@@ -214,5 +217,16 @@ public class StartupBackgroundService(
 
         logger.LogError("Healthcheck timeout exceeded.");
         throw new Exception("Server didn't start within timeout.");
+    }
+
+    private static int GetHealthCheckPort()
+    {
+        if (bool.TryParse(Environment.GetEnvironmentVariable("USE_CERTIFICATE"), out var useCert) && !useCert)
+        {
+            if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_LISTEN_PORT"), out var port) && port > 0)
+                return port;
+            return 5050;
+        }
+        return 80;
     }
 }

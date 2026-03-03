@@ -1,44 +1,39 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography;
-using ILogger = Serilog.ILogger;
-
 namespace DataGateVPNBot.Configurations;
 
 public static class WebHostConfiguration
 {
-    public static void ConfigureWebHost(this WebApplicationBuilder builder, ILogger logger)
+    public static void ConfigureWebHost(this WebApplicationBuilder builder, Serilog.ILogger? logger = null)
     {
-        var config = builder.Configuration;
-
-        builder.WebHost.ConfigureKestrel(options =>
+        builder.WebHost.ConfigureKestrel((context, options) =>
         {
-            options.ListenAnyIP(80);
+            var useCert = GetUseCertificate(context.Configuration);
+            var listenPort = GetListenPort(context.Configuration);
 
-            var certPath = config["CERTIFICATE_PEM_PATH"] ?? "/app/resources/certs/datagatetgbot.pem";
-            var keyPath = config["CERTIFICATE_KEY_PATH"] ?? "/app/resources/certs/datagatetgbot.key";
-
-            if (File.Exists(certPath) && File.Exists(keyPath))
+            if (!useCert)
             {
-                try
-                {
-                    var cert = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-                    cert = new X509Certificate2(cert.Export(X509ContentType.Pkcs12)); //todo: make cert usable for Kestrel
-
-                    options.ListenAnyIP(443, listen =>
-                    {
-                        listen.UseHttps(cert);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, "❌ Failed to load certificate from PEM/KEY: {Cert}, {Key}", certPath, keyPath);
-                }
+                options.ListenAnyIP(listenPort);
+                logger?.Information(
+                    "USE_CERTIFICATE=false: Kestrel listening HTTP only on port {Port}.",
+                    listenPort);
             }
             else
             {
-                logger.Warning("⚠ No certificate files found at '{Cert}' and '{Key}'. HTTPS will not be enabled.",
-                    certPath, keyPath);
+                options.Configure(context.Configuration.GetSection("Kestrel"));
             }
         });
+    }
+
+    private static bool GetUseCertificate(IConfiguration configuration)
+    {
+        if (bool.TryParse(Environment.GetEnvironmentVariable("USE_CERTIFICATE"), out var env))
+            return env;
+        return configuration.GetValue<bool>("BotConfiguration:UseCertificate");
+    }
+
+    private static int GetListenPort(IConfiguration configuration)
+    {
+        if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_LISTEN_PORT"), out var port) && port > 0)
+            return port;
+        return 5050;
     }
 }
