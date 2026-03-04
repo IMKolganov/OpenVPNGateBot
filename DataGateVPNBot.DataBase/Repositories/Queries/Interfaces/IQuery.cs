@@ -1,4 +1,4 @@
-namespace DataGateVPNBot.DataBase.Repositories.Interfaces;
+namespace DataGateVPNBot.DataBase.Repositories.Queries.Interfaces;
 
 public interface IQuery<T> where T : class
 {

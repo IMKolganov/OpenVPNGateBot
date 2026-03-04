@@ -1,5 +1,4 @@
-﻿using DataGateVPNBot.Models.Helpers;
-using Microsoft.EntityFrameworkCore;
+﻿using DataGateVPNBot.Models.Configurations.Helpers;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 
@@ -7,16 +6,39 @@ namespace DataGateVPNBot.Configurations;
 
 public static class SerilogConfiguration
 {
-    public static void ConfigureSerilog(this IHostBuilder host, IConfiguration configuration)
+    public static void ConfigureSerilog(this IHostBuilder host)
     {
-        var elasticsearchSettings = configuration.GetSection("Elasticsearch").Get<ElasticsearchSettings>();
-        if (elasticsearchSettings == null) throw new NullReferenceException(nameof(elasticsearchSettings));
-        
-        Log.Logger = new LoggerConfiguration()
+        var elasticConfig = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("elasticsearch.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(elasticsearchSettings.Uri))
+            .Enrich.FromLogContext()
+            .MinimumLevel.Information();
+
+        var elasticsearchSettings = new ElasticsearchSettings
+        {
+            Uri = (Environment.GetEnvironmentVariable("ELASTIC_URI") 
+                   ?? elasticConfig["Elasticsearch:Uri"]) ?? string.Empty,
+
+            Username = (Environment.GetEnvironmentVariable("ELASTIC_USERNAME") 
+                        ?? elasticConfig["Elasticsearch:Username"]) ?? string.Empty,
+
+            Password = (Environment.GetEnvironmentVariable("ELASTIC_PASSWORD") 
+                        ?? elasticConfig["Elasticsearch:Password"]) ?? string.Empty,
+
+            IndexFormat = (Environment.GetEnvironmentVariable("ELASTIC_INDEX_FORMAT") 
+                           ?? elasticConfig["Elasticsearch:IndexFormat"]) ?? string.Empty
+        };
+
+        if (!string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
+        {
+            loggerConfig = loggerConfig.WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(elasticsearchSettings.Uri))
             {
-                IndexFormat = elasticsearchSettings.IndexFormat,
+                IndexFormat = elasticsearchSettings.IndexFormat ?? "default-index",
                 AutoRegisterTemplate = true,
                 AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv8,
                 NumberOfShards = 1,
@@ -31,12 +53,23 @@ public static class SerilogConfiguration
                         Console.WriteLine($"Exception: {exception.Message}");
                 },
                 EmitEventFailure = EmitEventFailureHandling.WriteToSelfLog
+            });
+        }
 
-            })
-            .Enrich.FromLogContext()
-            .MinimumLevel.Information()
-            .CreateLogger();
-;
+        Log.Logger = loggerConfig.CreateLogger();
+
+        var serilogLogger = Log.ForContext(typeof(SerilogConfiguration));
+
+        if (!string.IsNullOrWhiteSpace(elasticsearchSettings.Uri))
+        {
+            serilogLogger.Information($"📡 Elasticsearch logging is enabled. " +
+                                      $"Host: {elasticsearchSettings.Uri}, " +
+                                      $"IndexFormat: {elasticsearchSettings.IndexFormat}");
+        }
+        else
+        {
+            serilogLogger.Warning("🚨 Elasticsearch settings not found. Logging to console only.");
+        }
 
         host.UseSerilog();
     }

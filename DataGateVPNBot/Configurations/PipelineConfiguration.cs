@@ -1,5 +1,6 @@
-﻿using System.Reflection;
-using DataGateVPNBot.Services.UntilsServices;
+using System.Net;
+using System.Reflection;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace DataGateVPNBot.Configurations;
 
@@ -7,6 +8,27 @@ public static class PipelineConfiguration
 {
     public static void ConfigurePipeline(this WebApplication app)
     {
+        if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
+        {
+            var options = new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+                ForwardedForHeaderName = "X-Forwarded-For",
+                ForwardedProtoHeaderName = "X-Forwarded-Proto"
+            };
+            if (app.Configuration.GetValue<bool>("ForwardedHeaders:AllowAll"))
+            {
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+            }
+            else
+            {
+                options.KnownIPNetworks.Clear();
+                options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Loopback, 8));
+            }
+            app.UseForwardedHeaders(options);
+        }
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -16,7 +38,8 @@ public static class PipelineConfiguration
         app.UseHttpsRedirection();
         app.UseAuthorization();
         app.MapControllers();
-        
+        app.MapGet("/.well-known/healthcheck", () => Results.Ok()).ExcludeFromDescription();
+
         app.UseStatusCodePagesWithReExecute("/error/{0}");
         app.MapGet("/error/404", () => Results.Problem(statusCode: 404, title: "Page Not Found", 
                 detail: "The requested resource was not found."))
@@ -26,7 +49,7 @@ public static class PipelineConfiguration
         var environmentName = app.Environment.EnvironmentName;
         
         app.MapGet("/",
-            (ILogger<EasyRsaService> logger) => Results.Text(statusCode: 200, 
+            (ILogger<Program> logger) => Results.Text(statusCode: 200,
                 content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
 
         app.Logger.LogInformation($"Application version: {version}; Environment: {environmentName};");

@@ -1,8 +1,13 @@
 using DataGateVPNBot.Models.Configurations;
-using DataGateVPNBot.Models.Enums;
 using DataGateVPNBot.Services.BotServices.Interfaces;
-using DataGateVPNBot.Services.DataServices.Interfaces;
+using DataGateVPNBot.Services.DashboardServices;
+using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
+using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
+using OpenVPNGateMonitor.SharedModels.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -12,43 +17,32 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DataGateVPNBot.Handlers;
 
-public partial class TelegramUpdateHandler : IUpdateHandler
+public partial class TelegramUpdateHandler(
+    ILogger<TelegramUpdateHandler> logger,
+    ITelegramBotClient botClient,
+    IServiceProvider serviceProvider,
+    ITelegramSettingsService telegramSettingsService,
+    AuthService authService,
+    IOptions<BotConfiguration> options)
+    : IUpdateHandler
 {
-    private readonly ITelegramBotClient _botClient;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IOpenVpnClientService _openVpnClientService;
-    private readonly ITelegramSettingsService _telegramSettingsService;
-    private readonly ILogger<TelegramUpdateHandler> _logger;
-    private readonly string _pathBotLog;
-    private readonly string _pathBotPhoto;
-    
-    public TelegramUpdateHandler(
-        ITelegramBotClient botClient,
-        IServiceProvider serviceProvider,
-        IOpenVpnClientService openVpnClientService,
-        ITelegramSettingsService telegramSettingsService,
-        ILogger<TelegramUpdateHandler> logger,
-        IConfiguration configuration)
-    {
-        _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _openVpnClientService = openVpnClientService ?? throw new ArgumentNullException(nameof(openVpnClientService));
-        _telegramSettingsService = telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
-        _pathBotLog = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.LogFile ?? throw new InvalidOperationException();
-        _pathBotPhoto = configuration.GetSection("BotConfiguration").Get<BotConfiguration>()?.BotPhotoPath ?? throw new InvalidOperationException();
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
-    
+    private readonly ILogger<TelegramUpdateHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ITelegramBotClient _botClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
+    private readonly IServiceProvider _serviceProvider = serviceProvider ?? 
+                                                         throw new ArgumentNullException(nameof(serviceProvider));
+    private readonly ITelegramSettingsService _telegramSettingsService = 
+        telegramSettingsService ?? throw new ArgumentNullException(nameof(telegramSettingsService));
+    private readonly BotConfiguration _botConfig = (options ?? throw new ArgumentNullException(nameof(options))).Value;
     #region HandleErrorAsync: Error handling for Telegram Bot API
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception,
         HandleErrorSource source, CancellationToken cancellationToken)
     {
         _logger.LogCritical("HandleError: {Exception}", exception);
         using var scope = _serviceProvider.CreateScope();
-        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
 
-        await errorService.LogErrorToDatabase(exception);
-        await errorService.NotifyAdminsAsync(exception);
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+        errorService.LogErrorToDatabase(exception);//todo:fix it
+        await errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
         if (exception is RequestException)
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
     }
@@ -61,9 +55,9 @@ public partial class TelegramUpdateHandler : IUpdateHandler
         cancellationToken.ThrowIfCancellationRequested();
         await (update switch
         {
-            { Message: { } message } => OnMessage(message),
-            { EditedMessage: { } message } => OnMessage(message),
-            { CallbackQuery: { } callbackQuery } => OnCallbackQuery(callbackQuery),
+            { Message: { } message } => OnMessage(message, cancellationToken),
+            { EditedMessage: { } message } => OnMessage(message, cancellationToken),
+            { CallbackQuery: { } callbackQuery } => OnCallbackQuery(callbackQuery, cancellationToken),
             { InlineQuery: { } inlineQuery } => OnInlineQuery(inlineQuery),
             { ChosenInlineResult: { } chosenInlineResult } => OnChosenInlineResult(chosenInlineResult),
             { Poll: { } poll } => OnPoll(poll),
@@ -72,187 +66,310 @@ public partial class TelegramUpdateHandler : IUpdateHandler
             // EditedChannelPost:
             // ShippingQuery:
             // PreCheckoutQuery:
-            _ => UnknownUpdateHandlerAsync(update)
+            _ => UnknownUpdateHandlerAsync(update, cancellationToken)
         });
     }
     #endregion
     
     #region OnMessage: Handle incoming messages
-    private async Task OnMessage(Message msg)
+    private async Task OnMessage(Message msg, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Received message type: {MessageType}", msg.Type);
         if (msg.Text is not { } messageText)
             return;
-        await LogIncomingMessage(msg);
+        await LogIncomingMessage(msg, cancellationToken);
 
-        Message sentMessage = await ProcessingMessage(msg, messageText);
+        Message sentMessage = await ProcessingMessage(msg, messageText, cancellationToken);
         _logger.LogInformation("Message sent with id: {SentMessageId}", sentMessage.Id);
     }
     #endregion
 
-    private async Task<Message> ProcessingMessage(Message msg, string messageText)
+    private async Task<Message> ProcessingMessage(Message msg, string messageText, CancellationToken cancellationToken)
     {
         var commandParts = messageText.Split(' ', 2);
-        var command = commandParts[0].ToLower();
-        // var argument = commandParts.Length > 1 ? commandParts[1] : null;
-        if (!await IsExistLocalizationSettings(msg.From!.Id) && 
-            (command != "/start"
-             ||command != "/change_language"
-             ||command != "/english"
-             ||command != "/русский"
-             ||command != "/ελληνικά"))
+        var rawCommand = commandParts[0].ToLower();
+        var command = rawCommand.Split('@')[0]; // remove @BotUsername
+        var argument = commandParts.Length > 1 ? commandParts[1] : null;
+
+        var isPrivate = msg.Chat.Type == ChatType.Private;
+
+        await RegisterNewUserAsync(msg, cancellationToken); // optional user registration
+
+        var isLocalizationCommand = command is BotCommands.CommandStart
+            or BotCommands.CommandChangeLanguage
+            or BotCommands.CommandEnglish
+            or BotCommands.CommandRussian
+            or BotCommands.CommandGreek;
+
+        if (!await IsExistLocalizationSettings(msg.From!.Id, cancellationToken) && !isLocalizationCommand)
         {
-            _logger.LogInformation("Localization settings not found for user with TelegramId: {TelegramId}. Calling SelectLanguage.", msg.From.Id);
-            await SelectLanguage(msg);
+            _logger.LogInformation(
+                "Localization settings not found for TelegramId: {TelegramId}. Triggering language selection.",
+                msg.From.Id);
+            return await SelectLanguage(msg, cancellationToken);
         }
-        else
+
+        _logger.LogInformation("Processing command {Command} from user {UserId}", command, msg.From!.Id);
+
+        var privateOnlyCommands = new HashSet<string>
         {
-            _logger.LogInformation("Localization settings found for user with TelegramId: {TelegramId}.", msg.From.Id);
+            BotCommands.CommandRegister,
+            BotCommands.CommandGetMyFiles,
+            BotCommands.CommandMakeNewFile,
+            BotCommands.CommandMakeNewFileWithToken,
+            BotCommands.CommandDeleteSelectedFile,
+            BotCommands.CommandDeleteAllFiles,
+            BotCommands.CommandDashboardApiGetToken
+        };
+
+        if (!isPrivate && privateOnlyCommands.Contains(command))
+        {
+            _logger.LogInformation("Command {Command} is not allowed in group chats.", command);
+            return await  _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: $"Command {command} is not allowed in group chats.", 
+                cancellationToken: cancellationToken);
         }
-        await RegisterNewUserAsync(msg);//for something wrong when "/start" don't work. This line usually is not a necessary 
 
         return await (command switch
         {
-            "/start" => Start(msg),
-            "/about_bot" => AboutBot(msg),
-            "/how_to_use" => HowToUseVpn(msg),
-            "/register" => RegisterForVpn(msg),
-            "/get_my_files" => GetMyFiles(msg),
-            "/make_new_file" => MakeNewVpnFile(msg),
-            "/delete_selected_file" => DeleteSelectedFile(msg),
-            "/delete_all_files" => DeleteAllFiles(msg),
-            "/install_client" => InstallClient(msg),
-            "/about_project" => AboutProject(msg),
-            "/contacts" => Contacts(msg),
-            "/change_language" => SelectLanguage(msg),
-            
-            "/register_commands" => RegisterCommandsAsync(msg),
-            
-            "/get_logs" => GetLogs(msg),
-            "/get_file_log" => SendFileLog(msg),
-            
-            "/english" => ChangeLanguage(msg, command),
-            "/русский" => ChangeLanguage(msg, command),
-            "/ελληνικά" => ChangeLanguage(msg, command),
+            BotCommands.CommandStart => Start(msg, cancellationToken),
+            BotCommands.CommandAboutBot => AboutBot(msg, cancellationToken),
+            BotCommands.CommandHowToUse => HowToUseVpn(msg, cancellationToken),
+            BotCommands.CommandRegister => RegisterForVpn(msg, cancellationToken),
+            BotCommands.CommandGetMyFiles => GetMyFilesWithToken(msg, argument, cancellationToken),
+            BotCommands.CommandGetMyFilesWithToken => GetMyFilesWithToken(msg, argument, cancellationToken),
+            BotCommands.CommandGetMyFilesWithoutToken => GetMyFiles(msg, argument, cancellationToken),
+            BotCommands.CommandMakeNewFile => MakeNewVpnFileWithToken(msg, argument, cancellationToken),
+            BotCommands.CommandMakeNewFileWithoutToken => MakeNewVpnFile(msg, argument, cancellationToken),
+            BotCommands.CommandMakeNewFileWithToken => MakeNewVpnFileWithToken(msg, argument, cancellationToken),
+            BotCommands.CommandDeleteSelectedFile => DeleteSelectedFile(msg, argument, cancellationToken),
+            BotCommands.CommandDeleteAllFiles => DeleteAllFiles(msg, argument, cancellationToken),
+            BotCommands.CommandInstallClient => InstallClient(msg, cancellationToken),
+            BotCommands.CommandAboutProject => AboutProject(msg, cancellationToken),
+            BotCommands.CommandContacts => Contacts(msg, cancellationToken),
+            BotCommands.CommandChangeLanguage => SelectLanguage(msg, cancellationToken),
+            BotCommands.CommandRegisterCommands => RegisterCommandsAsync(msg, cancellationToken),
+            BotCommands.CommandEnglish or BotCommands.CommandRussian or BotCommands.CommandGreek => ChangeLanguage(msg, 
+                command, cancellationToken),
+            BotCommands.CommandDashboardApiGetToken => DashBoardApiGetToken(msg),
+            BotCommands.CommandPhoto => SendPhoto(msg),
+            BotCommands.CommandInlineButtons => SendInlineKeyboard(msg),
+            BotCommands.CommandKeyboard => SendReplyKeyboard(msg),
+            BotCommands.CommandRemove => RemoveKeyboard(msg),
+            BotCommands.CommandRequest => RequestContactAndLocation(msg),
+            BotCommands.CommandInlineMode => StartInlineQuery(msg),
+            BotCommands.CommandPoll => SendPoll(msg),
+            BotCommands.CommandPollAnonymous => SendAnonymousPoll(msg),
+            BotCommands.CommandThrow => FailingHandler(),
 
-            "/photo" => SendPhoto(msg),
-            "/inline_buttons" => SendInlineKeyboard(msg),
-            "/keyboard" => SendReplyKeyboard(msg),
-            "/remove" => RemoveKeyboard(msg),
-            "/request" => RequestContactAndLocation(msg),
-            "/inline_mode" => StartInlineQuery(msg),
-            "/poll" => SendPoll(msg),
-            "/poll_anonymous" => SendAnonymousPoll(msg),
-            "/throw" => FailingHandler(),
-
-            _ => Usage(msg)
+            _ => Usage(msg, cancellationToken)
         });
     }
 
-    private async Task<Message> Usage(Message msg)
+    private async Task<Message> Usage(Message msg, CancellationToken cancellationToken)
     {
         return await _botClient.SendMessage(msg.Chat, 
-            await GetLocalizationTextAsync("BotMenu", msg.Chat.Id)
+            await GetLocalizationTextAsync("BotMenu", msg.Chat.Id, cancellationToken)
             , parseMode: ParseMode.Html,
-            replyMarkup: new ReplyKeyboardRemove());
+            replyMarkup: new ReplyKeyboardRemove(), 
+            cancellationToken: cancellationToken);
     }
 
-    private async Task<Message> Start(Message msg)
+    private async Task<Message> Start(Message msg, CancellationToken cancellationToken)
     {
-        // Register new user if applicable
-        await RegisterNewUserAsync(msg);
+        // Register a new user if applicable
+        await RegisterNewUserAsync(msg, cancellationToken);
 
-        return await SelectLanguage(msg);
+        return await SelectLanguage(msg, cancellationToken);
     }
-    
-    private async Task OnCallbackQuery(CallbackQuery callbackQuery)
+
+    private async Task OnCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Received inline keyboard callback from: {CallbackQueryId}", callbackQuery.Id);
-        await _botClient.AnswerCallbackQuery(callbackQuery.Id, "Processing your request...");
 
-        if (callbackQuery.Data != null && callbackQuery.Data.ToLower().StartsWith("/delete_file "))
+        await _botClient.AnswerCallbackQuery(callbackQuery.Id, "Processing your request...",
+            cancellationToken: cancellationToken);
+
+        var data = callbackQuery.Data?.Trim();
+        if (string.IsNullOrWhiteSpace(data))
         {
-            var fileName = callbackQuery.Data.Substring("/delete_file ".Length);
-            _logger.LogInformation("Deleting file: {FileName}", fileName);
-            await DeleteFile(callbackQuery.From.Id, fileName);
+            _logger.LogWarning("Empty callback data received.");
+            return;
         }
-        else if (callbackQuery.Data != null && (callbackQuery.Data.ToLower() == "/english" || 
-                                                callbackQuery.Data.ToLower() == "/русский" ||
-                                                callbackQuery.Data.ToLower() == "/ελληνικά"))
+
+        var message = callbackQuery.Message ?? throw new InvalidOperationException("Message is null.");
+        var lowerData = data.ToLowerInvariant();
+        
+        await LogIncomingMessage(callbackQuery, cancellationToken);
+
+        if (lowerData.StartsWith($"{BotCommands.CommandDeleteSelectedFile} "))
         {
-            if (callbackQuery.Message != null) await ChangeLanguage(callbackQuery.Message, 
-                callbackQuery.Data.ToLower());
-            _logger.LogInformation("User selected language: {Language}", callbackQuery.Data);
+            var parts = data.Split(' ', 3);
+            if (parts.Length == 3)
+            {
+                var vpnServerId = parts[1];
+                var fileName = parts[2];
+                _logger.LogInformation("Deleting file: {FileName} from server {ServerId}", fileName, vpnServerId);
+                await DeleteFile(callbackQuery.From.Id, vpnServerId, fileName, cancellationToken);
+            }else if (parts.Length == 2)
+            {
+                var vpnServerId = data.Substring(BotCommands.CommandDeleteSelectedFile.Length + 1);
+                _logger.LogInformation("Delete selected file for vpnServerId: {VpnServerId}", vpnServerId);
+                await DeleteSelectedFile(message, vpnServerId, cancellationToken);
+            }
+            else
+            {
+                _logger.LogWarning("Invalid delete_file callback format: {Data}", data);
+            }
+        }
+        else if (lowerData.StartsWith($"{BotCommands.CommandGetMyFiles} "))
+        {
+            var vpnServerId = data.Substring(BotCommands.CommandGetMyFiles.Length + 1);
+            _logger.LogInformation("Get files for vpnServerId: {VpnServerId}", vpnServerId);
+            await GetMyFiles(message, vpnServerId, cancellationToken);
+        }
+        else if (lowerData.StartsWith($"{BotCommands.CommandGetMyFilesWithToken} "))
+        {
+            var vpnServerId = data.Substring(BotCommands.CommandGetMyFilesWithToken.Length + 1);
+            _logger.LogInformation("Get files for vpnServerId: {VpnServerId}", vpnServerId);
+            await GetMyFilesWithToken(message, vpnServerId, cancellationToken);
+        }
+        else if (lowerData.StartsWith($"{BotCommands.CommandMakeNewFile} "))
+        {
+            var vpnServerId = data.Substring(BotCommands.CommandMakeNewFile.Length + 1);
+            _logger.LogInformation("Make new file for vpnServerId: {VpnServerId}", vpnServerId);
+            await MakeNewVpnFile(message, vpnServerId, cancellationToken);
+        }
+        else if (lowerData.StartsWith($"{BotCommands.CommandMakeNewFileWithToken} "))
+        {
+            var vpnServerId = data.Substring(BotCommands.CommandMakeNewFileWithToken.Length + 1);
+            _logger.LogInformation("Make new file with token for vpnServerId: {VpnServerId}", vpnServerId);
+            await MakeNewVpnFileWithToken(message, vpnServerId, cancellationToken);
+        }
+        else if (lowerData.StartsWith($"{BotCommands.CommandDeleteAllFiles} "))
+        {
+            var vpnServerId = data.Substring(BotCommands.CommandDeleteAllFiles.Length + 1);
+            _logger.LogInformation("Delete all files for vpnServerId: {VpnServerId}", vpnServerId);
+            await DeleteAllFiles(message, vpnServerId, cancellationToken);
+        }
+        else if (data is BotCommands.CommandEnglish or BotCommands.CommandRussian or BotCommands.CommandGreek)
+        {
+            _logger.LogInformation("User selected language: {Language}", data);
+            await ChangeLanguage(message, data.ToLowerInvariant(), cancellationToken);
         }
         else
         {
-            _logger.LogWarning("Invalid callback data received: {CallbackData}", callbackQuery.Data);
-
-            if (callbackQuery.Message != null)
-                await _botClient.SendMessage(
-                    chatId: callbackQuery.Message.Chat.Id,
-                    text: "Invalid callback data received. Please try again."
-                );
+            _logger.LogWarning("Invalid callback data received: {CallbackData}", data);
+            await _botClient.SendMessage(
+                chatId: message.Chat.Id,
+                text: "Invalid callback data received. Please try again.",
+                cancellationToken: cancellationToken);
         }
     }
-    
-    private async Task<Message> RegisterForVpn(Message msg)
+
+    private async Task<Message> RegisterForVpn(Message msg, CancellationToken cancellationToken)
     {
         if (msg.From != null)
-            await RegisterNewUserAsync(msg);
+            await RegisterNewUserAsync(msg, cancellationToken);
 
         return await _botClient.SendMessage(
             chatId: msg.Chat.Id,
-            await GetLocalizationTextAsync("Registered", msg.From!.Id)
-        );
+            await GetLocalizationTextAsync("Registered", msg.From!.Id, cancellationToken),
+            cancellationToken: cancellationToken);
     }
 
-    private Task UnknownUpdateHandlerAsync(Update update)
+    private async Task UnknownUpdateHandlerAsync(Update update, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Unknown update type: {UpdateType}", update.Type);
-        return Task.CompletedTask;
+        var updateDetails = JsonConvert.SerializeObject(update, Formatting.Indented);
+
+        var ex = new InvalidOperationException(
+            $"Unknown update type received: {update.Type}\nDetails:\n{updateDetails}");
+
+        using var scope = _serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+        await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+
+        _logger.LogWarning("⚠️ Unknown update sent to admin: {UpdateType}\n{Details}", update.Type, updateDetails);
     }
-     
-    private async Task<Message> RegisterCommandsAsync(Message msg)
+
+    private async Task<Message> RegisterButtonsAsync(Message msg, CancellationToken cancellationToken)
+    {//todo: for future
+        await botClient.SetChatMenuButton(
+            menuButton: new MenuButtonWebApp
+            {
+                Text = "Open VPN App",
+                WebApp = new WebAppInfo { Url = "https://yourdomain.com/mini/" }
+            },
+            cancellationToken: cancellationToken);
+
+        return await _botClient.SendMessage(
+            chatId: msg.Chat.Id,
+            text: "\u2705 Button have been successfully registered...",
+            replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
+    }
+
+    private async Task<Message> RegisterCommandsAsync(Message msg, CancellationToken cancellationToken)
     {
-        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.English), languageCode: "en");
-        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Russian), languageCode: "ru");
-        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Greek), languageCode: "el");
+        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.English), 
+            languageCode: "en", cancellationToken: cancellationToken);
+        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Russian), 
+            languageCode: "ru", cancellationToken: cancellationToken);
+        await _botClient.SetMyCommands(_telegramSettingsService.GetTelegramMenuByLanguage(Language.Greek), 
+            languageCode: "el", cancellationToken: cancellationToken);
         return await _botClient.SendMessage(
             chatId: msg.Chat.Id,
             text: "\u2705 All commands have been successfully registered...",
-            replyMarkup: new ReplyKeyboardRemove()
-        );
+            replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
     }
     
-    private async Task RegisterNewUserAsync(Message msg)
+    private async Task RegisterNewUserAsync(Message msg, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var registrationService = scope.ServiceProvider.GetRequiredService<ITelegramUsersService>();
-        await registrationService.RegisterUserAsync(
-            telegramId: msg.From!.Id,
-            username: msg.From.Username,
-            firstName: msg.From.FirstName,
-            lastName: msg.From.LastName
-        );
+        var registrationService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
+        var request = new RegisterUserFromTgBotRequest
+        {
+            TelegramId = msg.From!.Id,
+            FirstName = msg.From.FirstName,
+            LastName = msg.From.LastName,
+            Username = msg.From.Username,
+            LanguageCode = msg.From.LanguageCode,
+            IsPremium = msg.From.IsPremium
+        };
+
+        if (!await registrationService.UserExistsAsync(request.TelegramId, cancellationToken))
+        {
+            _logger.LogInformation("User with TelegramId {TelegramId} not found. Registering...", request.TelegramId);
+            await registrationService.RegisterUserAsync(request, cancellationToken);
+        }
     }
 
-    private async Task LogIncomingMessage(Message msg)
+    private async Task LogIncomingMessage(Message msg, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var incomingMessageLogService = scope.ServiceProvider.GetRequiredService<IIncomingMessageLogService>();
-        await incomingMessageLogService.Log(_botClient, msg);
+        await incomingMessageLogService.Log(_botClient, msg, cancellationToken);
     }
     
-    private async Task<bool> IsExistLocalizationSettings(long telegramId)
+    private async Task LogIncomingMessage(CallbackQuery msg, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Checking localization settings for TelegramId: {TelegramId}.", telegramId);
+        using var scope = _serviceProvider.CreateScope();
+        var incomingMessageLogService = scope.ServiceProvider.GetRequiredService<IIncomingMessageLogService>();
+        await incomingMessageLogService.Log(_botClient, msg, cancellationToken);
+    }
+    
+    private async Task<bool> IsExistLocalizationSettings(long telegramId, CancellationToken cancellationToken)
+    {
+        var request = new IsExistTelegramUserLanguagePreferenceRequest() { TelegramId = telegramId };
+        
+        _logger.LogInformation($"Checking localization settings for TelegramId: {telegramId}.");
         using var scope = _serviceProvider.CreateScope();
         var incomingMessageLogService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
 
-        var result = await incomingMessageLogService.IsExistUserLanguageAsync(telegramId);
-        _logger.LogInformation("Result of IsExistUserLanguageAsync for TelegramId {TelegramId}: {Result}", telegramId, result);
+        var result = 
+            await incomingMessageLogService.IsExistTelegramUserLanguagePreferenceAsync(request, cancellationToken);
+        _logger.LogInformation($"Result of IsExistUserLanguageAsync for TelegramId {telegramId}: {result}");
 
-        return result;
+        return result.IsExistTelegramUserLanguagePreference;
     }
 }

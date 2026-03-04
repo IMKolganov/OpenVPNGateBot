@@ -7,7 +7,11 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5501;https://localhost:88",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Url": "https://*:443",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/resources/certs/datagatetgbot.pem",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/resources/certs/datagatetgbot.key"
       }
     },
     "DataGateVPNBot Release": {
@@ -17,7 +21,25 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5050;https://localhost:8443",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": ""
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Url": "https://*:443",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/resources/certs/datagatetgbot.pem",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/resources/certs/datagatetgbot.key"
+      }
+    },
+    "DataGateVPNBot Local": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:80;https://localhost:443",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging",
+        "ASPNETCORE_Kestrel__Endpoints__Http__Url": "http://*:80",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Url": "https://*:443",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path": "/app/resources/certs/datagatetgbot.pem",
+        "ASPNETCORE_Kestrel__Endpoints__Https__Certificate__KeyPath": "/app/resources/certs/datagatetgbot.key"
       }
     }
   }

@@ -4,40 +4,29 @@ using Newtonsoft.Json;
 
 namespace DataGateVPNBot.Middlewares;
 
-public class GlobalExceptionMiddleware
+public class GlobalExceptionMiddleware(
+    RequestDelegate next,
+    IServiceProvider serviceProvider,
+    ILogger<GlobalExceptionMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<GlobalExceptionMiddleware> _logger;
-
-    public GlobalExceptionMiddleware(RequestDelegate next,
-        IServiceProvider serviceProvider,
-        ILogger<GlobalExceptionMiddleware> logger)
-    {
-        _next = next;
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception occurred.");
-            using var scope = _serviceProvider.CreateScope();
+            logger.LogError(ex, "Unhandled exception occurred.");
+            using var scope = serviceProvider.CreateScope();
             var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
-            await errorService.LogErrorToDatabase(ex, context);
-            await errorService.NotifyAdminsAsync(ex, context);
-            await HandleExceptionAsync(context); //ex);
-
+            errorService.LogErrorToDatabase(ex, context); //todo: fix it
+            await errorService.NotifyAdminsAboutExceptionAsync(ex, context);
+            await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context)//, Exception exception)
+    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
@@ -46,7 +35,7 @@ public class GlobalExceptionMiddleware
         {
             context.Response.StatusCode,
             Message = "An unexpected error occurred. Please try again later.",
-            // Detail = exception.Message
+            Detail = exception.Message
         };
 
         return context.Response.WriteAsync(JsonConvert.SerializeObject(response));

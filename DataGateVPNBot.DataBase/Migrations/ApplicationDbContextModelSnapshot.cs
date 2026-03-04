@@ -18,7 +18,7 @@ namespace DataGateVPNBot.DataBase.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("xgb_botvpndev")
-                .HasAnnotation("ProductVersion", "9.0.1")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -594,6 +594,90 @@ namespace DataGateVPNBot.DataBase.Migrations
                             Key = "CertCriticalError",
                             Language = 2,
                             Text = "Κρίσιμο σφάλμα. Κάτι πήγε στραβά με την υπηρεσία πιστοποίησης. Τώρα σταματάμε όλες τις διαδικασίες, παρακαλώ δοκιμάστε αργότερα."
+                        },
+                        new
+                        {
+                            Id = 61,
+                            Key = "ChooseOpenVpnServer",
+                            Language = 1,
+                            Text = "Choose an OpenVPN server:"
+                        },
+                        new
+                        {
+                            Id = 62,
+                            Key = "ChooseOpenVpnServer",
+                            Language = 3,
+                            Text = "Выберите сервер OpenVPN:"
+                        },
+                        new
+                        {
+                            Id = 63,
+                            Key = "ChooseOpenVpnServer",
+                            Language = 2,
+                            Text = "Επιλέξτε διακομιστή OpenVPN:"
+                        },
+                        new
+                        {
+                            Id = 64,
+                            Key = "SomethingWentWrongWhenTryMakeNewFile",
+                            Language = 1,
+                            Text = "Something went wrong while trying to create a new file."
+                        },
+                        new
+                        {
+                            Id = 65,
+                            Key = "SomethingWentWrongWhenTryMakeNewFile",
+                            Language = 3,
+                            Text = "Произошла ошибка при попытке создать новый файл."
+                        },
+                        new
+                        {
+                            Id = 66,
+                            Key = "SomethingWentWrongWhenTryMakeNewFile",
+                            Language = 2,
+                            Text = "Κάτι πήγε στραβά κατά την προσπάθεια δημιουργίας νέου αρχείου."
+                        },
+                        new
+                        {
+                            Id = 67,
+                            Key = "ErrorDeletedAllFile",
+                            Language = 1,
+                            Text = "No files found to delete."
+                        },
+                        new
+                        {
+                            Id = 68,
+                            Key = "ErrorDeletedAllFile",
+                            Language = 3,
+                            Text = "Файлы для удаления не найдены."
+                        },
+                        new
+                        {
+                            Id = 69,
+                            Key = "ErrorDeletedAllFile",
+                            Language = 2,
+                            Text = "Δεν βρέθηκαν αρχεία προς διαγραφή."
+                        },
+                        new
+                        {
+                            Id = 70,
+                            Key = "ErrorDeletedFile",
+                            Language = 1,
+                            Text = "File not found or already deleted."
+                        },
+                        new
+                        {
+                            Id = 71,
+                            Key = "ErrorDeletedFile",
+                            Language = 3,
+                            Text = "Файл не найден или уже удалён."
+                        },
+                        new
+                        {
+                            Id = 72,
+                            Key = "ErrorDeletedFile",
+                            Language = 2,
+                            Text = "Το αρχείο δεν βρέθηκε ή έχει ήδη διαγραφεί."
                         });
                 });
 

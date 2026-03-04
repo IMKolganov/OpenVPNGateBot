@@ -1,4 +1,4 @@
-﻿using DataGateVPNBot.Models.Enums;
+﻿using OpenVPNGateMonitor.SharedModels.Enums;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices.Interfaces;

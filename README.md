@@ -88,6 +88,9 @@ This script uses appsettings.json.template and populates it with values from .en
 ### Deployment on Raspberry Pi
 Automatic deployment is handled via **GitHub Actions**. See the [workflow file](.github/workflows/deploy.yml) for configuration details.
 
+### Deployment behind nginx
+Set `USE_CERTIFICATE=false`, `ForwardedHeaders__Enabled=true`, and `ForwardedHeaders__AllowAll=true`; app listens HTTP on `TELEGRAMBOT_LISTEN_PORT` (default 5050).
+
 ---
 
 ## Main Components

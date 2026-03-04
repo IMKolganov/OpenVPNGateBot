@@ -18,7 +18,7 @@ public partial class TelegramUpdateHandler
     {
         await _botClient.SendChatAction(msg.Chat, ChatAction.UploadPhoto);
         // await Task.Delay(2000); // simulate a long task
-        await using var fileStream = new FileStream(_pathBotPhoto, FileMode.Open, FileAccess.Read);
+        await using var fileStream = new FileStream("Photo/bot.gif", FileMode.Open, FileAccess.Read);
         return await _botClient.SendAnimation(msg.Chat, fileStream, caption: "Read https://github.com/IMKolganov/DataGateVPNBot");
     }
 
@@ -83,7 +83,6 @@ public partial class TelegramUpdateHandler
     {
         _logger.LogInformation("Received inline query from: {InlineQueryFromId}", inlineQuery.From.Id);
 
-        // throw new NotImplementedException();// displayed result
         InlineQueryResult[] results =
         [
             new InlineQueryResultArticle("1", "Telegram.Bot", new InputTextMessageContent("hello")),
@@ -108,7 +107,6 @@ public partial class TelegramUpdateHandler
 
     private async Task OnPollAnswer(PollAnswer pollAnswer)
     {
-        // throw new NotImplementedException("OnPollAnswer");
         var answer = pollAnswer.OptionIds.FirstOrDefault();
         var selectedOption = _pollOptions[answer];
         if (pollAnswer.User != null)

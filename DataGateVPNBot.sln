@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataGateVPNBot", "DataGateVPNBot\DataGateVPNBot.csproj", "{11C98FD4-7613-4BD4-B35E-9D049B33947C}"
 EndProject
@@ -8,11 +8,25 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		Dockerfile = Dockerfile
 		.dockerignore = .dockerignore
+		NuGet.config = NuGet.config
+		global.json = global.json
+		entrypoint.sh = entrypoint.sh
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataGateVPNBot.DataBase", "DataGateVPNBot.DataBase\DataGateVPNBot.DataBase.csproj", "{C531A99C-04AA-409F-9858-DD8446571254}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataGateVPNBot.Models", "DataGateVPNBot.Models\DataGateVPNBot.Models.csproj", "{24645906-7DAD-4673-827C-85A7DC981827}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataGateVPNBot.Tests", "DataGateVPNBot.Tests\DataGateVPNBot.Tests.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github\workflows", ".github\workflows", "{9DD5CA3E-F2DC-4588-A6F9-27EF89AF46EB}"
+    ProjectSection(SolutionItems) = preProject
+        .github\workflows\dockerhub-release.yml = .github\workflows\dockerhub-release.yml
+    EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "openssl", "openssl", "{9DD5CA3E-F2DC-4588-A6F9-27EF89AF46EA}"
+	ProjectSection(SolutionItems) = preProject
+		openssl\generate-cert.sh = openssl\generate-cert.sh
+		openssl\README.md = openssl\README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,13 +38,17 @@ Global
 		{11C98FD4-7613-4BD4-B35E-9D049B33947C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11C98FD4-7613-4BD4-B35E-9D049B33947C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11C98FD4-7613-4BD4-B35E-9D049B33947C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C531A99C-04AA-409F-9858-DD8446571254}.Release|Any CPU.Build.0 = Release|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{24645906-7DAD-4673-827C-85A7DC981827}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9DD5CA3E-F2DC-4588-A6F9-27EF89AF46EA} = {3E890336-DEBF-4E1C-A10D-A513D8242EE1}
+		{9DD5CA3E-F2DC-4588-A6F9-27EF89AF46EB} = {3E890336-DEBF-4E1C-A10D-A513D8242EE1}
 	EndGlobalSection
 EndGlobal
