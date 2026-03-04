@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.DashboardServices;
@@ -17,20 +17,7 @@ public static class DashboardApiConfiguration
             .AddEnvironmentVariables()
             .Build();
 
-        var dashboardConfig = new DashboardApiConfig
-        {
-            Url = Environment.GetEnvironmentVariable("DASHBOARDAPI_URL")
-                  ?? config["DashboardApi:Url"]
-                  ?? string.Empty,
-
-            ClientId = Environment.GetEnvironmentVariable("DASHBOARDAPI_CLIENTID")
-                       ?? config["DashboardApi:ClientId"]
-                       ?? string.Empty,
-
-            ClientSecret = Environment.GetEnvironmentVariable("DASHBOARDAPI_CLIENTSECRET")
-                           ?? config["DashboardApi:ClientSecret"]
-                           ?? string.Empty
-        };
+        var dashboardConfig = DashboardApiConfigurationHelper.GetConfig(config);
 
         if (string.IsNullOrWhiteSpace(dashboardConfig.Url))
         {

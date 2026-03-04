@@ -1,5 +1,5 @@
 # Use the .NET SDK for building
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 # Set the working directory
 WORKDIR /src
@@ -22,7 +22,7 @@ RUN echo "Using build configuration: $BUILD_CONFIGURATION" && \
       -o /app/publish
 
 # Use the ASP.NET runtime for the final image (framework-dependent)
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 
 # Use root initially to allow setting permissions
 USER root

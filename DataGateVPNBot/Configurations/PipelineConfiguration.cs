@@ -18,13 +18,13 @@ public static class PipelineConfiguration
             };
             if (app.Configuration.GetValue<bool>("ForwardedHeaders:AllowAll"))
             {
-                options.KnownNetworks.Clear();
+                options.KnownIPNetworks.Clear();
                 options.KnownProxies.Clear();
             }
             else
             {
-                options.KnownNetworks.Clear();
-                options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Loopback, 8));
+                options.KnownIPNetworks.Clear();
+                options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Loopback, 8));
             }
             app.UseForwardedHeaders(options);
         }

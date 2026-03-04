@@ -6,8 +6,8 @@ public static class WebHostConfiguration
     {
         builder.WebHost.ConfigureKestrel((context, options) =>
         {
-            var useCert = GetUseCertificate(context.Configuration);
-            var listenPort = GetListenPort(context.Configuration);
+            var useCert = KestrelListenOptionsHelper.GetUseCertificate(context.Configuration);
+            var listenPort = KestrelListenOptionsHelper.GetListenPort(context.Configuration);
 
             if (!useCert)
             {
@@ -23,17 +23,4 @@ public static class WebHostConfiguration
         });
     }
 
-    private static bool GetUseCertificate(IConfiguration configuration)
-    {
-        if (bool.TryParse(Environment.GetEnvironmentVariable("USE_CERTIFICATE"), out var env))
-            return env;
-        return configuration.GetValue<bool>("BotConfiguration:UseCertificate");
-    }
-
-    private static int GetListenPort(IConfiguration configuration)
-    {
-        if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_LISTEN_PORT"), out var port) && port > 0)
-            return port;
-        return 5050;
-    }
 }

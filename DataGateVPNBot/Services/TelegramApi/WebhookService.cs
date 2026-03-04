@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DataGateVPNBot.Extensions;
 using DataGateVPNBot.Models.Configurations;
 using Microsoft.Extensions.Options;
 
@@ -145,13 +146,8 @@ public class WebhookService(
 
     private string BuildWebhookUrl()
     {
-        var host = _botConfig.HostAddress
-            .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
-            .Replace("http://", "", StringComparison.OrdinalIgnoreCase)
-            .TrimEnd('/');
-
-        var portPart = _botConfig.Port == 443 ? "" : $":{_botConfig.Port}";
-        return $"https://{host}{portPart}/api/bot";
+        var host = HostAddressNormalizer.Normalize(_botConfig.HostAddress);
+        return WebhookUrlBuilder.Build(host, _botConfig.Port);
     }
 
 

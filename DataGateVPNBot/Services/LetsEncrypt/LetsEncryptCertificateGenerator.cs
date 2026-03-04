@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
+using DataGateVPNBot.Extensions;
 using DataGateVPNBot.Services.Interfaces;
 using Directory = System.IO.Directory;
 
@@ -108,7 +109,7 @@ namespace DataGateVPNBot.Services.LetsEncrypt
                 domain);
 
             // Normalize domain (strip protocol and port)
-            var normalizedDomain = NormalizeDomain(domain);
+            var normalizedDomain = DomainNormalizer.Normalize(domain);
 
             // Load or create ACME account key
             IKey accountKey;
@@ -207,28 +208,6 @@ namespace DataGateVPNBot.Services.LetsEncrypt
             await _errorService.SendMessageToAdminsAsync(
                 "♻️ Restarting the application to apply the new certificate...", cancellationToken);
             Environment.Exit(0);
-        }
-
-        private static string NormalizeDomain(string domain)
-        {
-            if (string.IsNullOrWhiteSpace(domain))
-                throw new ArgumentException("Domain is required.", nameof(domain));
-
-            if (domain.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            {
-                var uri = new Uri(domain);
-                return uri.Host;
-            }
-
-            // Strip optional ":port"
-            var colon = domain.LastIndexOf(':');
-            if (colon > -1)
-            {
-                var hostPart = domain[..colon];
-                if (!string.IsNullOrWhiteSpace(hostPart)) return hostPart;
-            }
-
-            return domain;
         }
 
         private static void EnsureDirectoryForFile(string filePath)
