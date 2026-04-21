@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.91" />
+    <ProjectReference Include="..\..\backend\DataGateMonitor.SharedModels\DataGateMonitor.SharedModels.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataGateVPNBot\DataGateVPNBot.csproj" />

@@ -1,7 +1,8 @@
 using System.Security.Authentication;
 using DataGateVPNBot.Services.Http;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnServers.Responses;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.VpnServers.Dto;
+using DataGateMonitor.SharedModels.DataGateMonitor.VpnServers.Responses;
+using DataGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -11,8 +12,24 @@ public class ServerService(
     AuthService authService)
 {
     private const string EndpointGetAllOpenVpnServers = "api/open-vpn-servers/get-all";
+    private const string EndpointGetVpnServer = "api/open-vpn-servers/get";
 
-    public async Task<OpenVpnServersResponse> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
+    public async Task<VpnServerDto?> GetVpnServerByIdAsync(int vpnServerId, CancellationToken cancellationToken)
+    {
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+            throw new AuthenticationException("Authentication failed. Failed to obtain a valid token from API.");
+
+        var url = $"{EndpointGetVpnServer}/{vpnServerId}";
+        var response = await httpRequestService.GetAsync<ApiResponse<VpnServerResponse>>(url, token, cancellationToken);
+        if (response is { Success: true, Data: not null })
+            return response.Data.VpnServer;
+
+        logger.LogWarning("Failed to get VPN server {VpnServerId}: {Message}", vpnServerId, response?.Message);
+        return null;
+    }
+
+    public async Task<VpnServersResponse> GetOpenVpnServersListAsync(CancellationToken cancellationToken)
     {
         var token = await authService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
@@ -20,7 +37,7 @@ public class ServerService(
 
         var url = EndpointGetAllOpenVpnServers;
         
-        var response = await httpRequestService.GetAsync<ApiResponse<OpenVpnServersResponse>>(url, token, cancellationToken);
+        var response = await httpRequestService.GetAsync<ApiResponse<VpnServersResponse>>(url, token, cancellationToken);
 
         if (!(response?.Success == true && response.Data is not null))
         {

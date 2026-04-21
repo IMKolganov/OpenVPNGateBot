@@ -1,6 +1,6 @@
 using DataGateVPNBot.Services.Http;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.Auth.Responses;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses;
+using DataGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 

@@ -27,6 +27,7 @@ public static class ServiceConfiguration
         services.AddSingleton<ITelegramSettingsService, TelegramSettingsService>();
         services.AddScoped<IOpenVpnServersService, OpenVpnServersService>();
         services.AddScoped<IOvpnFileService, OvpnFileService>();
+        services.AddScoped<IXrayClientLinkBotService, XrayClientLinkBotService>();
         services.AddSingleton<ServerService>();
 
         

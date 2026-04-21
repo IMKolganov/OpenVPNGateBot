@@ -1,6 +1,6 @@
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Responses;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotUser.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices.Interfaces;
 

@@ -1,5 +1,5 @@
-﻿using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Responses;
+﻿using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotLocalization.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotLocalization.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices.Interfaces;
 

@@ -1,13 +1,17 @@
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using OpenVPNGateMonitor.SharedModels.DataGateVPNBot.OvpnFile.Requests;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses;
+using DataGateMonitor.SharedModels.DataGateVPNBot.OvpnFile.Requests;
+using DataGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Controllers;
 
 [ApiController]
-public class OvpnFileController(IOvpnFileService ovpnFileService, IErrorService errorService,
+public class OvpnFileController(
+    IOvpnFileService ovpnFileService,
+    IXrayClientLinkBotService xrayClientLinkBotService,
+    IErrorService errorService,
     ILogger<OvpnFileController> logger) : ControllerBase
 {
     /// <summary>
@@ -22,18 +26,35 @@ public class OvpnFileController(IOvpnFileService ovpnFileService, IErrorService 
 
         try
         {
-            var response = await ovpnFileService.DownloadOvpnFileByTokenAsync(request.Token, ct);
+            DownloadFileResponse response;
+            try
+            {
+                response = await ovpnFileService.DownloadOvpnFileByTokenAsync(request.Token, ct);
+            }
+            catch (FileNotFoundException)
+            {
+                response = await xrayClientLinkBotService.DownloadOvpnFileByTokenAsync(request.Token, ct);
+            }
 
             if (response?.Content == null || response.Content.Length == 0)
                 return NotFound("OVPN file is empty or not found.");
 
-            var actualFileName = string.IsNullOrWhiteSpace(response.IssuedOvpn.FileName)
-                ? $"client_{request.Token}.ovpn"
-                : Path.GetFileNameWithoutExtension(response.IssuedOvpn.FileName) + ".ovpn";
+            var rawName = response.IssuedOvpn.FileName;
+            var ext = string.IsNullOrWhiteSpace(rawName) ? ".ovpn" : Path.GetExtension(rawName);
+            if (string.IsNullOrEmpty(ext))
+                ext = ".ovpn";
+
+            var actualFileName = string.IsNullOrWhiteSpace(rawName)
+                ? $"client_{request.Token}{ext}"
+                : Path.GetFileName(rawName);
+
+            var contentType = ext.Equals(".ovpn", StringComparison.OrdinalIgnoreCase)
+                ? "application/x-openvpn-profile"
+                : "application/octet-stream";
 
             return File(
                 fileContents: response.Content,
-                contentType: "application/x-openvpn-profile",
+                contentType: contentType,
                 fileDownloadName: actualFileName
             );
         }

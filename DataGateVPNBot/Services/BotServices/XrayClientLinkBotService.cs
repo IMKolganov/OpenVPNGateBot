@@ -1,5 +1,6 @@
 using System.Text;
 using DataGateVPNBot.Services.BotServices.Interfaces;
+using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Interfaces;
 using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Requests;
 using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses;
@@ -8,9 +9,9 @@ using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
 
-public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, IErrorService errorService,
-    ILogger<OvpnFileService> logger)
-    : IOvpnFileService
+public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileService, IErrorService errorService,
+    ILogger<XrayClientLinkBotService> logger)
+    : IXrayClientLinkBotService
 {
     public async Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
@@ -515,12 +516,9 @@ public class OvpnFileService(DashboardServices.OvpnFileService ovpnFileService, 
         throw new Exception($"No available CommonName for Telegram ID {telegramId}. Limit of 10 reached.");
     }
     
-    private string BuildDownloadUrlWithToken(string baseUrl, string token)
+    private static string BuildDownloadUrlWithToken(string baseUrl, string token)
     {
         baseUrl = baseUrl.TrimEnd('/');
-
-        var url = $"{baseUrl}/openvpn-api/profile?token={Uri.EscapeDataString(token)}";
-
-        return url;
+        return $"{baseUrl}/DownloadByToken?token={Uri.EscapeDataString(token)}";
     }
 }

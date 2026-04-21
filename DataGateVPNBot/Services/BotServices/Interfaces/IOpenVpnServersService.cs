@@ -1,8 +1,8 @@
-﻿using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnServers.Responses;
+﻿using DataGateMonitor.SharedModels.DataGateMonitor.VpnServers.Responses;
 
 namespace DataGateVPNBot.Services.BotServices.Interfaces;
 
 public interface IOpenVpnServersService
 {
-    Task<OpenVpnServersResponse> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken);
+    Task<VpnServersResponse> GetAllOpenVpnServersListAsync(CancellationToken cancellationToken);
 }

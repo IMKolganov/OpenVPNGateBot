@@ -4,7 +4,7 @@ using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using OpenVPNGateMonitor.SharedModels.DataGateVPNBot.OvpnFile.Requests;
+using DataGateMonitor.SharedModels.DataGateVPNBot.OvpnFile.Requests;
 using Xunit;
 
 namespace DataGateVPNBot.Tests.Controllers;
@@ -15,8 +15,9 @@ public class OvpnFileControllerTests
     public async Task DownloadByToken_When_Token_Empty_Returns_BadRequest()
     {
         var ovpnFileService = Mock.Of<IOvpnFileService>();
+        var xray = Mock.Of<IXrayClientLinkBotService>();
         var errorService = Mock.Of<IErrorService>();
-        var controller = new OvpnFileController(ovpnFileService, errorService, Mock.Of<ILogger<OvpnFileController>>());
+        var controller = new OvpnFileController(ovpnFileService, xray, errorService, Mock.Of<ILogger<OvpnFileController>>());
 
         var result = await controller.DownloadByToken(new ByTokenRequest { Token = "" }, CancellationToken.None);
 
@@ -28,8 +29,9 @@ public class OvpnFileControllerTests
     public async Task DownloadByToken_When_Token_Null_Returns_BadRequest()
     {
         var ovpnFileService = Mock.Of<IOvpnFileService>();
+        var xray = Mock.Of<IXrayClientLinkBotService>();
         var errorService = Mock.Of<IErrorService>();
-        var controller = new OvpnFileController(ovpnFileService, errorService, Mock.Of<ILogger<OvpnFileController>>());
+        var controller = new OvpnFileController(ovpnFileService, xray, errorService, Mock.Of<ILogger<OvpnFileController>>());
 
         var result = await controller.DownloadByToken(new ByTokenRequest { Token = null! }, CancellationToken.None);
 
@@ -42,8 +44,11 @@ public class OvpnFileControllerTests
         var ovpnFileService = new Mock<IOvpnFileService>();
         ovpnFileService.Setup(s => s.DownloadOvpnFileByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new FileNotFoundException("File not found"));
+        var xray = new Mock<IXrayClientLinkBotService>();
+        xray.Setup(s => s.DownloadOvpnFileByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new FileNotFoundException("File not found"));
         var errorService = new Mock<IErrorService>();
-        var controller = new OvpnFileController(ovpnFileService.Object, errorService.Object, Mock.Of<ILogger<OvpnFileController>>());
+        var controller = new OvpnFileController(ovpnFileService.Object, xray.Object, errorService.Object, Mock.Of<ILogger<OvpnFileController>>());
 
         var result = await controller.DownloadByToken(new ByTokenRequest { Token = "invalid" }, CancellationToken.None);
 

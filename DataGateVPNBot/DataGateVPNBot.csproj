@@ -20,7 +20,7 @@
         </PackageReference>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-        <PackageReference Include="OpenVPNGateMonitor.SharedModels" Version="1.0.91" />
+        <ProjectReference Include="..\..\backend\DataGateMonitor.SharedModels\DataGateMonitor.SharedModels.csproj" />
         <PackageReference Include="Serilog" Version="4.3.1" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />

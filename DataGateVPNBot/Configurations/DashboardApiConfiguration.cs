@@ -59,5 +59,6 @@ public static class DashboardApiConfiguration
         );
 
         services.AddScoped<OvpnFileService>();
+        services.AddScoped<XrayClientLinksDashboardService>();
     }
 }
