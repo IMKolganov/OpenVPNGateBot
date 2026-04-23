@@ -22,7 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\backend\DataGateMonitor.SharedModels\DataGateMonitor.SharedModels.csproj" />
+    <!-- SharedModels: NuGet only (never ProjectReference). -->
+    <PackageReference Include="DataGateMonitor.SharedModels" Version="1.0.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataGateVPNBot\DataGateVPNBot.csproj" />
