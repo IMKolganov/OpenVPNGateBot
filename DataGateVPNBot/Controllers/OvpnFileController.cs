@@ -9,8 +9,7 @@ namespace DataGateVPNBot.Controllers;
 
 [ApiController]
 public class OvpnFileController(
-    IOvpnFileService ovpnFileService,
-    IXrayClientLinkBotService xrayClientLinkBotService,
+    IVpnProfileTokenDownloadService vpnProfileTokenDownloadService,
     IErrorService errorService,
     ILogger<OvpnFileController> logger) : ControllerBase
 {
@@ -26,15 +25,7 @@ public class OvpnFileController(
 
         try
         {
-            DownloadFileResponse response;
-            try
-            {
-                response = await ovpnFileService.DownloadOvpnFileByTokenAsync(request.Token, ct);
-            }
-            catch (FileNotFoundException)
-            {
-                response = await xrayClientLinkBotService.DownloadOvpnFileByTokenAsync(request.Token, ct);
-            }
+            var response = await vpnProfileTokenDownloadService.DownloadByTokenAsync(request.Token, ct);
 
             if (response?.Content == null || response.Content.Length == 0)
                 return NotFound("OVPN file is empty or not found.");
