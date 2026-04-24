@@ -5,9 +5,10 @@ using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices.Interfaces;
 
-public interface IOvpnFileService
+/// <summary>Telegram-side flows for Xray (VLESS) client links via dashboard <c>api/xray-client-links</c> (same DTOs as OpenVPN exports).</summary>
+public interface IXrayClientLinkBotService
 {
-    Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId, 
+    Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken);
     Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(string token,
         CancellationToken cancellationToken);

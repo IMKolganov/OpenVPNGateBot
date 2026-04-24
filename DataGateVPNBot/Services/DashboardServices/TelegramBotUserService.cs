@@ -2,10 +2,10 @@ using System.Security.Authentication;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Http;
 using DataGateVPNBot.Services.Interfaces;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Responses;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Responses;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotUser.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Responses;
+using DataGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 

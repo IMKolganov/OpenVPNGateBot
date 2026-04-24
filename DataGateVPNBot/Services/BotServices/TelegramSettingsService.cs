@@ -1,7 +1,7 @@
 ﻿using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Models;
 using DataGateVPNBot.Services.BotServices.Interfaces;
-using OpenVPNGateMonitor.SharedModels.Enums;
+using DataGateMonitor.SharedModels.Enums;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;

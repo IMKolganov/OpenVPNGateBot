@@ -2,8 +2,8 @@ using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
 using Microsoft.Extensions.Logging;
 using Moq;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.Auth.Responses;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses;
+using DataGateMonitor.SharedModels.Responses;
 using Xunit;
 
 namespace DataGateVPNBot.Tests.Services;
