@@ -144,9 +144,10 @@ public partial class TelegramUpdateHandler
             Message? first = null;
             foreach (var item in items)
             {
-                var shareUrl = $"https://t.me/share/url?url=&text={Uri.EscapeDataString(item.Text)}";
                 var markup = new InlineKeyboardMarkup(
-                    InlineKeyboardButton.WithUrl($"📋 {item.FileName}", shareUrl));
+                    InlineKeyboardButton.WithCopyText(
+                        $"📋 {item.FileName}",
+                        new CopyTextButton { Text = item.Text }));
                 var sent = await _botClient.SendMessage(
                     chatId: msg.Chat.Id,
                     text: item.Text,
@@ -297,9 +298,10 @@ public partial class TelegramUpdateHandler
                         cancellationToken: cancellationToken);
                 }
 
-                var shareUrl = $"https://t.me/share/url?url=&text={Uri.EscapeDataString(item.Value.Text)}";
                 var markup = new InlineKeyboardMarkup(
-                    InlineKeyboardButton.WithUrl($"📋 {item.Value.FileName}", shareUrl));
+                    InlineKeyboardButton.WithCopyText(
+                        $"📋 {item.Value.FileName}",
+                        new CopyTextButton { Text = item.Value.Text }));
                 return await _botClient.SendMessage(
                     chatId: msg.Chat.Id,
                     text: item.Value.Text,
