@@ -129,10 +129,10 @@ public partial class TelegramUpdateHandler
         var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
         if (isXray)
         {
-            var text = await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                .GetClientLinksTextWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+            var items = await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
+                .GetClientLinkItemsWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
 
-            if (string.IsNullOrWhiteSpace(text))
+            if (items.Count == 0)
             {
                 return await _botClient.SendMessage(
                     chatId: msg.Chat.Id,
@@ -141,11 +141,21 @@ public partial class TelegramUpdateHandler
                     cancellationToken: cancellationToken);
             }
 
-            return await _botClient.SendMessage(
-                chatId: msg.Chat.Id,
-                text: text,
-                replyMarkup: new ReplyKeyboardRemove(),
-                cancellationToken: cancellationToken);
+            Message? first = null;
+            foreach (var item in items)
+            {
+                var shareUrl = $"https://t.me/share/url?url=&text={Uri.EscapeDataString(item.Text)}";
+                var markup = new InlineKeyboardMarkup(
+                    InlineKeyboardButton.WithUrl($"📋 {item.FileName}", shareUrl));
+                var sent = await _botClient.SendMessage(
+                    chatId: msg.Chat.Id,
+                    text: item.Text,
+                    replyMarkup: markup,
+                    cancellationToken: cancellationToken);
+                first ??= sent;
+            }
+
+            return first ?? throw new InvalidOperationException("No messages returned after sending XRay links.");
         }
 
         var mediaGroupOpenVpnFiles = isXray
@@ -275,10 +285,10 @@ public partial class TelegramUpdateHandler
 
             if (isXray)
             {
-                var text = await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                    .MakeClientLinkTextWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+                var item = await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
+                    .MakeClientLinkItemWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
 
-                if (string.IsNullOrWhiteSpace(text))
+                if (item is null || string.IsNullOrWhiteSpace(item.Value.Text))
                 {
                     return await _botClient.SendMessage(
                         chatId: msg.Chat.Id,
@@ -287,10 +297,13 @@ public partial class TelegramUpdateHandler
                         cancellationToken: cancellationToken);
                 }
 
+                var shareUrl = $"https://t.me/share/url?url=&text={Uri.EscapeDataString(item.Value.Text)}";
+                var markup = new InlineKeyboardMarkup(
+                    InlineKeyboardButton.WithUrl($"📋 {item.Value.FileName}", shareUrl));
                 return await _botClient.SendMessage(
                     chatId: msg.Chat.Id,
-                    text: text,
-                    replyMarkup: new ReplyKeyboardRemove(),
+                    text: item.Value.Text,
+                    replyMarkup: markup,
                     cancellationToken: cancellationToken);
             }
 
