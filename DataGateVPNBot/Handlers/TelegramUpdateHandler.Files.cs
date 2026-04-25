@@ -127,6 +127,27 @@ public partial class TelegramUpdateHandler
         _logger.LogInformation($"GetMyFiles started for user: {msg.Chat.Id}, ServerId: {vpnServerId}");
 
         var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
+        if (isXray)
+        {
+            var text = await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
+                .GetClientLinksTextWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return await _botClient.SendMessage(
+                    chatId: msg.Chat.Id,
+                    text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
+            return await _botClient.SendMessage(
+                chatId: msg.Chat.Id,
+                text: text,
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: cancellationToken);
+        }
+
         var mediaGroupOpenVpnFiles = isXray
             ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
                 .GetOvpnFilesWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress, cancellationToken)
@@ -251,6 +272,28 @@ public partial class TelegramUpdateHandler
                 : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                     .MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress,
                         cancellationToken);
+
+            if (isXray)
+            {
+                var text = await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
+                    .MakeClientLinkTextWithTokenAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return await _botClient.SendMessage(
+                        chatId: msg.Chat.Id,
+                        text: await GetLocalizationTextAsync("FilesNotFoundError", msg.Chat.Id, cancellationToken),
+                        replyMarkup: new ReplyKeyboardRemove(),
+                        cancellationToken: cancellationToken);
+                }
+
+                return await _botClient.SendMessage(
+                    chatId: msg.Chat.Id,
+                    text: text,
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken);
+            }
+
             if (!mediaGroupOpenVpnFiles.Any())
             {
                 return await _botClient.SendMessage(

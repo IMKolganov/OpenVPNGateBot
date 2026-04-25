@@ -228,6 +228,54 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         return mediaGroupOpenVpnFiles;
     }
 
+    public async Task<string> GetClientLinksTextWithTokenAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken)
+    {
+        var request = new ByExternalIdAndVpnServerIdRequest
+        {
+            VpnServerId = vpnServerId,
+            ExternalId = telegramId.ToString()
+        };
+
+        var response = await ovpnFileService.GetAllOvpnFilesByExternalIdWithTokenAsync(request, cancellationToken);
+        if (response == null || !response.IssuedOvpnFiles.Any())
+            return string.Empty;
+
+        var activeFiles = response.IssuedOvpnFiles.Where(x => !x.IsRevoked).ToList();
+        if (!activeFiles.Any())
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        foreach (var file in activeFiles)
+        {
+            try
+            {
+                var download = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(new DownloadFileRequest
+                {
+                    VpnServerId = file.VpnServerId,
+                    IssuedOvpnFileId = file.Id
+                }, cancellationToken);
+
+                var text = Encoding.UTF8.GetString(download.Content ?? Array.Empty<byte>()).Trim();
+                if (string.IsNullOrWhiteSpace(text))
+                    continue;
+
+                if (sb.Length > 0)
+                    sb.AppendLine().AppendLine("-----").AppendLine();
+
+                sb.AppendLine(file.FileName);
+                sb.AppendLine(text);
+            }
+            catch (Exception ex)
+            {
+                await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                logger.LogError(ex, "Failed to prepare XRay text link for file {FileName}", file.FileName);
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
+
 
     public async Task<List<IAlbumInputMedia>> MakeOvpnFileWithTokenAsync(int vpnServerId, long telegramId, 
         string hostUrl, CancellationToken cancellationToken)
@@ -308,6 +356,37 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         }
 
         return mediaGroupOpenVpnFiles;
+    }
+
+    public async Task<string> MakeClientLinkTextWithTokenAsync(int vpnServerId, long telegramId,
+        CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Creating XRay client link text. TelegramId: {TelegramId}, ServerId: {VpnServerId}",
+            telegramId, vpnServerId);
+
+        var addRequest = new AddFileRequest
+        {
+            VpnServerId = vpnServerId,
+            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
+            ExternalId = telegramId.ToString(),
+            IssuedTo = $"telegram user {telegramId} with token"
+        };
+
+        var created = await ovpnFileService.AddOvpnFileWithTokenAsync(addRequest, cancellationToken);
+        if (created?.IssuedOvpnFile == null)
+            return string.Empty;
+
+        var download = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(new DownloadFileRequest
+        {
+            VpnServerId = created.IssuedOvpnFile.VpnServerId,
+            IssuedOvpnFileId = created.IssuedOvpnFile.Id
+        }, cancellationToken);
+
+        var text = Encoding.UTF8.GetString(download.Content ?? Array.Empty<byte>()).Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        return $"{created.IssuedOvpnFile.FileName}{Environment.NewLine}{text}";
     }
 
 
