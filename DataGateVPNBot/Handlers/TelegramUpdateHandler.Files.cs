@@ -144,10 +144,15 @@ public partial class TelegramUpdateHandler
             Message? first = null;
             foreach (var item in items)
             {
-                var markup = new InlineKeyboardMarkup(
-                    InlineKeyboardButton.WithCopyText(
-                        $"📋 {item.FileName}",
-                        new CopyTextButton { Text = item.Text }));
+                var copyText = TelegramCopyTextHelper.TryGetVlessCopyText(item.Text);
+                InlineKeyboardMarkup? markup = null;
+                if (!string.IsNullOrWhiteSpace(copyText))
+                {
+                    markup = new InlineKeyboardMarkup(
+                        InlineKeyboardButton.WithCopyText(
+                            "📋 Copy VLESS",
+                            new CopyTextButton { Text = copyText }));
+                }
                 var sent = await _botClient.SendMessage(
                     chatId: msg.Chat.Id,
                     text: item.Text,
@@ -298,10 +303,15 @@ public partial class TelegramUpdateHandler
                         cancellationToken: cancellationToken);
                 }
 
-                var markup = new InlineKeyboardMarkup(
-                    InlineKeyboardButton.WithCopyText(
-                        $"📋 {item.Value.FileName}",
-                        new CopyTextButton { Text = item.Value.Text }));
+                var copyText = TelegramCopyTextHelper.TryGetVlessCopyText(item.Value.Text);
+                InlineKeyboardMarkup? markup = null;
+                if (!string.IsNullOrWhiteSpace(copyText))
+                {
+                    markup = new InlineKeyboardMarkup(
+                        InlineKeyboardButton.WithCopyText(
+                            "📋 Copy VLESS",
+                            new CopyTextButton { Text = copyText }));
+                }
                 return await _botClient.SendMessage(
                     chatId: msg.Chat.Id,
                     text: item.Value.Text,
