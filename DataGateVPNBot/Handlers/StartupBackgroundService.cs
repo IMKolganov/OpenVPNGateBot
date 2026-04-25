@@ -221,17 +221,18 @@ public class StartupBackgroundService(
 
     private static int GetHealthCheckPort()
     {
-        // Docker / production: Kestrel often listens on TELEGRAMBOT_PORT (e.g. 5583), not 80.
-        if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_PORT"), out var telegramBotPort) &&
-            telegramBotPort > 0)
-            return telegramBotPort;
-
         if (bool.TryParse(Environment.GetEnvironmentVariable("USE_CERTIFICATE"), out var useCert) && !useCert)
         {
             if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_LISTEN_PORT"), out var port) && port > 0)
                 return port;
             return 5050;
         }
+
+        // In certificate mode, prefer externally configured bot port.
+        if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_PORT"), out var telegramBotPort) &&
+            telegramBotPort > 0)
+            return telegramBotPort;
+
         return 80;
     }
 }
