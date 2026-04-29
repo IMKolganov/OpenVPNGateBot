@@ -1,4 +1,5 @@
-﻿using DataGateVPNBot.Services.BotServices.Interfaces;
+﻿using DataGateVPNBot.Helpers;
+using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Interfaces;
 using DataGateMonitor.SharedModels.Enums;
@@ -50,6 +51,9 @@ public partial class TelegramUpdateHandler
         var currentRow = new List<InlineKeyboardButton>();
         foreach (var server in serverResponses.VpnServers)
         {
+            if (VpnServerDtoReflection.IsDisabled(server))
+                continue;
+
             var label = server.ServerType == VpnServerType.Xray
                 ? $"{server.ServerName} (VLESS)"
                 : server.ServerName;
