@@ -109,6 +109,16 @@ public class TelegramSettingsService : ITelegramSettingsService
                 ["ru"] = "Изменить язык",
                 ["el"] = "Αλλάξτε τη γλώσσα σας"
             }
+        },
+        new()
+        {
+            Command = BotCommands.CommandRefreshProfilePhotos,
+            Descriptions = new()
+            {
+                ["en"] = "Admin: sync all user profile photos to the dashboard",
+                ["ru"] = "Админ: обновить аватарки всех пользователей в панели",
+                ["el"] = "Διαχειριστής: συγχρονισμός φωτογραφιών προφίλ όλων των χρηστών"
+            }
         }
     ];
 

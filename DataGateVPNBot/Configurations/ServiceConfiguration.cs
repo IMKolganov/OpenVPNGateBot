@@ -1,4 +1,5 @@
 ﻿using Certes;
+using Microsoft.Extensions.Configuration;
 using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.BotServices;
@@ -14,12 +15,16 @@ namespace DataGateVPNBot.Configurations;
 
 public static class ServiceConfiguration
 {
-    public static void ConfigureServices(this IServiceCollection services)
+    public static void ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<DataGateVPNBot.Models.Configurations.ProfilePhotoRefreshOptions>(
+            configuration.GetSection(DataGateVPNBot.Models.Configurations.ProfilePhotoRefreshOptions.SectionName));
         services.AddSingleton<IKey>(_ => LetsEncryptAccountStore.LoadOrCreateAccountKey());
         
         services.AddScoped<IIncomingMessageLogService, IncomingMessageLogService>();
         services.AddScoped<ITelegramBotUserService, TelegramBotUserService>();
+        services.AddScoped<ITelegramUserProfilePhotoRefreshService, TelegramUserProfilePhotoRefreshService>();
+        services.AddHostedService<MonthlyProfilePhotoRefreshHostedService>();
         services.AddScoped<ILocalizationService, LocalizationService>();
         services.AddScoped<IIncomingMessageLogSenderService, IncomingMessageLogSenderService>();
         services.AddScoped<IErrorService, ErrorService>();

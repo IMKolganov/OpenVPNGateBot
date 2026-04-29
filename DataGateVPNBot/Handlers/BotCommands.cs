@@ -32,4 +32,7 @@ public static class BotCommands
     public const string CommandPoll = "/poll";
     public const string CommandPollAnonymous = "/poll_anonymous";
     public const string CommandThrow = "/throw";
+
+    /// <summary>Admin only: push current Telegram profile photos into the dashboard for every registered user.</summary>
+    public const string CommandRefreshProfilePhotos = "/refresh_profile_photos";
 }
