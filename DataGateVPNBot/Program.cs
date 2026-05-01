@@ -10,7 +10,7 @@ var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "
 logger.Information($"Application version: {version};");
 
 builder.Services.ConfigureTelegram(builder.Configuration);
-builder.Services.ConfigureServices();
+builder.Services.ConfigureServices(builder.Configuration);
 builder.Services.ConfigureDashboardApi();
 
 builder.ConfigureWebHost(logger);

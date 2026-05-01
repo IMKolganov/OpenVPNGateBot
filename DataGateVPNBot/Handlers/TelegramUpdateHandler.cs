@@ -123,7 +123,8 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandMakeNewFileWithToken,
             BotCommands.CommandDeleteSelectedFile,
             BotCommands.CommandDeleteAllFiles,
-            BotCommands.CommandDashboardApiGetToken
+            BotCommands.CommandDashboardApiGetToken,
+            BotCommands.CommandRefreshProfilePhotos
         };
 
         if (!isPrivate && privateOnlyCommands.Contains(command))
@@ -166,6 +167,7 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandPoll => SendPoll(msg),
             BotCommands.CommandPollAnonymous => SendAnonymousPoll(msg),
             BotCommands.CommandThrow => FailingHandler(),
+            BotCommands.CommandRefreshProfilePhotos => AdminRefreshAllProfilePhotosAsync(msg, cancellationToken),
 
             _ => Usage(msg, cancellationToken)
         });
