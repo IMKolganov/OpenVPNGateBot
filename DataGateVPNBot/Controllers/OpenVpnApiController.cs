@@ -1,11 +1,15 @@
+using DataGateVPNBot.Extensions;
+using DataGateVPNBot.Models.Configurations;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace DataGateVPNBot.Controllers;
 
 [ApiController]
 [Route("openvpn-api")]
-public class OpenVpnApiController : ControllerBase
+public class OpenVpnApiController(IOptions<BotConfiguration> botOptions) : ControllerBase
 {
+    private readonly BotConfiguration _botConfig = botOptions.Value;
     /// <summary>
     /// This endpoint responds to HEAD requests from the OpenVPN Connect app.
     /// It returns a 200 OK and sets custom headers to inform the client about the web auth method.
@@ -38,9 +42,7 @@ public class OpenVpnApiController : ControllerBase
         if (string.IsNullOrEmpty(token))
             return BadRequest("Missing token");
 
-        //todo:move
-        var redirectUri =
-            $"openvpn://import-profile/https://datagate.rackot.ru/DownloadByToken?token={token}";
+        var redirectUri = OpenVpnProfileUrls.BuildConnectImportUri(_botConfig.HostAddress, token);
 
         var scriptBlock = $@"
     <script>
