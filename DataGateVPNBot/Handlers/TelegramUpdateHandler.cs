@@ -92,9 +92,6 @@ public partial class TelegramUpdateHandler(
     {
         var isPrivate = msg.Chat.Type == ChatType.Private;
 
-        if (isPrivate && IsLoginCodeTextRequest(messageText))
-            return await SendDashboardLoginCodeAsync(msg, cancellationToken);
-
         var commandParts = messageText.Split(' ', 2);
         var rawCommand = commandParts[0].ToLower();
         var command = rawCommand.Split('@')[0]; // remove @BotUsername
