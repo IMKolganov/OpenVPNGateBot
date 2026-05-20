@@ -90,12 +90,15 @@ public partial class TelegramUpdateHandler(
 
     private async Task<Message> ProcessingMessage(Message msg, string messageText, CancellationToken cancellationToken)
     {
+        var isPrivate = msg.Chat.Type == ChatType.Private;
+
+        if (isPrivate && IsLoginCodeTextRequest(messageText))
+            return await SendDashboardLoginCodeAsync(msg, cancellationToken);
+
         var commandParts = messageText.Split(' ', 2);
         var rawCommand = commandParts[0].ToLower();
         var command = rawCommand.Split('@')[0]; // remove @BotUsername
         var argument = commandParts.Length > 1 ? commandParts[1] : null;
-
-        var isPrivate = msg.Chat.Type == ChatType.Private;
 
         await RegisterNewUserAsync(msg, cancellationToken); // optional user registration
 
@@ -118,6 +121,7 @@ public partial class TelegramUpdateHandler(
         var privateOnlyCommands = new HashSet<string>
         {
             BotCommands.CommandRegister,
+            BotCommands.CommandLoginCode,
             BotCommands.CommandGetMyFiles,
             BotCommands.CommandMakeNewFile,
             BotCommands.CommandMakeNewFileWithToken,
@@ -142,6 +146,7 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandAboutBot => AboutBot(msg, cancellationToken),
             BotCommands.CommandHowToUse => HowToUseVpn(msg, cancellationToken),
             BotCommands.CommandRegister => RegisterForVpn(msg, cancellationToken),
+            BotCommands.CommandLoginCode => SendDashboardLoginCodeAsync(msg, cancellationToken),
             BotCommands.CommandGetMyFiles => GetMyFilesWithToken(msg, argument, cancellationToken),
             BotCommands.CommandGetMyFilesWithToken => GetMyFilesWithToken(msg, argument, cancellationToken),
             BotCommands.CommandGetMyFilesWithoutToken => GetMyFiles(msg, argument, cancellationToken),

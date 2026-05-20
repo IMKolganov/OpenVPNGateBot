@@ -1,4 +1,5 @@
 using DataGateVPNBot.Services.Http;
+using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Requests;
 using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses;
 using DataGateMonitor.SharedModels.Responses;
 
@@ -14,6 +15,7 @@ public class AuthService(
     private DateTime _tokenExpiry = DateTime.MinValue;
     private readonly TimeSpan _tokenExpiration = TimeSpan.FromMinutes(55);
     private const string EndpointAuthByToken = "api/auth/token";
+    private const string EndpointTelegramRequestLoginCode = "api/auth/telegram/request-login-code";
 
     public async Task<string?> GetTokenAsync()
     {
@@ -67,6 +69,41 @@ public class AuthService(
         catch (Exception ex)
         {
             logger.LogError(ex, "❌ Failed to obtain token from API.");
+            return null;
+        }
+    }
+
+    public async Task<TelegramRequestLoginCodeResponse?> RequestDashboardLoginCodeAsync(long telegramId, CancellationToken ct = default)
+    {
+        var token = await GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            logger.LogWarning("Cannot request login code: App token unavailable.");
+            return null;
+        }
+
+        var body = new TelegramRequestLoginCodeRequest { TelegramId = telegramId };
+
+        try
+        {
+            var response = await httpRequestService.PostAsync<ApiResponse<TelegramRequestLoginCodeResponse>>(
+                EndpointTelegramRequestLoginCode,
+                body,
+                token,
+                ct);
+
+            if (response is not { Success: true, Data: not null })
+            {
+                logger.LogWarning("Login code request failed for TelegramId {TelegramId}: {Message}",
+                    telegramId, response?.Message);
+                return null;
+            }
+
+            return response.Data;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to request dashboard login code for TelegramId {TelegramId}", telegramId);
             return null;
         }
     }
