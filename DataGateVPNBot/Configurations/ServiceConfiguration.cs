@@ -39,7 +39,7 @@ public static class ServiceConfiguration
         
         services.ConfigureTelegramBotMvc();
 
-        services.AddControllers();
+        services.AddControllers().AddNewtonsoftJson();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();

@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Newtonsoft.Json.Linq;
 using DataGateVPNBot.Extensions;
 using DataGateVPNBot.Models.Configurations;
 using Microsoft.Extensions.Options;
@@ -31,15 +31,13 @@ public class WebhookService(
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
+        var root = JObject.Parse(json);
 
-        if (root.TryGetProperty("ok", out var ok) && ok.GetBoolean())
+        if (root["ok"]?.Value<bool>() == true)
         {
-            var result = root.GetProperty("result");
-            var currentUrl = result.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
-            var hasCustomCertificate = result.TryGetProperty("has_custom_certificate", out var certElement) 
-                                       && certElement.GetBoolean();
+            var result = root["result"] as JObject;
+            var currentUrl = result?["url"]?.Value<string>();
+            var hasCustomCertificate = result?["has_custom_certificate"]?.Value<bool>() == true;
 
             var expectedUrl = BuildWebhookUrl();
 

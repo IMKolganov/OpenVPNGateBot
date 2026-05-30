@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using Newtonsoft.Json;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
@@ -171,7 +171,7 @@ public class IncomingMessageLogService(IIncomingMessageLogSenderService incoming
         var fileName = $"{request.Message!.TelegramId}_{DateTime.UtcNow:yyyyMMdd_HHmmssfff}.json";
         var fullPath = Path.Combine(dir, fileName);
 
-        var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonConvert.SerializeObject(request, Formatting.Indented);
 
         await File.WriteAllTextAsync(fullPath, json, cancellationToken);
     }

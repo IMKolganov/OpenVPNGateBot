@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <!-- SharedModels: NuGet only (never ProjectReference). -->
-    <PackageReference Include="DataGateMonitor.SharedModels" Version="1.0.19" />
+    <PackageReference Include="DataGateMonitor.SharedModels" Version="1.0.20" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataGateVPNBot\DataGateVPNBot.csproj" />
