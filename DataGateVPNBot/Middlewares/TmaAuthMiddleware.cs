@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace DataGateVPNBot.Middlewares;
@@ -57,14 +58,14 @@ public sealed class TmaAuthMiddleware(RequestDelegate next, string botToken, Tim
     {
         ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
         ctx.Response.ContentType = "application/json";
-        await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { message }));
+        await ctx.Response.WriteAsync(JsonConvert.SerializeObject(new { message }));
     }
 
     private static async Task Problem(HttpContext ctx, int code, string message)
     {
         ctx.Response.StatusCode = code;
         ctx.Response.ContentType = "application/json";
-        await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { message }));
+        await ctx.Response.WriteAsync(JsonConvert.SerializeObject(new { message }));
     }
 
     private static bool Validate(string initDataQuery, string botToken, TimeSpan maxAge, out string? error)
@@ -145,14 +146,9 @@ public sealed class TmaAuthMiddleware(RequestDelegate next, string botToken, Tim
             var userJson = nvc["user"];
             if (!string.IsNullOrEmpty(userJson))
             {
-                using var doc = JsonDocument.Parse(userJson);
-                data.User = doc.RootElement.Clone();
-
-                if (doc.RootElement.TryGetProperty("id", out var idEl) &&
-                    idEl.ValueKind == JsonValueKind.Number)
-                {
-                    data.UserId = idEl.GetInt64();
-                }
+                data.User = JObject.Parse(userJson);
+                if (data.User["id"]?.Type == JTokenType.Integer)
+                    data.UserId = data.User["id"]!.Value<long>();
             }
 
             return data;
