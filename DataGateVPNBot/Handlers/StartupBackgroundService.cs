@@ -227,6 +227,12 @@ public class StartupBackgroundService(
                 return port;
             return 5050;
         }
+
+        // In certificate mode, prefer externally configured bot port.
+        if (int.TryParse(Environment.GetEnvironmentVariable("TELEGRAMBOT_PORT"), out var telegramBotPort) &&
+            telegramBotPort > 0)
+            return telegramBotPort;
+
         return 80;
     }
 }

@@ -2,10 +2,10 @@ using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
 using Microsoft.Extensions.Logging;
 using Moq;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Responses;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Responses;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotUser.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Responses;
+using DataGateMonitor.SharedModels.Responses;
 using DataGateVPNBot.Services.Interfaces;
 using Xunit;
 
@@ -29,8 +29,8 @@ public class TelegramBotUserServiceTests
     public async Task GetAdminsAsync_Throws_When_No_Token()
     {
         var httpRequest = new Mock<IHttpRequestService>();
-        httpRequest.Setup(h => h.PostAsync<ApiResponse<OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.Auth.Responses.TokenResponse>>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ApiResponse<OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.Auth.Responses.TokenResponse> { Success = false });
+        httpRequest.Setup(h => h.PostAsync<ApiResponse<DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses.TokenResponse>>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResponse<DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses.TokenResponse> { Success = false });
         var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
         var errorService = Mock.Of<IErrorService>();
         var sut = new TelegramBotUserService(Mock.Of<ILogger<TelegramBotUserService>>(), httpRequest.Object, authService, errorService);

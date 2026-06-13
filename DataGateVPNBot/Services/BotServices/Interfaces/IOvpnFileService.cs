@@ -1,6 +1,6 @@
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.OpenVpnFiles.Responses.Dto;
+using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses.Dto;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices.Interfaces;

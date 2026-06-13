@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using DataGateVPNBot.Services.Http;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;

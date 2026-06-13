@@ -2,10 +2,11 @@ using System.Security.Authentication;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Http;
 using DataGateVPNBot.Services.Interfaces;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotUser.Responses;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Responses;
-using OpenVPNGateMonitor.SharedModels.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotUser.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotUser.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Responses;
+using DataGateMonitor.SharedModels.Responses;
 
 namespace DataGateVPNBot.Services.DashboardServices;
 
@@ -19,6 +20,8 @@ public class TelegramBotUserService(
     private const string EndpointRegisterUser = "api/users/register-from-tgbot";
     private const string EndpointGetAdmins = "api/tgbot-users/get-admins";
     private const string EndpointUserExists = "api/tgbot-users/check-exists";
+    private const string EndpointGetAll = "api/tgbot-users/get-all";
+    private const string EndpointProfilePhoto = "api/tgbot-users/profile-photo";
 
 
     public async Task<UsersResponse> RegisterUserAsync(RegisterUserFromTgBotRequest request, 
@@ -133,5 +136,61 @@ public class TelegramBotUserService(
         }
 
         return telegramBotAdmins;
+    }
+
+    public async Task<bool> IsTelegramDashboardAdminAsync(long telegramUserId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var admins = await GetAdminsAsync(cancellationToken);
+            return admins.TelegramBotAdmins?.Any(a => a.TelegramId == telegramUserId) == true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "IsTelegramDashboardAdminAsync failed for {TelegramUserId}", telegramUserId);
+            return false;
+        }
+    }
+
+    public async Task<GetAllTelegramUsersResponse?> GetAllTelegramUsersAsync(CancellationToken cancellationToken)
+    {
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            logger.LogError("GetAllTelegramUsersAsync: Failed to obtain token.");
+            return null;
+        }
+
+        var response = await httpRequestService.GetAsync<ApiResponse<GetAllTelegramUsersResponse>>(
+            EndpointGetAll, token, cancellationToken);
+
+        if (response is { Success: true, Data: not null })
+            return response.Data;
+
+        logger.LogWarning("GetAllTelegramUsersAsync failed: {Message}", response?.Message);
+        return null;
+    }
+
+    public async Task<UpsertTelegramBotUserProfilePhotoResponse?> UpsertProfilePhotoAsync(
+        UpsertTelegramBotUserProfilePhotoRequest request,
+        CancellationToken cancellationToken)
+    {
+        var token = await authService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            logger.LogError("UpsertProfilePhotoAsync: Failed to obtain token.");
+            return null;
+        }
+
+        var response = await httpRequestService.PostAsync<ApiResponse<UpsertTelegramBotUserProfilePhotoResponse>>(
+            EndpointProfilePhoto, request, token, cancellationToken);
+
+        if (response is { Success: true, Data: not null })
+            return response.Data;
+
+        logger.LogWarning("UpsertProfilePhotoAsync failed for TelegramId {Id}: {Message}", request.TelegramId,
+            response?.Message);
+        return null;
     }
 }

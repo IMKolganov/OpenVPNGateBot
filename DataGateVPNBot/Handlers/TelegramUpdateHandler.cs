@@ -5,9 +5,9 @@ using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.User.Requests;
-using OpenVPNGateMonitor.SharedModels.Enums;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotLocalization.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.User.Requests;
+using DataGateMonitor.SharedModels.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -58,6 +58,10 @@ public partial class TelegramUpdateHandler(
             { Message: { } message } => OnMessage(message, cancellationToken),
             { EditedMessage: { } message } => OnMessage(message, cancellationToken),
             { CallbackQuery: { } callbackQuery } => OnCallbackQuery(callbackQuery, cancellationToken),
+            { ChannelPost: { } channelPost } => OnUnsupportedChannelUpdateAsync("ChannelPost", channelPost, cancellationToken),
+            { EditedChannelPost: { } editedChannelPost } => OnUnsupportedChannelUpdateAsync("EditedChannelPost", editedChannelPost, cancellationToken),
+            { MyChatMember: { } myChatMember } => OnMyChatMemberUpdate(myChatMember, cancellationToken),
+            { ChatMember: { } chatMember } => OnChatMemberUpdate(chatMember, cancellationToken),
             { InlineQuery: { } inlineQuery } => OnInlineQuery(inlineQuery),
             { ChosenInlineResult: { } chosenInlineResult } => OnChosenInlineResult(chosenInlineResult),
             { Poll: { } poll } => OnPoll(poll),
@@ -86,12 +90,12 @@ public partial class TelegramUpdateHandler(
 
     private async Task<Message> ProcessingMessage(Message msg, string messageText, CancellationToken cancellationToken)
     {
+        var isPrivate = msg.Chat.Type == ChatType.Private;
+
         var commandParts = messageText.Split(' ', 2);
         var rawCommand = commandParts[0].ToLower();
         var command = rawCommand.Split('@')[0]; // remove @BotUsername
         var argument = commandParts.Length > 1 ? commandParts[1] : null;
-
-        var isPrivate = msg.Chat.Type == ChatType.Private;
 
         await RegisterNewUserAsync(msg, cancellationToken); // optional user registration
 
@@ -114,12 +118,14 @@ public partial class TelegramUpdateHandler(
         var privateOnlyCommands = new HashSet<string>
         {
             BotCommands.CommandRegister,
+            BotCommands.CommandLoginCode,
             BotCommands.CommandGetMyFiles,
             BotCommands.CommandMakeNewFile,
             BotCommands.CommandMakeNewFileWithToken,
             BotCommands.CommandDeleteSelectedFile,
             BotCommands.CommandDeleteAllFiles,
-            BotCommands.CommandDashboardApiGetToken
+            BotCommands.CommandDashboardApiGetToken,
+            BotCommands.CommandRefreshProfilePhotos
         };
 
         if (!isPrivate && privateOnlyCommands.Contains(command))
@@ -137,6 +143,7 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandAboutBot => AboutBot(msg, cancellationToken),
             BotCommands.CommandHowToUse => HowToUseVpn(msg, cancellationToken),
             BotCommands.CommandRegister => RegisterForVpn(msg, cancellationToken),
+            BotCommands.CommandLoginCode => SendDashboardLoginCodeAsync(msg, cancellationToken),
             BotCommands.CommandGetMyFiles => GetMyFilesWithToken(msg, argument, cancellationToken),
             BotCommands.CommandGetMyFilesWithToken => GetMyFilesWithToken(msg, argument, cancellationToken),
             BotCommands.CommandGetMyFilesWithoutToken => GetMyFiles(msg, argument, cancellationToken),
@@ -162,6 +169,7 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandPoll => SendPoll(msg),
             BotCommands.CommandPollAnonymous => SendAnonymousPoll(msg),
             BotCommands.CommandThrow => FailingHandler(),
+            BotCommands.CommandRefreshProfilePhotos => AdminRefreshAllProfilePhotosAsync(msg, cancellationToken),
 
             _ => Usage(msg, cancellationToken)
         });
@@ -291,6 +299,105 @@ public partial class TelegramUpdateHandler(
         await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
 
         _logger.LogWarning("⚠️ Unknown update sent to admin: {UpdateType}\n{Details}", update.Type, updateDetails);
+    }
+
+    private async Task OnUnsupportedChannelUpdateAsync(string updateType, Message message, CancellationToken cancellationToken)
+    {
+        var chat = DescribeChat(message.Chat);
+        var actor = DescribeUser(message.From);
+        var payload = string.IsNullOrWhiteSpace(message.Text)
+            ? "<empty>"
+            : message.Text.Length > 500
+                ? message.Text[..500] + "... (truncated)"
+                : message.Text;
+
+        var text =
+            "ℹ️ Unsupported Telegram update received\n" +
+            $"Type: {updateType}\n" +
+            "Status: currently not supported by this bot\n" +
+            $"Chat: {chat}\n" +
+            $"Actor: {actor}\n" +
+            $"MessageId: {message.Id}\n" +
+            $"Payload: {payload}\n" +
+            $"Time: {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+
+        _logger.LogInformation("Unsupported update {UpdateType} received. Chat={Chat}; MessageId={MessageId}",
+            updateType, chat, message.Id);
+
+        using var scope = _serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+        await errorService.SendMessageToAdminsAsync(text, cancellationToken);
+    }
+
+    private async Task OnMyChatMemberUpdate(ChatMemberUpdated update, CancellationToken cancellationToken)
+    {
+        var actor = DescribeUser(update.From);
+        var target = DescribeUser(update.NewChatMember?.User);
+        var chat = DescribeChat(update.Chat);
+        var oldStatus = update.OldChatMember?.Status.ToString() ?? "Unknown";
+        var newStatus = update.NewChatMember?.Status.ToString() ?? "Unknown";
+        var eventTime = update.Date == default ? DateTimeOffset.UtcNow : update.Date;
+
+        var text =
+            "ℹ️ Telegram chat-member update\n" +
+            $"Type: MyChatMember\n" +
+            $"Chat: {chat}\n" +
+            $"Actor: {actor}\n" +
+            $"Target: {target}\n" +
+            $"Status: {oldStatus} -> {newStatus}\n" +
+            $"Time: {eventTime:yyyy-MM-dd HH:mm:ss} UTC";
+
+        _logger.LogInformation("MyChatMember update received. Chat={Chat}; Actor={Actor}; Target={Target}; {Old}->{New}",
+            chat, actor, target, oldStatus, newStatus);
+
+        using var scope = _serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+        await errorService.SendMessageToAdminsAsync(text, cancellationToken);
+    }
+
+    private async Task OnChatMemberUpdate(ChatMemberUpdated update, CancellationToken cancellationToken)
+    {
+        var actor = DescribeUser(update.From);
+        var target = DescribeUser(update.NewChatMember?.User);
+        var chat = DescribeChat(update.Chat);
+        var oldStatus = update.OldChatMember?.Status.ToString() ?? "Unknown";
+        var newStatus = update.NewChatMember?.Status.ToString() ?? "Unknown";
+        var eventTime = update.Date == default ? DateTimeOffset.UtcNow : update.Date;
+
+        var text =
+            "ℹ️ Telegram chat-member update\n" +
+            $"Type: ChatMember\n" +
+            $"Chat: {chat}\n" +
+            $"Actor: {actor}\n" +
+            $"Target: {target}\n" +
+            $"Status: {oldStatus} -> {newStatus}\n" +
+            $"Time: {eventTime:yyyy-MM-dd HH:mm:ss} UTC";
+
+        _logger.LogInformation("ChatMember update received. Chat={Chat}; Actor={Actor}; Target={Target}; {Old}->{New}",
+            chat, actor, target, oldStatus, newStatus);
+
+        using var scope = _serviceProvider.CreateScope();
+        var errorService = scope.ServiceProvider.GetRequiredService<IErrorService>();
+        await errorService.SendMessageToAdminsAsync(text, cancellationToken);
+    }
+
+    private static string DescribeUser(User? user)
+    {
+        if (user == null)
+            return "Unknown";
+        var username = string.IsNullOrWhiteSpace(user.Username) ? "" : $"@{user.Username}";
+        return $"{user.FirstName} {user.LastName}".Trim() + $" (id={user.Id}) {username}".TrimEnd();
+    }
+
+    private static string DescribeChat(Chat? chat)
+    {
+        if (chat == null)
+            return "Unknown";
+        var titleOrName = !string.IsNullOrWhiteSpace(chat.Title)
+            ? chat.Title
+            : $"{chat.FirstName} {chat.LastName}".Trim();
+        var username = string.IsNullOrWhiteSpace(chat.Username) ? "" : $"@{chat.Username}";
+        return $"{titleOrName} (id={chat.Id}, type={chat.Type}) {username}".TrimEnd();
     }
 
     private async Task<Message> RegisterButtonsAsync(Message msg, CancellationToken cancellationToken)

@@ -6,6 +6,8 @@ public static class BotCommands
     public const string CommandAboutBot = "/about_bot";
     public const string CommandHowToUse = "/how_to_use";
     public const string CommandRegister = "/register";
+    /// <summary>One-time dashboard login code (5 minutes).</summary>
+    public const string CommandLoginCode = "/login_code";
     public const string CommandGetMyFiles = "/get_my_files";
     public const string CommandGetMyFilesWithToken = "/get_my_files_with_token";
     public const string CommandGetMyFilesWithoutToken = "/get_my_files_without_token";
@@ -32,4 +34,7 @@ public static class BotCommands
     public const string CommandPoll = "/poll";
     public const string CommandPollAnonymous = "/poll_anonymous";
     public const string CommandThrow = "/throw";
+
+    /// <summary>Admin only: push current Telegram profile photos into the dashboard for every registered user.</summary>
+    public const string CommandRefreshProfilePhotos = "/refresh_profile_photos";
 }

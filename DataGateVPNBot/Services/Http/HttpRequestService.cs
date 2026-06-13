@@ -1,7 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
 using DataGateVPNBot.Services.Interfaces;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace DataGateVPNBot.Services.Http;
 
@@ -11,6 +12,11 @@ public class HttpRequestService(
     ILogger<HttpRequestService> logger)
     : IHttpRequestService
 {
+    private static readonly JsonSerializerSettings JsonSettings = new()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver(),
+    };
+
     private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
 
     private HttpClient CreateClient(string? token)
@@ -42,18 +48,15 @@ public class HttpRequestService(
 
         logger.LogInformation("Received JSON from {Url}: {Json}", url, json);
 
-        return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        return JsonConvert.DeserializeObject<T>(json, JsonSettings);
     }
 
     public async Task<T?> PostAsync<T>(string url, object data, string? token = null,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Sending POST request to {Url} with data: {Data}", url, JsonSerializer.Serialize(data));
+        logger.LogInformation("Sending POST request to {Url} with data: {Data}", url, JsonConvert.SerializeObject(data, JsonSettings));
         var client = CreateClient(token);
-        var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
+        var content = new StringContent(JsonConvert.SerializeObject(data, JsonSettings), Encoding.UTF8, "application/json");
         return await SendRequestAsync<T>(() => client.PostAsync(url, content, cancellationToken), url,
             cancellationToken);
     }
@@ -61,9 +64,9 @@ public class HttpRequestService(
     public async Task<T?> PutAsync<T>(string url, object data, string? token = null,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Sending PUT request to {Url} with data: {Data}", url, JsonSerializer.Serialize(data));
+        logger.LogInformation("Sending PUT request to {Url} with data: {Data}", url, JsonConvert.SerializeObject(data, JsonSettings));
         var client = CreateClient(token);
-        var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
+        var content = new StringContent(JsonConvert.SerializeObject(data, JsonSettings), Encoding.UTF8, "application/json");
         return await SendRequestAsync<T>(() => client.PutAsync(url, content, cancellationToken), url,
             cancellationToken);
     }
@@ -139,17 +142,13 @@ public class HttpRequestService(
                     return (T)(object)response;
                 }
 
-                var result = JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var result = JsonConvert.DeserializeObject<T>(responseContent, JsonSettings);
 
                 response.Dispose();
                 return result;
             }
             catch (OperationCanceledException ex) when (cts.Token.IsCancellationRequested)
             {
-                // await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
                 logger.LogError("Request to {Url} timed out (Attempt {Attempt}) Error: {Error}", 
                     url, attempt, ex.Message);
                 errorDetails.AppendLine($"Attempt {attempt}: Timeout after {_defaultTimeout.TotalSeconds} seconds.");
@@ -158,14 +157,14 @@ public class HttpRequestService(
             catch (HttpRequestException ex)
             {
                 await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-                logger.LogError("Network error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
+                logger.LogError(ex, "Network error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
                 errorDetails.AppendLine($"Attempt {attempt}: HttpRequestException - {ex.Message}");
             }
             catch (Exception ex)
             {
                 await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-                logger.LogError("Unexpected error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
+                logger.LogError(ex, "Unexpected error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
                 errorDetails.AppendLine($"Attempt {attempt}: Exception - {ex.GetType().Name}: {ex.Message}");
             }

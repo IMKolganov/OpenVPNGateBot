@@ -1,5 +1,5 @@
 using DataGateVPNBot.Services.BotServices;
-using OpenVPNGateMonitor.SharedModels.Enums;
+using DataGateMonitor.SharedModels.Enums;
 using Xunit;
 
 namespace DataGateVPNBot.Tests.Services;

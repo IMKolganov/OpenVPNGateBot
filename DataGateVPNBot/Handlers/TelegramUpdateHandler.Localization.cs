@@ -1,7 +1,8 @@
-﻿using DataGateVPNBot.Services.BotServices.Interfaces;
+﻿using DataGateVPNBot.Localization;
+using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
-using OpenVPNGateMonitor.SharedModels.DataGateMonitorBackend.TelegramBotLocalization.Requests;
-using OpenVPNGateMonitor.SharedModels.Enums;
+using DataGateMonitor.SharedModels.DataGateMonitor.TelegramBotLocalization.Requests;
+using DataGateMonitor.SharedModels.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -63,7 +64,7 @@ public partial class TelegramUpdateHandler
         var openVpnServersService = scope.ServiceProvider.GetRequiredService<IOpenVpnServersService>();
         var serverResponses = await openVpnServersService.GetAllOpenVpnServersListAsync(cancellationToken);
 
-        var defaultServerId = serverResponses.OpenVpnServers
+        var defaultServerId = serverResponses.VpnServers
             .Where(x => x.IsDefault)
             .Select(x => x.Id)
             .FirstOrDefault();
@@ -86,5 +87,15 @@ public partial class TelegramUpdateHandler
         var localizationService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
         var request = new GetTextForTelegramUserRequest() { TelegramId = telegramId, Key = key };
         return (await localizationService.GetTextForTelegramUser(request, cancellationToken)).Text;
+    }
+
+    private async Task<string> GetLocalizationTextAsync(
+        string key,
+        long telegramId,
+        IReadOnlyDictionary<string, string> placeholders,
+        CancellationToken cancellationToken)
+    {
+        var template = await GetLocalizationTextAsync(key, telegramId, cancellationToken);
+        return LocalizationPlaceholderFormatter.Apply(template, placeholders);
     }
 }

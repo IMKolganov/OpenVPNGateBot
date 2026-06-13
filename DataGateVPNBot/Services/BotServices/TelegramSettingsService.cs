@@ -1,7 +1,7 @@
 ﻿using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Models;
 using DataGateVPNBot.Services.BotServices.Interfaces;
-using OpenVPNGateMonitor.SharedModels.Enums;
+using DataGateMonitor.SharedModels.Enums;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
@@ -108,6 +108,16 @@ public class TelegramSettingsService : ITelegramSettingsService
                 ["en"] = "Change your language",
                 ["ru"] = "Изменить язык",
                 ["el"] = "Αλλάξτε τη γλώσσα σας"
+            }
+        },
+        new()
+        {
+            Command = BotCommands.CommandRefreshProfilePhotos,
+            Descriptions = new()
+            {
+                ["en"] = "Admin: sync all user profile photos to the dashboard",
+                ["ru"] = "Админ: обновить аватарки всех пользователей в панели",
+                ["el"] = "Διαχειριστής: συγχρονισμός φωτογραφιών προφίλ όλων των χρηστών"
             }
         }
     ];

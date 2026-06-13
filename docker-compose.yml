@@ -1,8 +1,8 @@
 services:
   telegrambot:
-    image: imkolganov/openvpn-gate-monitor-telegrambot:latest
+    image: imkolganov/datagate-monitor-telegrambot:latest
     pull_policy: always
-    container_name: open-vpn-gate-monitor-telegrambot
+    container_name: datagate-monitor-telegrambot
     restart: always
     networks:
       - tgbot_network

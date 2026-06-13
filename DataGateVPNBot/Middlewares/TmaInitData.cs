@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using Newtonsoft.Json.Linq;
 
 namespace DataGateVPNBot.Middlewares;
 
@@ -13,6 +13,6 @@ public sealed class TmaInitData
     public long? CanSendAfter { get; set; }
     public string? Receiver { get; set; }
     public string? Hash { get; set; }
-    public JsonElement? User { get; set; }
+    public JToken? User { get; set; }
     public long? UserId { get; set; }
 }
