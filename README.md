@@ -1,4 +1,7 @@
-# DataGateVPNBot
+<h1 align="left">
+  <img src="https://raw.githubusercontent.com/IMKolganov/DataGateMonitorFrontend/main/public/favicon.svg" width="32" height="32" alt="" />
+  DataGateVPNBot
+</h1>
 
 Telegram bot for [DataGate](https://datagateapp.com/) / DataGate Monitor: registration, VPN config delivery, and user-facing commands.
 
@@ -105,7 +108,7 @@ CI/CD: see [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
 
 | Contact | Link |
 |---------|------|
-| <img src="https://cdn.simpleicons.org/linkedin/0A66C2" width="16" height="16" alt="" /> **LinkedIn** | [linkedin.com/in/imkolganov](https://www.linkedin.com/in/imkolganov/?locale=en) |
+| <img src="https://api.iconify.design/simple-icons/linkedin.svg?color=%230A66C2" width="16" height="16" alt="" /> **LinkedIn** | [linkedin.com/in/imkolganov](https://www.linkedin.com/in/imkolganov/?locale=en) |
 | <img src="https://cdn.simpleicons.org/telegram/26A5E4" width="16" height="16" alt="" /> **Telegram** | [@KolganovIvan](https://t.me/KolganovIvan) |
 | <img src="https://cdn.simpleicons.org/buymeacoffee/FFDD00" width="16" height="16" alt="" /> **Buy Me a Coffee** | [buymeacoffee.com/imkolganov](https://buymeacoffee.com/imkolganov) |
 | <img src="https://cdn.simpleicons.org/github/181717" width="16" height="16" alt="" /> **GitHub** | [IMKolganov](https://github.com/IMKolganov) |
