@@ -3,6 +3,7 @@ using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
+using DataGateVPNBot.Services.Interfaces;
 using Serilog;
 
 namespace DataGateVPNBot.Configurations;
@@ -55,6 +56,7 @@ public static class DashboardApiConfiguration
                 provider.GetRequiredService<IHttpRequestService>(),
                 dashboardConfig.ClientId,
                 dashboardConfig.ClientSecret,
+                provider.GetRequiredService<IDashboardAuthAlertService>(),
                 provider.GetRequiredService<ILogger<AuthService>>())
         );
 

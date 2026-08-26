@@ -18,7 +18,7 @@ public class IncomingMessageLogSenderServiceTests
     {
         var logger = Mock.Of<ILogger<IncomingMessageLogSenderService>>();
         var httpRequest = new Mock<IHttpRequestService>();
-        var authService = new AuthService(httpRequest.Object, "clientId", "clientSecret", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "clientId", "clientSecret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new IncomingMessageLogSenderService(logger, httpRequest.Object, authService);
 
         var request = new AddMessageRequest
@@ -42,7 +42,7 @@ public class IncomingMessageLogSenderServiceTests
         var httpRequest = new Mock<IHttpRequestService>();
         httpRequest.Setup(h => h.PostAsync<ApiResponse<TokenResponse>>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<TokenResponse> { Success = false });
-        var authService = new AuthService(httpRequest.Object, "clientId", "clientSecret", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "clientId", "clientSecret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new IncomingMessageLogSenderService(logger, httpRequest.Object, authService);
 
         var request = new AddMessageRequest
@@ -74,7 +74,7 @@ public class IncomingMessageLogSenderServiceTests
         httpRequest.Setup(h => h.PostAsync<ApiResponse<AddMessageResponse>>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<AddMessageResponse> { Success = true, Data = expectedData });
 
-        var authService = new AuthService(httpRequest.Object, "clientId", "clientSecret", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "clientId", "clientSecret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new IncomingMessageLogSenderService(logger, httpRequest.Object, authService);
         var request = new AddMessageRequest
         {

@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using DataGateVPNBot.Models;
-using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,10 +9,11 @@ namespace DataGateVPNBot.Services;
 public class ErrorService(
     IServiceProvider serviceProvider,
     IHostEnvironment environment,
+    IAdminRecipientService adminRecipientService,
     ILogger<ErrorService> logger)
     : IErrorService
 {
-    private static bool _isSendingException = false;
+    private static bool _isSendingException;
 
     public void LogErrorToDatabase(Exception exception, HttpContext? context)
     {
@@ -53,28 +53,28 @@ public class ErrorService(
     
     public async Task SendMessageToAdminsAsync(string message, CancellationToken cancellationToken)
     {
-        using var scope = serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-        var admins =  await telegramUsersService.GetAdminsAsync(cancellationToken);
-        
-        if (admins.TelegramBotAdmins is { Count: 0 })
+        var adminIds = await adminRecipientService.GetAdminTelegramIdsAsync(cancellationToken, tryRefresh: false);
+        if (adminIds.Count == 0)
         {
             logger.LogWarning("Admin chat ID is not configured.");
             return;
         }
-        logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
-        foreach (var admin in admins.TelegramBotAdmins)
+
+        using var scope = serviceProvider.CreateScope();
+        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+
+        logger.LogInformation("Sending admin message to {RecordCount} recipient(s).", adminIds.Count);
+        foreach (var adminId in adminIds)
         {
             try
             {
-                await botClient.SendMessage(admin.TelegramId, message, cancellationToken: cancellationToken);
+                await botClient.SendMessage(adminId, message, cancellationToken: cancellationToken);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex,
                     "Failed to send admin message to Telegram ID {TelegramId}.",
-                    admin.TelegramId);
+                    adminId);
             }
         }
     }
@@ -91,25 +91,24 @@ public class ErrorService(
             return;
         }
 
-        using var scope = serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-        var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
-
-        if (admins.TelegramBotAdmins is { Count: 0 })
+        var adminIds = await adminRecipientService.GetAdminTelegramIdsAsync(cancellationToken, tryRefresh: false);
+        if (adminIds.Count == 0)
         {
             logger.LogWarning("Admin chat ID is not configured.");
             return;
         }
 
-        logger.LogInformation("Sending photo alert to {RecordCount} admins.", admins.TelegramBotAdmins.Count);
-        foreach (var admin in admins.TelegramBotAdmins)
+        using var scope = serviceProvider.CreateScope();
+        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+
+        logger.LogInformation("Sending photo alert to {RecordCount} recipient(s).", adminIds.Count);
+        foreach (var adminId in adminIds)
         {
             try
             {
                 await using var stream = new MemoryStream(photoBytes, writable: false);
                 await botClient.SendPhoto(
-                    admin.TelegramId,
+                    adminId,
                     new InputFileStream(stream, fileName),
                     caption: caption,
                     cancellationToken: cancellationToken);
@@ -118,16 +117,16 @@ public class ErrorService(
             {
                 logger.LogError(ex,
                     "Failed to send admin photo to Telegram ID {TelegramId}; falling back to text.",
-                    admin.TelegramId);
+                    adminId);
                 try
                 {
-                    await botClient.SendMessage(admin.TelegramId, caption, cancellationToken: cancellationToken);
+                    await botClient.SendMessage(adminId, caption, cancellationToken: cancellationToken);
                 }
                 catch (Exception textEx)
                 {
                     logger.LogError(textEx,
                         "Failed to send fallback admin text to Telegram ID {TelegramId}.",
-                        admin.TelegramId);
+                        adminId);
                 }
             }
         }
@@ -147,21 +146,19 @@ public class ErrorService(
 
         try
         {
-            using var scope = serviceProvider.CreateScope();
-            var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-            var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-
-            var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
-
-            if (admins.TelegramBotAdmins is { Count: 0 })
+            var adminIds = await adminRecipientService.GetAdminTelegramIdsAsync(cancellationToken, tryRefresh: false);
+            if (adminIds.Count == 0)
             {
                 logger.LogWarning("No admins are configured to receive error notifications.");
                 return;
             }
 
-            logger.LogInformation($"Notifying {admins.TelegramBotAdmins.Count} admins about an error.");
+            using var scope = serviceProvider.CreateScope();
+            var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
-            foreach (var admin in admins.TelegramBotAdmins)
+            logger.LogInformation("Notifying {Count} admin(s) about an error.", adminIds.Count);
+
+            foreach (var adminId in adminIds)
             {
                 try
                 {
@@ -180,14 +177,15 @@ public class ErrorService(
                     if (errorMessage.Length > 4096)
                         errorMessage = errorMessage[..4093] + "...";
 
-                    await botClient.SendMessage(admin.TelegramId, errorMessage,
+                    await botClient.SendMessage(adminId, errorMessage,
                         parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown,
                         cancellationToken: cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex,
-                        $"Failed to send error notification to admin with Telegram ID {admin.TelegramId}.");
+                        "Failed to send error notification to admin with Telegram ID {TelegramId}.",
+                        adminId);
                 }
             }
         }
@@ -203,18 +201,18 @@ public class ErrorService(
 
     public async Task NotifyAdminsAboutStartAsync(CancellationToken cancellationToken)
     {
-        using var scope = serviceProvider.CreateScope();
-        var telegramUsersService = scope.ServiceProvider.GetRequiredService<ITelegramBotUserService>();
-        var admins = await telegramUsersService.GetAdminsAsync(cancellationToken);
-        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-
-        if (admins.TelegramBotAdmins is { Count: 0 })
+        var adminIds = await adminRecipientService.GetAdminTelegramIdsAsync(cancellationToken, tryRefresh: false);
+        if (adminIds.Count == 0)
         {
             logger.LogWarning("Admin chat ID is not configured.");
             return;
         }
-        logger.LogInformation("Admins count: {RecordCount}", admins!.TelegramBotAdmins.Count);
-        foreach (var admin in admins.TelegramBotAdmins)
+
+        using var scope = serviceProvider.CreateScope();
+        var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+
+        logger.LogInformation("Notifying {RecordCount} admin(s) about startup.", adminIds.Count);
+        foreach (var adminId in adminIds)
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
 
@@ -223,7 +221,7 @@ public class ErrorService(
                                  $"Environment: {environment.EnvironmentName}\n" +
                                  $"Time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
 
-            await botClient.SendMessage(admin.TelegramId, startupMessage, cancellationToken: cancellationToken);
+            await botClient.SendMessage(adminId, startupMessage, cancellationToken: cancellationToken);
         }
     }
 }

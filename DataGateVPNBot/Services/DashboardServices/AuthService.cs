@@ -1,5 +1,6 @@
 using DataGateVPNBot.Localization;
 using DataGateVPNBot.Services.Http;
+using DataGateVPNBot.Services.Interfaces;
 using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Requests;
 using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses;
 using DataGateMonitor.SharedModels.DataGateMonitor.User.Requests;
@@ -12,16 +13,28 @@ public class AuthService(
     IHttpRequestService httpRequestService,
     string clientId,
     string clientSecret,
+    IDashboardAuthAlertService dashboardAuthAlertService,
     ILogger<AuthService> logger)
 {
     private string? _cachedToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
+    private DateTime _tokenBlockedUntilUtc = DateTime.MinValue;
     private readonly TimeSpan _tokenExpiration = TimeSpan.FromMinutes(55);
+    private static readonly TimeSpan RateLimitBackoff = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan CredentialFailureBackoff = TimeSpan.FromMinutes(30);
     private const string EndpointAuthByToken = "api/auth/token";
     private const string EndpointTelegramRequestLoginCode = "api/auth/telegram/request-login-code";
 
     public async Task<string?> GetTokenAsync()
     {
+        if (DateTime.UtcNow < _tokenBlockedUntilUtc)
+        {
+            logger.LogWarning(
+                "Skipping token request until {UntilUtc:u} due to prior dashboard auth/rate-limit backoff.",
+                _tokenBlockedUntilUtc);
+            return null;
+        }
+
         if (!string.IsNullOrEmpty(_cachedToken) && DateTime.UtcNow < _tokenExpiry)
         {
             logger.LogInformation("Using cached token from memory.");
@@ -43,13 +56,15 @@ public class AuthService(
 
             if (response == null)
             {
-                logger.LogWarning("Empty response from API.");
+                logger.LogWarning("Empty response from dashboard token endpoint.");
+                await HandleTokenFailureAsync("Empty response from dashboard token endpoint.");
                 return null;
             }
 
             if (!response.Success || response.Data == null)
             {
                 logger.LogWarning("Token request failed: {Message}", response.Message);
+                await HandleTokenFailureAsync(response.Message);
                 return null;
             }
 
@@ -71,9 +86,73 @@ public class AuthService(
         }
         catch (Exception ex)
         {
+            await HandleTokenFailureAsync(ex.Message);
             logger.LogError(ex, "❌ Failed to obtain token from API.");
             return null;
         }
+    }
+
+    private async Task HandleTokenFailureAsync(string? hint)
+    {
+        if (IsRateLimitFailure(hint))
+        {
+            ApplyTokenBackoff(RateLimitBackoff, "rate limiting");
+            await dashboardAuthAlertService.TryNotifyAuthFailureAsync(
+                hint ?? "Too many token requests. Try again later.");
+            return;
+        }
+
+        if (IsCredentialFailure(hint))
+        {
+            _cachedToken = null;
+            _tokenExpiry = DateTime.MinValue;
+            ApplyTokenBackoff(CredentialFailureBackoff, "invalid dashboard credentials");
+            await dashboardAuthAlertService.TryNotifyAuthFailureAsync(hint ?? "Authentication rejected.");
+            return;
+        }
+
+        logger.LogWarning("Dashboard token request failed without classified reason: {Hint}", hint);
+        await dashboardAuthAlertService.TryNotifyAuthFailureAsync(hint ?? "Dashboard token request failed.");
+    }
+
+    private void ApplyTokenBackoff(TimeSpan duration, string reason)
+    {
+        _tokenBlockedUntilUtc = DateTime.UtcNow.Add(duration);
+        logger.LogWarning(
+            "Dashboard token requests paused until {UntilUtc:u} due to {Reason}.",
+            _tokenBlockedUntilUtc,
+            reason);
+    }
+
+    private static bool IsRateLimitFailure(string? hint)
+    {
+        if (string.IsNullOrWhiteSpace(hint))
+            return false;
+
+        return hint.Contains("Too many token", StringComparison.OrdinalIgnoreCase)
+               || hint.Contains("TooManyRequests", StringComparison.OrdinalIgnoreCase)
+               || hint.Contains("429", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsCredentialFailure(string? hint)
+    {
+        if (string.IsNullOrWhiteSpace(hint))
+            return false;
+
+        string[] markers =
+        [
+            "invalid credential",
+            "invalid client",
+            "invalid secret",
+            "unauthorized",
+            "forbidden",
+            "revoked",
+            "application not found",
+            "401",
+            "403",
+        ];
+
+        return markers.Any(marker => hint.Contains(marker, StringComparison.OrdinalIgnoreCase));
     }
 
     public async Task<TelegramRequestLoginCodeResponse?> RequestDashboardLoginCodeAsync(long telegramId, CancellationToken ct = default)

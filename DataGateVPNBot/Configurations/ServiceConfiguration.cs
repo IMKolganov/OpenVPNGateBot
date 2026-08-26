@@ -28,6 +28,9 @@ public static class ServiceConfiguration
         services.AddHostedService<MonthlyProfilePhotoRefreshHostedService>();
         services.AddScoped<ILocalizationService, LocalizationService>();
         services.AddScoped<IIncomingMessageLogSenderService, IncomingMessageLogSenderService>();
+        services.AddSingleton<AdminRecipientStore>();
+        services.AddSingleton<IAdminRecipientService, AdminRecipientService>();
+        services.AddSingleton<IDashboardAuthAlertService, DashboardAuthAlertService>();
         services.AddScoped<IErrorService, ErrorService>();
         services.AddSingleton<TelegramUpdateHandler>();
         services.AddSingleton<ITelegramSettingsService, TelegramSettingsService>();

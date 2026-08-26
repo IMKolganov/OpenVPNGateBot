@@ -40,7 +40,7 @@ public class FreeTierUnsubscribedVpnDigestBotServiceTests
                 },
             });
 
-        var auth = new AuthService(http.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(http.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new FreeTierUnsubscribedVpnDigestBotService(
             auth, http.Object, Mock.Of<ILogger<FreeTierUnsubscribedVpnDigestBotService>>());
 
@@ -63,7 +63,7 @@ public class FreeTierUnsubscribedVpnDigestBotServiceTests
                 Success = false,
             });
 
-        var auth = new AuthService(http.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(http.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new FreeTierUnsubscribedVpnDigestBotService(
             auth, http.Object, Mock.Of<ILogger<FreeTierUnsubscribedVpnDigestBotService>>());
 

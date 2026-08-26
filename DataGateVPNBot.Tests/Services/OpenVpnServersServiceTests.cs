@@ -21,7 +21,7 @@ public class OpenVpnServersServiceTests
             .ReturnsAsync(new ApiResponse<TokenResponse> { Success = true, Data = new TokenResponse { Token = "t", Expiration = DateTimeOffset.UtcNow.AddHours(1) } });
         httpRequest.Setup(h => h.GetAsync<ApiResponse<VpnServersResponse>>(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<VpnServersResponse> { Success = true, Data = expected });
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var serverService = new ServerService(Mock.Of<ILogger<ServerService>>(), httpRequest.Object, authService);
         var logger = Mock.Of<ILogger<DataGateVPNBot.Services.BotServices.OvpnFileService>>();
         var sut = new OpenVpnServersService(serverService, logger);

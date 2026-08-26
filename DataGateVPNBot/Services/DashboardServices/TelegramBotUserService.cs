@@ -1,4 +1,5 @@
 using System.Security.Authentication;
+using DataGateVPNBot.Services;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Http;
@@ -16,6 +17,7 @@ public class TelegramBotUserService(
     IHttpRequestService httpRequestService,
     AuthService authService,
     IErrorService errorService,
+    AdminRecipientStore adminRecipientStore,
     ITelegramProfilePhotoDownloader profilePhotoDownloader)
     : ITelegramBotUserService
 {
@@ -163,6 +165,11 @@ public class TelegramBotUserService(
         if (response is { Success: true, Data: not null })
         {
             telegramBotAdmins = response.Data;
+            if (telegramBotAdmins.TelegramBotAdmins is { Count: > 0 })
+            {
+                adminRecipientStore.Update(
+                    telegramBotAdmins.TelegramBotAdmins.Select(admin => admin.TelegramId));
+            }
         }
         else
         {
