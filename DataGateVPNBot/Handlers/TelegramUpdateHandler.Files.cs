@@ -137,7 +137,7 @@ public partial class TelegramUpdateHandler
         var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
         var mediaGroupOpenVpnFiles = isXray
             ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                .GetOvpnFilesAsync(vpnServerId, msg.Chat.Id, cancellationToken)
+                .GetClientLinksAsync(vpnServerId, msg.Chat.Id, cancellationToken)
             : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                 .GetOvpnFilesAsync(vpnServerId, msg.Chat.Id, cancellationToken);
 
@@ -219,11 +219,8 @@ public partial class TelegramUpdateHandler
             return first ?? throw new InvalidOperationException("No messages returned after sending XRay links.");
         }
 
-        var mediaGroupOpenVpnFiles = isXray
-            ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                .GetOvpnFilesWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress, cancellationToken)
-            : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
-                .GetOvpnFilesWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress, cancellationToken);
+        var mediaGroupOpenVpnFiles = await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
+            .GetOvpnFilesWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress, cancellationToken);
 
         if (!mediaGroupOpenVpnFiles.Any())
         {
@@ -267,7 +264,7 @@ public partial class TelegramUpdateHandler
             var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
             var atLimit = isXray
                 ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                    .CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken)
+                    .CheckMaxCountClientLinksForClient(vpnServerId, msg.Chat.Id, cancellationToken)
                 : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                     .CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken);
             if (atLimit)
@@ -281,7 +278,7 @@ public partial class TelegramUpdateHandler
 
             var mediaGroupOpenVpnFiles = isXray
                 ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                    .MakeOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken)
+                    .MakeClientLinkAsync(vpnServerId, msg.Chat.Id, cancellationToken)
                 : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                     .MakeOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken);
             if (!mediaGroupOpenVpnFiles.Any())
@@ -332,7 +329,7 @@ public partial class TelegramUpdateHandler
             var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
             var atLimit = isXray
                 ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                    .CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken)
+                    .CheckMaxCountClientLinksForClient(vpnServerId, msg.Chat.Id, cancellationToken)
                 : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                     .CheckMaxCountOvpnFilesForClient(vpnServerId, msg.Chat.Id, cancellationToken);
             if (atLimit)
@@ -346,7 +343,7 @@ public partial class TelegramUpdateHandler
 
             var mediaGroupOpenVpnFiles = isXray
                 ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                    .MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress,
+                    .MakeClientLinkWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress,
                         cancellationToken)
                 : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                     .MakeOvpnFileWithTokenAsync(vpnServerId, msg.Chat.Id, _botConfig.HostAddress,
@@ -460,7 +457,7 @@ public partial class TelegramUpdateHandler
         var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
         var revoked = isXray
             ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                .RevokeAllOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken)
+                .RevokeAllClientLinksAsync(vpnServerId, msg.Chat.Id, cancellationToken)
             : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                 .RevokeAllOvpnFileAsync(vpnServerId, msg.Chat.Id, cancellationToken);
         if (revoked)
@@ -491,13 +488,17 @@ public partial class TelegramUpdateHandler
         }
 
         var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
-        var clientConfigFiles = isXray
-            ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                .GetAllOvpnFilesListAsync(vpnServerId, msg.Chat.Id, cancellationToken)
-            : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
-                .GetAllOvpnFilesListAsync(vpnServerId, msg.Chat.Id, cancellationToken);
+        var clientConfigFileNames = isXray
+            ? (await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
+                .GetAllClientLinksListAsync(vpnServerId, msg.Chat.Id, cancellationToken))
+                .Select(x => x.FileName)
+                .ToList()
+            : (await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
+                .GetAllOvpnFilesListAsync(vpnServerId, msg.Chat.Id, cancellationToken))
+                .Select(x => x.FileName)
+                .ToList();
 
-        if (clientConfigFiles.Count <= 0)
+        if (clientConfigFileNames.Count <= 0)
         {
             return await _botClient.SendMessage(
                 chatId: msg.Chat.Id,
@@ -509,10 +510,10 @@ public partial class TelegramUpdateHandler
         var rows = new List<InlineKeyboardButton[]>();
         
         var currentRow = new List<InlineKeyboardButton>();
-        foreach (var fileInfo in clientConfigFiles)
+        foreach (var fileName in clientConfigFileNames)
         {
-            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileInfo.FileName, 
-                $"{BotCommands.CommandDeleteSelectedFile} {vpnServerId} {fileInfo.FileName}"));
+            currentRow.Add(InlineKeyboardButton.WithCallbackData(fileName, 
+                $"{BotCommands.CommandDeleteSelectedFile} {vpnServerId} {fileName}"));
         
             if (currentRow.Count == 2)
             {
@@ -551,7 +552,7 @@ public partial class TelegramUpdateHandler
         var isXray = await IsXrayServerAsync(scope, vpnServerId, cancellationToken);
         var ok = isXray
             ? await scope.ServiceProvider.GetRequiredService<IXrayClientLinkBotService>()
-                .RevokeOvpnFileAsync(vpnServerId, telegramId, fileName, cancellationToken)
+                .RevokeClientLinkAsync(vpnServerId, telegramId, fileName, cancellationToken)
             : await scope.ServiceProvider.GetRequiredService<IOvpnFileService>()
                 .RevokeOvpnFileAsync(vpnServerId, telegramId, fileName, cancellationToken);
         if (ok)
