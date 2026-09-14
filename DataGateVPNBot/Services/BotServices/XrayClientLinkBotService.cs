@@ -2,172 +2,172 @@ using System.Text;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Interfaces;
-using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Requests;
-using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses;
-using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses.Dto;
+using DataGateMonitor.SharedModels.DataGateMonitor.XrayClientLinks.Requests;
+using DataGateMonitor.SharedModels.DataGateMonitor.XrayClientLinks.Responses;
+using DataGateMonitor.SharedModels.DataGateMonitor.XrayClientLinks.Responses.Dto;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
 
-public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileService, IErrorService errorService,
+public class XrayClientLinkBotService(XrayClientLinksDashboardService dashboard, IErrorService errorService,
     ILogger<XrayClientLinkBotService> logger)
     : IXrayClientLinkBotService
 {
-    public async Task<List<IssuedOvpnFileDto>> GetAllOvpnFilesListAsync(int vpnServerId, long telegramId,
+    public async Task<List<IssuedXrayClientLinkDto>> GetAllClientLinksListAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        var getAllByExternalIdOvpnFilesRequest = new ByExternalIdAndVpnServerIdRequest()
+        var listRequest = new GetXrayClientLinksByExternalIdAndVpnServerIdRequest()
         {
             VpnServerId = vpnServerId, ExternalId = telegramId.ToString()
         };
-        var issuedOvpnFileResponses =
-            await ovpnFileService.GetAllOvpnFilesByExternalIdAsync(
-                getAllByExternalIdOvpnFilesRequest, cancellationToken);
-        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x =>
+        var issuedXrayClientLinkResponses =
+            await dashboard.GetAllClientLinksByExternalIdAsync(
+                listRequest, cancellationToken);
+        issuedXrayClientLinkResponses = issuedXrayClientLinkResponses?.Where(x =>
             !x.IsRevoked).ToList() ?? [];
 
-        return issuedOvpnFileResponses;
+        return issuedXrayClientLinkResponses;
     }
 
-    public async Task<DownloadFileResponse> DownloadOvpnFileByTokenAsync(string token, CancellationToken ct)
+    public async Task<DownloadXrayClientLinkResponse> DownloadClientLinkByTokenAsync(string token, CancellationToken ct)
     {
-        var byToken = new ByTokenRequest(){ Token = token };
-        var issuedOvpnFileResponse = await ovpnFileService.GetOvpnFileByTokenAsync(byToken, ct);
+        var byToken = new GetXrayClientLinkByTokenRequest(){ Token = token };
+        var issuedXrayClientLinkResponse = await dashboard.GetClientLinkByTokenAsync(byToken, ct);
 
-        if (issuedOvpnFileResponse == null)
+        if (issuedXrayClientLinkResponse == null)
         {
-            throw new FileNotFoundException($"Ovpn file not found: {token}");
+            throw new FileNotFoundException($"Xray client link not found: {token}");
         }
 
-        var downloadOvpnFileRequest = new DownloadFileRequest()
+        var downloadRequest = new DownloadXrayClientLinkRequest()
         {
-            VpnServerId = issuedOvpnFileResponse.VpnServerId,
-            IssuedOvpnFileId = issuedOvpnFileResponse.Id
+            VpnServerId = issuedXrayClientLinkResponse.VpnServerId,
+            IssuedXrayClientLinkId = issuedXrayClientLinkResponse.Id
         };
         
-        var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-            downloadOvpnFileRequest, ct);
+        var downloadXrayClientLinkResponse = await dashboard.DownloadClientLinkByIdAndServerIdAsync(
+            downloadRequest, ct);
         
-        return downloadOvpnFileResponse;
+        return downloadXrayClientLinkResponse;
     }
 
 
-    public async Task<List<IAlbumInputMedia>> GetOvpnFilesAsync(int vpnServerId, long telegramId,
+    public async Task<List<IAlbumInputMedia>> GetClientLinksAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        var getAllByExternalIdOvpnFilesRequest = new ByExternalIdAndVpnServerIdRequest()
+        var listRequest = new GetXrayClientLinksByExternalIdAndVpnServerIdRequest()
         {
             VpnServerId = vpnServerId, ExternalId = telegramId.ToString()
         };
-        logger.LogInformation($"Fetching OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
+        logger.LogInformation($"Fetching Xray client links for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var issuedOvpnFileResponses =
-            await ovpnFileService.GetAllOvpnFilesByExternalIdAsync(
-                getAllByExternalIdOvpnFilesRequest, cancellationToken);
+        var issuedXrayClientLinkResponses =
+            await dashboard.GetAllClientLinksByExternalIdAsync(
+                listRequest, cancellationToken);
 
-        issuedOvpnFileResponses = issuedOvpnFileResponses?.Where(x =>
+        issuedXrayClientLinkResponses = issuedXrayClientLinkResponses?.Where(x =>
             !x.IsRevoked).ToList() ?? [];
 
-        if (!issuedOvpnFileResponses.Any())
+        if (!issuedXrayClientLinkResponses.Any())
         {
-            logger.LogInformation("No valid OVPN files found.");
+            logger.LogInformation("No valid Xray client links found.");
             return new List<IAlbumInputMedia>();
         }
 
-        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
+        var mediaGroup = new List<IAlbumInputMedia>();
 
-        foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses)
+        foreach (var issuedXrayClientLinkResponse in issuedXrayClientLinkResponses)
         {
             try
             {
                 logger.LogInformation(
-                    $"Processing file: {issuedOvpnFileResponse.FileName}, " +
-                    $"ServerId: {issuedOvpnFileResponse.VpnServerId}, " +
-                    $"FileId: {issuedOvpnFileResponse.Id}");
-                var downloadOvpnFileRequest = new DownloadFileRequest()
+                    $"Processing file: {issuedXrayClientLinkResponse.FileName}, " +
+                    $"ServerId: {issuedXrayClientLinkResponse.VpnServerId}, " +
+                    $"FileId: {issuedXrayClientLinkResponse.Id}");
+                var downloadRequest = new DownloadXrayClientLinkRequest()
                 {
-                    VpnServerId = issuedOvpnFileResponse.VpnServerId,
-                    IssuedOvpnFileId = issuedOvpnFileResponse.Id
+                    VpnServerId = issuedXrayClientLinkResponse.VpnServerId,
+                    IssuedXrayClientLinkId = issuedXrayClientLinkResponse.Id
                 };
 
-                var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-                    downloadOvpnFileRequest, cancellationToken);
+                var downloadXrayClientLinkResponse = await dashboard.DownloadClientLinkByIdAndServerIdAsync(
+                    downloadRequest, cancellationToken);
 
-                var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
-                var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
+                var stream = new MemoryStream(downloadXrayClientLinkResponse.Content ?? Array.Empty<byte>());
+                var inputFile = new InputFileStream(stream, downloadXrayClientLinkResponse.IssuedXrayClientLink.FileName);
                 var media = new InputMediaDocument(inputFile)
                 {
-                    Caption = issuedOvpnFileResponse.FileName
+                    Caption = issuedXrayClientLinkResponse.FileName
                 };
-                mediaGroupOpenVpnFiles.Add(media);
+                mediaGroup.Add(media);
             }
             catch (Exception ex)
             {
                 await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
                 logger.LogError($"Error processing file " +
-                                 $"{issuedOvpnFileResponse.FileName}: {ex.Message}");
+                                 $"{issuedXrayClientLinkResponse.FileName}: {ex.Message}");
 
                 var errorMessage = new StringBuilder()
-                    .AppendLine($"Error processing file: {issuedOvpnFileResponse.FileName}")
-                    .AppendLine($"ServerId: {issuedOvpnFileResponse.VpnServerId}")
-                    .AppendLine($"FileId: {issuedOvpnFileResponse.Id}")
+                    .AppendLine($"Error processing file: {issuedXrayClientLinkResponse.FileName}")
+                    .AppendLine($"ServerId: {issuedXrayClientLinkResponse.VpnServerId}")
+                    .AppendLine($"FileId: {issuedXrayClientLinkResponse.Id}")
                     .AppendLine($"Error: {ex.Message}")
                     .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
                     .ToString();
 
                 var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
                 var errorFile = new InputFileStream(errorStream,
-                    $"{issuedOvpnFileResponse.FileName}.error.txt");
+                    $"{issuedXrayClientLinkResponse.FileName}.error.txt");
 
                 var errorMedia = new InputMediaDocument(errorFile)
                 {
-                    Caption = $"Error file: {issuedOvpnFileResponse.FileName}"
+                    Caption = $"Error file: {issuedXrayClientLinkResponse.FileName}"
                 };
 
-                mediaGroupOpenVpnFiles.Add(errorMedia);
+                mediaGroup.Add(errorMedia);
             }
         }
 
-        return mediaGroupOpenVpnFiles;
+        return mediaGroup;
     }
 
-    public async Task<List<IAlbumInputMedia>> GetOvpnFilesWithTokenAsync(int vpnServerId, long telegramId, 
+    public async Task<List<IAlbumInputMedia>> GetClientLinksWithTokenAsync(int vpnServerId, long telegramId, 
         string hostUrl, CancellationToken cancellationToken)
     {
-        var getAllByExternalIdOvpnFilesRequest = new ByExternalIdAndVpnServerIdRequest()
+        var listRequest = new GetXrayClientLinksByExternalIdAndVpnServerIdRequest()
         {
             VpnServerId = vpnServerId, ExternalId = telegramId.ToString()
         };
-        logger.LogInformation($"Fetching OVPN files for telegramId: {telegramId}, ServerId: {vpnServerId}");
+        logger.LogInformation($"Fetching Xray client links for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var issuedOvpnFileResponses =
-            await ovpnFileService.GetAllOvpnFilesByExternalIdWithTokenAsync(
-                getAllByExternalIdOvpnFilesRequest, cancellationToken);
+        var issuedXrayClientLinkResponses =
+            await dashboard.GetAllClientLinksByExternalIdWithTokenAsync(
+                listRequest, cancellationToken);
         
-        if (issuedOvpnFileResponses != null && !issuedOvpnFileResponses.IssuedOvpnFiles.Any())
+        if (issuedXrayClientLinkResponses != null && !issuedXrayClientLinkResponses.IssuedXrayClientLinks.Any())
         {
-            logger.LogInformation("No valid OVPN files found.");
+            logger.LogInformation("No valid Xray client links found.");
             return new List<IAlbumInputMedia>();
         }
 
-        if (issuedOvpnFileResponses != null)//todo: fix it
+        if (issuedXrayClientLinkResponses != null)//todo: fix it
         {
-            issuedOvpnFileResponses.IssuedOvpnFiles = issuedOvpnFileResponses.IssuedOvpnFiles
+            issuedXrayClientLinkResponses.IssuedXrayClientLinks = issuedXrayClientLinkResponses.IssuedXrayClientLinks
                 .Where(x => !x.IsRevoked)
                 .ToList();
         }
         
-        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
+        var mediaGroup = new List<IAlbumInputMedia>();
 
         //todo: fix backend response
-        foreach (var issuedOvpnFileResponse in issuedOvpnFileResponses!.IssuedOvpnFiles)
+        foreach (var issuedXrayClientLinkResponse in issuedXrayClientLinkResponses!.IssuedXrayClientLinks)
         {
             var downloadUrl = string.Empty;
             
-            var response = issuedOvpnFileResponses; // type: OvpnFilesWithTokensResponse
+            var response = issuedXrayClientLinkResponses; // type: XrayClientLinksWithTokensResponse
 
-            var matchingToken = response.IssuedOvpnFileTokens
-                .FirstOrDefault(t => t.IssuedOvpnFileId == issuedOvpnFileResponse.Id);
+            var matchingToken = response.IssuedXrayClientLinkTokens
+                .FirstOrDefault(t => t.IssuedXrayClientLinkId == issuedXrayClientLinkResponse.Id);
 
             if (!string.IsNullOrWhiteSpace(matchingToken?.Token))
             {
@@ -178,70 +178,70 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
             try
             {
                 logger.LogInformation(
-                    $"Processing file: {issuedOvpnFileResponse.FileName}, " +
-                    $"ServerId: {issuedOvpnFileResponse.VpnServerId}, " +
-                    $"FileId: {issuedOvpnFileResponse.Id}");
-                var downloadOvpnFileRequest = new DownloadFileRequest()
+                    $"Processing file: {issuedXrayClientLinkResponse.FileName}, " +
+                    $"ServerId: {issuedXrayClientLinkResponse.VpnServerId}, " +
+                    $"FileId: {issuedXrayClientLinkResponse.Id}");
+                var downloadRequest = new DownloadXrayClientLinkRequest()
                 {
-                    VpnServerId = issuedOvpnFileResponse.VpnServerId,
-                    IssuedOvpnFileId = issuedOvpnFileResponse.Id
+                    VpnServerId = issuedXrayClientLinkResponse.VpnServerId,
+                    IssuedXrayClientLinkId = issuedXrayClientLinkResponse.Id
                 };
 
-                var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
-                    downloadOvpnFileRequest, cancellationToken);
+                var downloadXrayClientLinkResponse = await dashboard.DownloadClientLinkByIdAndServerIdAsync(
+                    downloadRequest, cancellationToken);
 
-                var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
-                var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
+                var stream = new MemoryStream(downloadXrayClientLinkResponse.Content ?? Array.Empty<byte>());
+                var inputFile = new InputFileStream(stream, downloadXrayClientLinkResponse.IssuedXrayClientLink.FileName);
                 var media = new InputMediaDocument(inputFile)
                 {
-                    Caption = $"{issuedOvpnFileResponse.FileName} Url: {downloadUrl}"
+                    Caption = $"{issuedXrayClientLinkResponse.FileName} Url: {downloadUrl}"
                 };
-                mediaGroupOpenVpnFiles.Add(media);
+                mediaGroup.Add(media);
             }
             catch (Exception ex)
             {
                 await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
                 logger.LogError($"Error processing file " +
-                                 $"{issuedOvpnFileResponse.FileName}: {ex.Message}");
+                                 $"{issuedXrayClientLinkResponse.FileName}: {ex.Message}");
 
                 var errorMessage = new StringBuilder()
-                    .AppendLine($"Error processing file: {issuedOvpnFileResponse.FileName}")
-                    .AppendLine($"ServerId: {issuedOvpnFileResponse.VpnServerId}")
-                    .AppendLine($"FileId: {issuedOvpnFileResponse.Id}")
+                    .AppendLine($"Error processing file: {issuedXrayClientLinkResponse.FileName}")
+                    .AppendLine($"ServerId: {issuedXrayClientLinkResponse.VpnServerId}")
+                    .AppendLine($"FileId: {issuedXrayClientLinkResponse.Id}")
                     .AppendLine($"Error: {ex.Message}")
                     .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
                     .ToString();
 
                 var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
                 var errorFile = new InputFileStream(errorStream,
-                    $"{issuedOvpnFileResponse.FileName}.error.txt");
+                    $"{issuedXrayClientLinkResponse.FileName}.error.txt");
 
                 var errorMedia = new InputMediaDocument(errorFile)
                 {
-                    Caption = $"Error file: {issuedOvpnFileResponse.FileName}"
+                    Caption = $"Error file: {issuedXrayClientLinkResponse.FileName}"
                 };
 
-                mediaGroupOpenVpnFiles.Add(errorMedia);
+                mediaGroup.Add(errorMedia);
             }
         }
 
-        return mediaGroupOpenVpnFiles;
+        return mediaGroup;
     }
 
     public async Task<string> GetClientLinksTextWithTokenAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        var request = new ByExternalIdAndVpnServerIdRequest
+        var request = new GetXrayClientLinksByExternalIdAndVpnServerIdRequest
         {
             VpnServerId = vpnServerId,
             ExternalId = telegramId.ToString()
         };
 
-        var response = await ovpnFileService.GetAllOvpnFilesByExternalIdWithTokenAsync(request, cancellationToken);
-        if (response == null || !response.IssuedOvpnFiles.Any())
+        var response = await dashboard.GetAllClientLinksByExternalIdWithTokenAsync(request, cancellationToken);
+        if (response == null || !response.IssuedXrayClientLinks.Any())
             return string.Empty;
 
-        var activeFiles = response.IssuedOvpnFiles.Where(x => !x.IsRevoked).ToList();
+        var activeFiles = response.IssuedXrayClientLinks.Where(x => !x.IsRevoked).ToList();
         if (!activeFiles.Any())
             return string.Empty;
 
@@ -250,10 +250,10 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         {
             try
             {
-                var download = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(new DownloadFileRequest
+                var download = await dashboard.DownloadClientLinkByIdAndServerIdAsync(new DownloadXrayClientLinkRequest
                 {
                     VpnServerId = file.VpnServerId,
-                    IssuedOvpnFileId = file.Id
+                    IssuedXrayClientLinkId = file.Id
                 }, cancellationToken);
 
                 var text = Encoding.UTF8.GetString(download.Content ?? Array.Empty<byte>()).Trim();
@@ -279,17 +279,17 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
     public async Task<List<(string FileName, string Text)>> GetClientLinkItemsWithTokenAsync(int vpnServerId,
         long telegramId, CancellationToken cancellationToken)
     {
-        var request = new ByExternalIdAndVpnServerIdRequest
+        var request = new GetXrayClientLinksByExternalIdAndVpnServerIdRequest
         {
             VpnServerId = vpnServerId,
             ExternalId = telegramId.ToString()
         };
 
-        var response = await ovpnFileService.GetAllOvpnFilesByExternalIdWithTokenAsync(request, cancellationToken);
-        if (response == null || !response.IssuedOvpnFiles.Any())
+        var response = await dashboard.GetAllClientLinksByExternalIdWithTokenAsync(request, cancellationToken);
+        if (response == null || !response.IssuedXrayClientLinks.Any())
             return [];
 
-        var activeFiles = response.IssuedOvpnFiles.Where(x => !x.IsRevoked).ToList();
+        var activeFiles = response.IssuedXrayClientLinks.Where(x => !x.IsRevoked).ToList();
         if (!activeFiles.Any())
             return [];
 
@@ -298,10 +298,10 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         {
             try
             {
-                var download = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(new DownloadFileRequest
+                var download = await dashboard.DownloadClientLinkByIdAndServerIdAsync(new DownloadXrayClientLinkRequest
                 {
                     VpnServerId = file.VpnServerId,
-                    IssuedOvpnFileId = file.Id
+                    IssuedXrayClientLinkId = file.Id
                 }, cancellationToken);
 
                 var text = Encoding.UTF8.GetString(download.Content ?? Array.Empty<byte>()).Trim();
@@ -319,85 +319,85 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
     }
 
 
-    public async Task<List<IAlbumInputMedia>> MakeOvpnFileWithTokenAsync(int vpnServerId, long telegramId, 
+    public async Task<List<IAlbumInputMedia>> MakeClientLinkWithTokenAsync(int vpnServerId, long telegramId, 
         string hostUrl, CancellationToken cancellationToken)
     {
-        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
-        logger.LogInformation("Creating OVPN file with token. " +
+        var mediaGroup = new List<IAlbumInputMedia>();
+        logger.LogInformation("Creating client link with token. " +
                               "TelegramId: {TelegramId}, ServerId: {VpnServerId}", telegramId, vpnServerId);
 
-        var addOvpnFileRequest = new AddFileRequest
+        var addRequest = new AddXrayClientLinkRequest
         {
             VpnServerId = vpnServerId,
-            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
+            CommonName = await MakeCommonNameForClientLinkAsync(vpnServerId, telegramId, cancellationToken),
             ExternalId = telegramId.ToString(),
             IssuedTo = $"telegram user {telegramId} with token"
         };
 
-        var addOvpnFileResponse =
-            await ovpnFileService.AddOvpnFileWithTokenAsync(addOvpnFileRequest, cancellationToken);
+        var addXrayClientLinkResponse =
+            await dashboard.AddClientLinkWithTokenAsync(addRequest, cancellationToken);
 
-        if (addOvpnFileResponse?.IssuedOvpnFile == null)
+        if (addXrayClientLinkResponse?.IssuedXrayClientLink == null)
         {
-            logger.LogWarning("Failed to create OVPN file with token " +
+            logger.LogWarning("Failed to create client link with token " +
                               "for telegramId: {TelegramId}, ServerId: {VpnServerId}", telegramId, vpnServerId);
-            return mediaGroupOpenVpnFiles;
+            return mediaGroup;
         }
 
-        var issuedOvpnFile = addOvpnFileResponse.IssuedOvpnFile;
+        var issuedLink = addXrayClientLinkResponse.IssuedXrayClientLink;
 
-        var token = addOvpnFileResponse.IssuedOvpnFileToken;
+        var token = addXrayClientLinkResponse.IssuedXrayClientLinkToken;
         
         var downloadUrl = BuildDownloadUrlWithToken(hostUrl, token.Token);
         logger.LogInformation("Generated tokenized download URL: {DownloadUrl}", downloadUrl);
         try
         {
             logger.LogInformation(
-                $"Downloading newly created file with token: {issuedOvpnFile.FileName}, " +
-                $"ServerId: {issuedOvpnFile.VpnServerId}, FileId: {issuedOvpnFile.Id}");
+                $"Downloading newly created file with token: {issuedLink.FileName}, " +
+                $"ServerId: {issuedLink.VpnServerId}, FileId: {issuedLink.Id}");
 
-            var downloadRequest = new DownloadFileRequest
+            var downloadRequest = new DownloadXrayClientLinkRequest
             {
-                VpnServerId = issuedOvpnFile.VpnServerId,
-                IssuedOvpnFileId = issuedOvpnFile.Id
+                VpnServerId = issuedLink.VpnServerId,
+                IssuedXrayClientLinkId = issuedLink.Id
             };
-            var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+            var downloadXrayClientLinkResponse = await dashboard.DownloadClientLinkByIdAndServerIdAsync(
                 downloadRequest, cancellationToken);
 
-            var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
-            var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
+            var stream = new MemoryStream(downloadXrayClientLinkResponse.Content ?? Array.Empty<byte>());
+            var inputFile = new InputFileStream(stream, downloadXrayClientLinkResponse.IssuedXrayClientLink.FileName);
             var media = new InputMediaDocument(inputFile)
             {
-                Caption = $"{issuedOvpnFile.FileName} Url: {downloadUrl}"
+                Caption = $"{issuedLink.FileName} Url: {downloadUrl}"
             };
-            mediaGroupOpenVpnFiles.Add(media);
+            mediaGroup.Add(media);
         }
         catch (Exception ex)
         {
             await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-            logger.LogError("Error processing file with token {FileName}: {ErrorMessage}", issuedOvpnFile.FileName,
+            logger.LogError("Error processing file with token {FileName}: {ErrorMessage}", issuedLink.FileName,
                 ex.Message);
 
             var errorMessage = new StringBuilder()
-                .AppendLine($"Error downloading file: {issuedOvpnFile.FileName}")
-                .AppendLine($"ServerId: {issuedOvpnFile.VpnServerId}")
-                .AppendLine($"FileId: {issuedOvpnFile.Id}")
+                .AppendLine($"Error downloading file: {issuedLink.FileName}")
+                .AppendLine($"ServerId: {issuedLink.VpnServerId}")
+                .AppendLine($"FileId: {issuedLink.Id}")
                 .AppendLine($"Error: {ex.Message}")
                 .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
                 .ToString();
 
             var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
-            var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFile.FileName}.error.txt");
+            var errorFile = new InputFileStream(errorStream, $"{issuedLink.FileName}.error.txt");
 
             var errorMedia = new InputMediaDocument(errorFile)
             {
-                Caption = $"Error file with token: {issuedOvpnFile.FileName}"
+                Caption = $"Error file with token: {issuedLink.FileName}"
             };
 
-            mediaGroupOpenVpnFiles.Add(errorMedia);
+            mediaGroup.Add(errorMedia);
         }
 
-        return mediaGroupOpenVpnFiles;
+        return mediaGroup;
     }
 
     public async Task<string> MakeClientLinkTextWithTokenAsync(int vpnServerId, long telegramId,
@@ -406,29 +406,29 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         logger.LogInformation("Creating XRay client link text. TelegramId: {TelegramId}, ServerId: {VpnServerId}",
             telegramId, vpnServerId);
 
-        var addRequest = new AddFileRequest
+        var addRequest = new AddXrayClientLinkRequest
         {
             VpnServerId = vpnServerId,
-            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
+            CommonName = await MakeCommonNameForClientLinkAsync(vpnServerId, telegramId, cancellationToken),
             ExternalId = telegramId.ToString(),
             IssuedTo = $"telegram user {telegramId} with token"
         };
 
-        var created = await ovpnFileService.AddOvpnFileWithTokenAsync(addRequest, cancellationToken);
-        if (created?.IssuedOvpnFile == null)
+        var created = await dashboard.AddClientLinkWithTokenAsync(addRequest, cancellationToken);
+        if (created?.IssuedXrayClientLink == null)
             return string.Empty;
 
-        var download = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(new DownloadFileRequest
+        var download = await dashboard.DownloadClientLinkByIdAndServerIdAsync(new DownloadXrayClientLinkRequest
         {
-            VpnServerId = created.IssuedOvpnFile.VpnServerId,
-            IssuedOvpnFileId = created.IssuedOvpnFile.Id
+            VpnServerId = created.IssuedXrayClientLink.VpnServerId,
+            IssuedXrayClientLinkId = created.IssuedXrayClientLink.Id
         }, cancellationToken);
 
         var text = Encoding.UTF8.GetString(download.Content ?? Array.Empty<byte>()).Trim();
         if (string.IsNullOrWhiteSpace(text))
             return string.Empty;
 
-        return $"{created.IssuedOvpnFile.FileName}{Environment.NewLine}{text}";
+        return $"{created.IssuedXrayClientLink.FileName}{Environment.NewLine}{text}";
     }
 
     public async Task<(string FileName, string Text)?> MakeClientLinkItemWithTokenAsync(int vpnServerId,
@@ -437,116 +437,116 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         logger.LogInformation("Creating XRay client link item. TelegramId: {TelegramId}, ServerId: {VpnServerId}",
             telegramId, vpnServerId);
 
-        var addRequest = new AddFileRequest
+        var addRequest = new AddXrayClientLinkRequest
         {
             VpnServerId = vpnServerId,
-            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
+            CommonName = await MakeCommonNameForClientLinkAsync(vpnServerId, telegramId, cancellationToken),
             ExternalId = telegramId.ToString(),
             IssuedTo = $"telegram user {telegramId} with token"
         };
 
-        var created = await ovpnFileService.AddOvpnFileWithTokenAsync(addRequest, cancellationToken);
-        if (created?.IssuedOvpnFile == null)
+        var created = await dashboard.AddClientLinkWithTokenAsync(addRequest, cancellationToken);
+        if (created?.IssuedXrayClientLink == null)
             return null;
 
-        var download = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(new DownloadFileRequest
+        var download = await dashboard.DownloadClientLinkByIdAndServerIdAsync(new DownloadXrayClientLinkRequest
         {
-            VpnServerId = created.IssuedOvpnFile.VpnServerId,
-            IssuedOvpnFileId = created.IssuedOvpnFile.Id
+            VpnServerId = created.IssuedXrayClientLink.VpnServerId,
+            IssuedXrayClientLinkId = created.IssuedXrayClientLink.Id
         }, cancellationToken);
 
         var text = Encoding.UTF8.GetString(download.Content ?? Array.Empty<byte>()).Trim();
         if (string.IsNullOrWhiteSpace(text))
             return null;
 
-        return (created.IssuedOvpnFile.FileName, text);
+        return (created.IssuedXrayClientLink.FileName, text);
     }
 
 
-    public async Task<List<IAlbumInputMedia>> MakeOvpnFileAsync(int vpnServerId, long telegramId,
+    public async Task<List<IAlbumInputMedia>> MakeClientLinkAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        var mediaGroupOpenVpnFiles = new List<IAlbumInputMedia>();
-        logger.LogInformation($"Creating OVPN file for telegramId: {telegramId}, ServerId: {vpnServerId}");
+        var mediaGroup = new List<IAlbumInputMedia>();
+        logger.LogInformation($"Creating client link for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var addOvpnFileRequest = new AddFileRequest
+        var addRequest = new AddXrayClientLinkRequest
         {
             VpnServerId = vpnServerId,
-            CommonName = await MakeCommonNameForOvpnFileAsync(vpnServerId, telegramId, cancellationToken),
+            CommonName = await MakeCommonNameForClientLinkAsync(vpnServerId, telegramId, cancellationToken),
             ExternalId = telegramId.ToString(),
             IssuedTo = $"telegram user {telegramId}"
         };
 
-        var addOvpnFileResponse =
-            await ovpnFileService.AddOvpnFileAsync(addOvpnFileRequest, cancellationToken);
+        var addXrayClientLinkResponse =
+            await dashboard.AddClientLinkAsync(addRequest, cancellationToken);
 
-        if (addOvpnFileResponse?.IssuedOvpnFile == null)
+        if (addXrayClientLinkResponse?.IssuedXrayClientLink == null)
         {
-            logger.LogWarning($"Failed to create OVPN file for telegramId: {telegramId}, ServerId: {vpnServerId}");
-            return mediaGroupOpenVpnFiles;
+            logger.LogWarning($"Failed to create client link for telegramId: {telegramId}, ServerId: {vpnServerId}");
+            return mediaGroup;
         }
 
-        var issuedOvpnFile = addOvpnFileResponse.IssuedOvpnFile;
+        var issuedLink = addXrayClientLinkResponse.IssuedXrayClientLink;
         try
         {
             logger.LogInformation(
-                $"Downloading newly created file: {issuedOvpnFile.FileName}, " +
-                $"ServerId: {issuedOvpnFile.VpnServerId}, FileId: {issuedOvpnFile.Id}");
+                $"Downloading newly created file: {issuedLink.FileName}, " +
+                $"ServerId: {issuedLink.VpnServerId}, FileId: {issuedLink.Id}");
 
-            var downloadRequest = new DownloadFileRequest
+            var downloadRequest = new DownloadXrayClientLinkRequest
             {
-                VpnServerId = issuedOvpnFile.VpnServerId,
-                IssuedOvpnFileId = issuedOvpnFile.Id
+                VpnServerId = issuedLink.VpnServerId,
+                IssuedXrayClientLinkId = issuedLink.Id
             };
-            var downloadOvpnFileResponse = await ovpnFileService.DownloadOvpnFileByIdAndServerIdAsync(
+            var downloadXrayClientLinkResponse = await dashboard.DownloadClientLinkByIdAndServerIdAsync(
                 downloadRequest, cancellationToken);
 
-            var stream = new MemoryStream(downloadOvpnFileResponse.Content ?? Array.Empty<byte>());
-            var inputFile = new InputFileStream(stream, downloadOvpnFileResponse.IssuedOvpn.FileName);
+            var stream = new MemoryStream(downloadXrayClientLinkResponse.Content ?? Array.Empty<byte>());
+            var inputFile = new InputFileStream(stream, downloadXrayClientLinkResponse.IssuedXrayClientLink.FileName);
             var media = new InputMediaDocument(inputFile)
             {
-                Caption = issuedOvpnFile.FileName
+                Caption = issuedLink.FileName
             };
-            mediaGroupOpenVpnFiles.Add(media);
+            mediaGroup.Add(media);
         }
         catch (Exception ex)
         {
             await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
-            logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedOvpnFile.FileName,
+            logger.LogError("Error processing file {FileName}: {ErrorMessage}", issuedLink.FileName,
                 ex.Message);
 
             var errorMessage = new StringBuilder()
-                .AppendLine($"Error downloading file: {issuedOvpnFile.FileName}")
-                .AppendLine($"ServerId: {issuedOvpnFile.VpnServerId}")
-                .AppendLine($"FileId: {issuedOvpnFile.Id}")
+                .AppendLine($"Error downloading file: {issuedLink.FileName}")
+                .AppendLine($"ServerId: {issuedLink.VpnServerId}")
+                .AppendLine($"FileId: {issuedLink.Id}")
                 .AppendLine($"Error: {ex.Message}")
                 .AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
                 .ToString();
 
             var errorStream = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage));
-            var errorFile = new InputFileStream(errorStream, $"{issuedOvpnFile.FileName}.error.txt");
+            var errorFile = new InputFileStream(errorStream, $"{issuedLink.FileName}.error.txt");
 
             var errorMedia = new InputMediaDocument(errorFile)
             {
-                Caption = $"Error file: {issuedOvpnFile.FileName}"
+                Caption = $"Error file: {issuedLink.FileName}"
             };
 
-            mediaGroupOpenVpnFiles.Add(errorMedia);
+            mediaGroup.Add(errorMedia);
         }
 
-        return mediaGroupOpenVpnFiles;
+        return mediaGroup;
     }
 
-    public async Task<bool> RevokeAllOvpnFileAsync(int vpnServerId, long telegramId,
+    public async Task<bool> RevokeAllClientLinksAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Revoking all OVPN files for telegramId: {TelegramId}, ServerId: {ServerId}", telegramId,
+        logger.LogInformation("Revoking all client links for telegramId: {TelegramId}, ServerId: {ServerId}", telegramId,
             vpnServerId);
 
-        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+        var files = await GetAllClientLinksListAsync(vpnServerId, telegramId, cancellationToken);
         if (files.Count == 0)
         {
-            logger.LogWarning("No OVPN files found to revoke for telegramId {TelegramId} on server {ServerId}.",
+            logger.LogWarning("No client links found to revoke for telegramId {TelegramId} on server {ServerId}.",
                 telegramId, vpnServerId);
             return false;
         }
@@ -556,32 +556,32 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
 
         foreach (var file in files)
         {
-            var request = new RevokeFileRequest
+            var request = new RevokeXrayClientLinkRequest
             {
                 VpnServerId = file.VpnServerId,
-                OvpnFileId = file.Id,
+                IssuedXrayClientLinkId = file.Id,
                 CommonName = file.CommonName,
                 IsRevoked = file.IsRevoked
             };
 
             try
             {
-                var revoked = await ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
-                if (revoked.IssuedOvpnFile.IsRevoked)
+                var revoked = await dashboard.RevokeClientLinkAsync(request, cancellationToken);
+                if (revoked.IssuedXrayClientLink.IsRevoked)
                 {
                     success++;
-                    logger.LogInformation("Revoked OVPN file: {CommonName} (ServerId: {ServerId})", file.CommonName,
+                    logger.LogInformation("Revoked client link: {CommonName} (ServerId: {ServerId})", file.CommonName,
                         vpnServerId);
                 }
                 else
                 {
-                    logger.LogWarning("Failed to revoke OVPN file: {CommonName} (ServerId: {ServerId})",
+                    logger.LogWarning("Failed to revoke client link: {CommonName} (ServerId: {ServerId})",
                         file.CommonName, vpnServerId);
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error revoking OVPN file: {CommonName} (ServerId: {ServerId})", file.CommonName,
+                logger.LogError(ex, "Error revoking client link: {CommonName} (ServerId: {ServerId})", file.CommonName,
                     vpnServerId);
             }
         }
@@ -592,50 +592,50 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         return allRevoked;
     }
 
-    public async Task<bool> RevokeOvpnFileAsync(int vpnServerId, long telegramId, string fileName,
+    public async Task<bool> RevokeClientLinkAsync(int vpnServerId, long telegramId, string fileName,
         CancellationToken cancellationToken)
     {
         logger.LogInformation(
-            $"Revoking OVPN file '{fileName}' for telegramId: {telegramId}, ServerId: {vpnServerId}");
+            $"Revoking client link '{fileName}' for telegramId: {telegramId}, ServerId: {vpnServerId}");
 
-        var issuedOvpnFileResponses = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, 
+        var issuedXrayClientLinkResponses = await GetAllClientLinksListAsync(vpnServerId, telegramId, 
             cancellationToken);
 
-        var fileToRevoke = issuedOvpnFileResponses.FirstOrDefault(f =>
+        var fileToRevoke = issuedXrayClientLinkResponses.FirstOrDefault(f =>
             string.Equals(f.FileName, fileName, StringComparison.OrdinalIgnoreCase));
 
         if (fileToRevoke == null)
         {
             logger.LogWarning(
-                "OVPN file '{fileName}' not found for telegramId {telegramId} on server {vpnServerId}.",
+                "client link '{fileName}' not found for telegramId {telegramId} on server {vpnServerId}.",
                 fileName, telegramId, vpnServerId);
             return false;
         }
 
-        var request = new RevokeFileRequest
+        var request = new RevokeXrayClientLinkRequest
         {
             VpnServerId = fileToRevoke.VpnServerId,
-            OvpnFileId = fileToRevoke.Id,
+            IssuedXrayClientLinkId = fileToRevoke.Id,
             CommonName = fileToRevoke.CommonName,
             IsRevoked = fileToRevoke.IsRevoked
         };
 
-        var revoked = await ovpnFileService.RevokeOvpnFileAsync(request, cancellationToken);
+        var revoked = await dashboard.RevokeClientLinkAsync(request, cancellationToken);
 
-        if (!revoked.IssuedOvpnFile.IsRevoked)
+        if (!revoked.IssuedXrayClientLink.IsRevoked)
         {
             logger.LogError(
-                "Failed to revoke OVPN file: {FileName} for telegramId {telegramId} on server {VpnServerId}",
+                "Failed to revoke client link: {FileName} for telegramId {telegramId} on server {VpnServerId}",
                 fileName, telegramId, vpnServerId);
         }
 
-        return revoked.IssuedOvpnFile.IsRevoked;
+        return revoked.IssuedXrayClientLink.IsRevoked;
     }
 
-    public async Task<bool> CheckMaxCountOvpnFilesForClient(int vpnServerId, long telegramId,
+    public async Task<bool> CheckMaxCountClientLinksForClient(int vpnServerId, long telegramId,
         CancellationToken cancellationToken, int maxCountFiles = 10)
     {
-        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+        var files = await GetAllClientLinksListAsync(vpnServerId, telegramId, cancellationToken);
 
         var prefix = $"tg-{vpnServerId}-{telegramId}-";
         var usedCount = files.Count(f => f.CommonName
@@ -644,10 +644,10 @@ public class XrayClientLinkBotService(XrayClientLinksDashboardService ovpnFileSe
         return usedCount >= maxCountFiles;
     }
 
-    private async Task<string> MakeCommonNameForOvpnFileAsync(int vpnServerId, long telegramId,
+    private async Task<string> MakeCommonNameForClientLinkAsync(int vpnServerId, long telegramId,
         CancellationToken cancellationToken, int maxCountFiles = 10)
     {
-        var files = await GetAllOvpnFilesListAsync(vpnServerId, telegramId, cancellationToken);
+        var files = await GetAllClientLinksListAsync(vpnServerId, telegramId, cancellationToken);
 
         var prefix = $"tg-{vpnServerId}-{telegramId}-";
         var usedNames = files
