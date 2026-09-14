@@ -1,5 +1,3 @@
-using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses;
-
 namespace DataGateVPNBot.Services.BotServices.Interfaces;
 
 /// <summary>
@@ -7,5 +5,5 @@ namespace DataGateVPNBot.Services.BotServices.Interfaces;
 /// </summary>
 public interface IVpnProfileTokenDownloadService
 {
-    Task<DownloadFileResponse> DownloadByTokenAsync(string token, CancellationToken cancellationToken);
+    Task<VpnProfileDownload> DownloadByTokenAsync(string token, CancellationToken cancellationToken);
 }

@@ -1,7 +1,6 @@
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using DataGateMonitor.SharedModels.DataGateMonitor.OpenVpnFiles.Responses;
 using DataGateMonitor.SharedModels.DataGateVPNBot.OvpnFile.Requests;
 using DataGateMonitor.SharedModels.Responses;
 
@@ -30,7 +29,7 @@ public class OvpnFileController(
             if (response?.Content == null || response.Content.Length == 0)
                 return NotFound("OVPN file is empty or not found.");
 
-            var rawName = response.IssuedOvpn.FileName;
+            var rawName = response.FileName;
             var ext = string.IsNullOrWhiteSpace(rawName) ? ".ovpn" : Path.GetExtension(rawName);
             if (string.IsNullOrEmpty(ext))
                 ext = ".ovpn";
