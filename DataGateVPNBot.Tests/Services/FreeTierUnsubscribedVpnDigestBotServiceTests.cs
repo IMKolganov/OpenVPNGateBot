@@ -1,8 +1,10 @@
 using System.Security.Authentication;
+using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Services.BotServices;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.Http;
 using DataGateMonitor.SharedModels.DataGateMonitor.FreeTierEnforcement.Dto;
+using DataGateMonitor.SharedModels.DataGateMonitor.FreeTierEnforcement.Enums;
 using DataGateMonitor.SharedModels.DataGateMonitor.FreeTierEnforcement.Responses;
 using DataGateMonitor.SharedModels.Responses;
 using Microsoft.Extensions.Logging;
@@ -76,7 +78,7 @@ public class FreeTierRemindKeyboardTests
     [Fact]
     public void BuildRemindKeyboard_IncludesTgAndEmailButtons()
     {
-        var keyboard = DataGateVPNBot.Handlers.TelegramUpdateHandler.BuildRemindKeyboard(
+        var keyboard = TelegramUpdateHandler.BuildRemindKeyboard(
         [
             new FreeTierEnforcementCandidateDto
             {
@@ -103,20 +105,83 @@ public class FreeTierRemindKeyboardTests
 
         Assert.NotNull(keyboard);
         var buttons = keyboard!.InlineKeyboard.SelectMany(r => r).ToList();
+        Assert.Contains(buttons, b => b.Text == "TG all" && b.CallbackData == "/remind_channel_subscribe all");
+        Assert.Contains(buttons, b => b.Text == "Email all" && b.CallbackData == "/remind_channel_email all");
         Assert.Contains(buttons, b => b.Text == "TG #22" && b.CallbackData == "/remind_channel_subscribe 22");
         Assert.Contains(buttons, b => b.Text == "Email #22" && b.CallbackData == "/remind_channel_email 22");
         Assert.Contains(buttons, b => b.Text == "Email #150" && b.CallbackData == "/remind_channel_email 150");
         Assert.DoesNotContain(buttons, b => b.CallbackData!.Contains(" 7"));
+
+        var firstRow = keyboard.InlineKeyboard.First().ToList();
+        Assert.Equal(2, firstRow.Count);
+        Assert.Equal("TG all", firstRow[0].Text);
+        Assert.Equal("Email all", firstRow[1].Text);
+    }
+
+    [Fact]
+    public void BuildRemindKeyboard_AllRow_OnlyTg_WhenNoEmails()
+    {
+        var keyboard = TelegramUpdateHandler.BuildRemindKeyboard(
+        [
+            new FreeTierEnforcementCandidateDto
+            {
+                UserId = 1,
+                DisplayName = "A",
+                TelegramId = 100,
+                Email = null,
+            },
+        ]);
+
+        Assert.NotNull(keyboard);
+        var firstRow = keyboard!.InlineKeyboard.First().ToList();
+        Assert.Single(firstRow);
+        Assert.Equal("TG all", firstRow[0].Text);
+        Assert.DoesNotContain(keyboard.InlineKeyboard.SelectMany(r => r), b => b.Text == "Email all");
     }
 
     [Fact]
     public void BuildRemindKeyboard_ReturnsNull_WhenNoContacts()
     {
-        var keyboard = DataGateVPNBot.Handlers.TelegramUpdateHandler.BuildRemindKeyboard(
+        var keyboard = TelegramUpdateHandler.BuildRemindKeyboard(
         [
             new FreeTierEnforcementCandidateDto { UserId = 1, Email = null, TelegramId = null },
         ]);
 
         Assert.Null(keyboard);
+    }
+
+    [Fact]
+    public void GetRemindAllTargets_FiltersByChannel()
+    {
+        FreeTierEnforcementCandidateDto[] candidates =
+        [
+            new() { UserId = 22, DisplayName = "Irina", TelegramId = 1, Email = "a@b.c" },
+            new() { UserId = 150, DisplayName = "Tatyana", TelegramId = null, Email = "t@x.com" },
+            new() { UserId = 7, DisplayName = "NoContact", TelegramId = null, Email = null },
+        ];
+
+        var tg = TelegramUpdateHandler.GetRemindAllTargets(
+            candidates, FreeTierChannelSubscribeRemindChannel.Telegram);
+        var email = TelegramUpdateHandler.GetRemindAllTargets(
+            candidates, FreeTierChannelSubscribeRemindChannel.Email);
+
+        Assert.Equal(["22"], tg);
+        Assert.Equal(["22", "150"], email);
+    }
+
+    [Fact]
+    public void FormatRemindAllSummary_AllOk()
+    {
+        var text = TelegramUpdateHandler.FormatRemindAllSummary("TG", 3, 3, []);
+        Assert.Equal("✅ TG reminders: 3/3 sent.", text);
+    }
+
+    [Fact]
+    public void FormatRemindAllSummary_IncludesFailures()
+    {
+        var text = TelegramUpdateHandler.FormatRemindAllSummary(
+            "Email", 2, 1, ["#150: User has no email"]);
+        Assert.StartsWith("⚠️ Email reminders: 1/2 sent.", text);
+        Assert.Contains("• #150: User has no email", text);
     }
 }

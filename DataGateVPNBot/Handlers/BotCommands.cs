@@ -50,4 +50,10 @@ public static class BotCommands
 
     /// <summary>Admin only: email a channel-subscribe reminder to a dashboard userId.</summary>
     public const string CommandRemindChannelEmail = "/remind_channel_email";
+
+    /// <summary>
+    /// Argument for remind commands / digest keyboard: send to every actionable digest candidate
+    /// for that channel (not a user id).
+    /// </summary>
+    public const string RemindAllTarget = "all";
 }

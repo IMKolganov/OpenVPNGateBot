@@ -2,6 +2,7 @@ using System.Security.Authentication;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateMonitor.SharedModels.DataGateMonitor.FreeTierEnforcement.Dto;
+using DataGateMonitor.SharedModels.DataGateMonitor.FreeTierEnforcement.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -77,7 +78,7 @@ public partial class TelegramUpdateHandler
     }
 
     /// <summary>
-    /// One row per candidate that can be reminded: optional TG and/or Email buttons.
+    /// Optional first row: TG all / Email all. Then one row per candidate (up to 20): TG and/or Email.
     /// </summary>
     public static InlineKeyboardMarkup? BuildRemindKeyboard(
         IReadOnlyList<FreeTierEnforcementCandidateDto>? candidates)
@@ -88,13 +89,31 @@ public partial class TelegramUpdateHandler
         var actionable = candidates
             .Where(c => c.TelegramId is > 0 || !string.IsNullOrWhiteSpace(c.Email))
             .OrderBy(c => c.DisplayName)
-            .Take(20)
             .ToList();
         if (actionable.Count == 0)
             return null;
 
         var rows = new List<InlineKeyboardButton[]>();
-        foreach (var c in actionable)
+
+        var allButtons = new List<InlineKeyboardButton>(2);
+        if (actionable.Any(c => c.TelegramId is > 0))
+        {
+            allButtons.Add(InlineKeyboardButton.WithCallbackData(
+                "TG all",
+                $"{BotCommands.CommandRemindChannelSubscribe} {BotCommands.RemindAllTarget}"));
+        }
+
+        if (actionable.Any(c => !string.IsNullOrWhiteSpace(c.Email)))
+        {
+            allButtons.Add(InlineKeyboardButton.WithCallbackData(
+                "Email all",
+                $"{BotCommands.CommandRemindChannelEmail} {BotCommands.RemindAllTarget}"));
+        }
+
+        if (allButtons.Count > 0)
+            rows.Add(allButtons.ToArray());
+
+        foreach (var c in actionable.Take(20))
         {
             var buttons = new List<InlineKeyboardButton>(2);
             if (c.TelegramId is > 0)
@@ -116,6 +135,31 @@ public partial class TelegramUpdateHandler
         }
 
         return rows.Count == 0 ? null : new InlineKeyboardMarkup(rows);
+    }
+
+    /// <summary>
+    /// Dashboard userIds to remind for a bulk "all" action (every actionable digest candidate).
+    /// </summary>
+    public static IReadOnlyList<string> GetRemindAllTargets(
+        IReadOnlyList<FreeTierEnforcementCandidateDto>? candidates,
+        FreeTierChannelSubscribeRemindChannel channel)
+    {
+        if (candidates is null || candidates.Count == 0)
+            return [];
+
+        IEnumerable<FreeTierEnforcementCandidateDto> filtered = channel switch
+        {
+            FreeTierChannelSubscribeRemindChannel.Email =>
+                candidates.Where(c => !string.IsNullOrWhiteSpace(c.Email)),
+            _ =>
+                candidates.Where(c => c.TelegramId is > 0),
+        };
+
+        return filtered
+            .OrderBy(c => c.DisplayName)
+            .Select(c => c.UserId.ToString())
+            .Distinct()
+            .ToList();
     }
 
     [Obsolete("Use BuildRemindKeyboard")]
