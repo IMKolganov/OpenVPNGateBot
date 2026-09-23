@@ -102,6 +102,16 @@ public class TelegramSettingsService : ITelegramSettingsService
         },
         new()
         {
+            Command = BotCommands.CommandDonate,
+            Descriptions = new()
+            {
+                ["en"] = "Support with Telegram Stars",
+                ["ru"] = "Поддержать Telegram Stars",
+                ["el"] = "Υποστήριξη με Telegram Stars"
+            }
+        },
+        new()
+        {
             Command = BotCommands.CommandChangeLanguage,
             Descriptions = new()
             {

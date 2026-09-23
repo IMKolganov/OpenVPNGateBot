@@ -21,6 +21,8 @@ public static class BotCommands
     public const string CommandInstallClient = "/install_client";
     public const string CommandAboutProject = "/about_project";
     public const string CommandContacts = "/contacts";
+    /// <summary>Voluntary /donate via Telegram Stars. Does not change VPN plan.</summary>
+    public const string CommandDonate = "/donate";
     public const string CommandChangeLanguage = "/change_language";
     public const string CommandRegisterCommands = "/register_commands";
     public const string CommandEnglish = "/english";
