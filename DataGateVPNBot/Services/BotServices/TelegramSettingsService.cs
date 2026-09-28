@@ -1,12 +1,16 @@
 ﻿using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Models;
+using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateMonitor.SharedModels.Enums;
+using Microsoft.Extensions.Options;
 using Telegram.Bot.Types;
 
 namespace DataGateVPNBot.Services.BotServices;
 
-public class TelegramSettingsService : ITelegramSettingsService
+public class TelegramSettingsService(
+    IOptions<TelegramStarsConfiguration> starsOptions,
+    IOptions<CryptoPayConfiguration> cryptoPayOptions) : ITelegramSettingsService
 {
     private static readonly LocalizedBotCommand[] UserCommands =
     [
@@ -187,8 +191,11 @@ public class TelegramSettingsService : ITelegramSettingsService
         };
 
         IEnumerable<LocalizedBotCommand> source = UserCommands;
+        if (!DonationFeatureFlags.IsAnyDonationChannelLive(starsOptions.Value, cryptoPayOptions.Value))
+            source = source.Where(c => c.Command != BotCommands.CommandDonate);
+
         if (includeAdminCommands)
-            source = UserCommands.Concat(AdminCommands);
+            source = source.Concat(AdminCommands);
 
         return source.Select(c => c.ToTelegramCommand(langCode)).ToArray();
     }

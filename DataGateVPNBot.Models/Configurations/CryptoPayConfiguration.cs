@@ -6,8 +6,8 @@ public class CryptoPayConfiguration
     public const string MainnetApiBaseUrl = "https://pay.crypt.bot/";
     public const string TestnetApiBaseUrl = "https://testnet-pay.crypt.bot/";
 
-    /// <summary>Kill switch. Donations also require <see cref="ApiToken"/>.</summary>
-    public bool Enabled { get; set; } = true;
+    /// <summary>Kill switch (default off). Donations also require <see cref="ApiToken"/>.</summary>
+    public bool Enabled { get; set; }
 
     /// <summary>App token from @CryptoBot → /pay → My Apps. Empty = donations disabled.</summary>
     public string ApiToken { get; set; } = string.Empty;

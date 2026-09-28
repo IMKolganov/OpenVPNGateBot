@@ -81,17 +81,17 @@ docker compose -f docker-compose-local.yml --env-file .env.dev.x64 up -d --build
 
 Image: `imkolganov/datagate-monitor-telegrambot`.
 
-Env: `TELEGRAMBOT_BOT_TOKEN`, `DASHBOARDAPI_*`, `ELASTIC_*`, `STARS_ENABLED` / `STARS_AMOUNTS`, optional `CRYPTOPAY_API_TOKEN` (see monorepo compose).
+Env: `TELEGRAMBOT_BOT_TOKEN`, `DASHBOARDAPI_*`, `ELASTIC_*`, optional donation flags below (see monorepo compose).
 
 ### Donations (`/donate`)
 
-Voluntary support. VPN quota does not change.
+Voluntary support. VPN quota does not change. **Both channels are off by default** (`STARS_ENABLED=false`, `CRYPTOPAY_ENABLED=false`); `/donate` is hidden from the bot menu until at least one channel is enabled. `/donate` still replies with a disabled message if typed manually.
 
-**Telegram Stars (default):** user taps ⭐ in the bot and pays inside Telegram. No provider token. Bot answers `pre_checkout_query` within 10s and thanks after `successful_payment`.
+**Telegram Stars:** set `STARS_ENABLED=true`. User taps ⭐ in the bot and pays inside Telegram. No provider token. Bot answers `pre_checkout_query` within 10s and thanks after `successful_payment`.
 
-Amounts: `STARS_AMOUNTS` (default `50,100,250,500`). Disable with `STARS_ENABLED=false`.
+Amounts: `STARS_AMOUNTS` (default `50,100,250,500`).
 
-**Crypto Pay (optional):** shown only when `CRYPTOPAY_API_TOKEN` is set. Tapping a USDT amount first shows a P2P risk banner; the invoice is created only after the user confirms. Webhook: `https://<HOST_ADDRESS>/api/cryptopay/webhook`.
+**Crypto Pay:** set `CRYPTOPAY_ENABLED=true` and `CRYPTOPAY_API_TOKEN`. Tapping a USDT amount first shows a P2P risk banner; the invoice is created only after the user confirms. Webhook: `https://<HOST_ADDRESS>/api/cryptopay/webhook`.
 
 ### Deployment behind nginx
 
