@@ -13,6 +13,74 @@ namespace DataGateVPNBot.Tests.Services;
 public class HttpRequestServiceTests
 {
     [Fact]
+    public async Task PostAsync_Returns_Deserialized_ApiResponse_On_Unauthorized_Without_Retry()
+    {
+        var json = """{"success":false,"message":"Invalid credentials","data":null}""";
+        var handler = new CountingHttpMessageHandler(HttpStatusCode.Unauthorized, json);
+        var client = new HttpClient(handler);
+        var factory = new Mock<IHttpClientFactoryService>();
+        factory.Setup(f => f.CreateDashboardClient()).Returns(client);
+        var errorService = new Mock<IErrorService>();
+        var services = new ServiceCollection();
+        services.AddScoped(_ => errorService.Object);
+        var serviceProvider = services.BuildServiceProvider();
+
+        var sut = new HttpRequestService(factory.Object, serviceProvider, Mock.Of<ILogger<HttpRequestService>>());
+        var result = await sut.PostAsync<ApiErrorDto>("https://api.example.com/api/auth/token", new { }, null, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.False(result!.Success);
+        Assert.Equal("Invalid credentials", result.Message);
+        Assert.Equal(1, handler.SendCount);
+    }
+
+    [Fact]
+    public async Task PostAsync_Returns_Deserialized_ApiResponse_On_TooManyRequests_Without_Retry()
+    {
+        var json = """{"success":false,"message":"Too many token requests. Try again later.","data":null}""";
+        var handler = new CountingHttpMessageHandler(HttpStatusCode.TooManyRequests, json);
+        var client = new HttpClient(handler);
+        var factory = new Mock<IHttpClientFactoryService>();
+        factory.Setup(f => f.CreateDashboardClient()).Returns(client);
+        var errorService = new Mock<IErrorService>();
+        var services = new ServiceCollection();
+        services.AddScoped(_ => errorService.Object);
+        var serviceProvider = services.BuildServiceProvider();
+
+        var sut = new HttpRequestService(factory.Object, serviceProvider, Mock.Of<ILogger<HttpRequestService>>());
+        var result = await sut.PostAsync<ApiErrorDto>("https://api.example.com/api/auth/token", new { }, null, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.False(result!.Success);
+        Assert.Equal(1, handler.SendCount);
+        errorService.Verify(
+            e => e.NotifyAdminsAboutExceptionAsync(It.IsAny<Exception>(), It.IsAny<HttpContext?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAsync_Returns_Null_On_Unauthorized_Without_Admin_Notify()
+    {
+        var handler = new CountingHttpMessageHandler(HttpStatusCode.Unauthorized, """{"success":false,"message":"Unauthorized"}""");
+        var client = new HttpClient(handler);
+        var factory = new Mock<IHttpClientFactoryService>();
+        factory.Setup(f => f.CreateDashboardClient()).Returns(client);
+        var errorService = new Mock<IErrorService>();
+        var services = new ServiceCollection();
+        services.AddScoped(_ => errorService.Object);
+        var serviceProvider = services.BuildServiceProvider();
+
+        var sut = new HttpRequestService(factory.Object, serviceProvider, Mock.Of<ILogger<HttpRequestService>>());
+        var result = await sut.GetAsync<ApiErrorDto>("https://api.example.com/api/users/exists", "stale-bearer", CancellationToken.None);
+
+        Assert.Null(result);
+        Assert.Equal(1, handler.SendCount);
+        errorService.Verify(
+            e => e.NotifyAdminsAboutExceptionAsync(It.IsAny<Exception>(), It.IsAny<HttpContext?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task GetAsync_Returns_Deserialized_Object_When_Response_200()
     {
         var json = """{"id":1,"name":"test"}""";

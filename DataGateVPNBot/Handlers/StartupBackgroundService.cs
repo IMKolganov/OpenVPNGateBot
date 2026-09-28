@@ -50,9 +50,16 @@ public class StartupBackgroundService(
 
             try
             {
-                logger.LogInformation("Notifying admins about startup.");
-                await errorService.NotifyAdminsAboutStartAsync(stoppingToken);
-                logger.LogInformation("Admins notified successfully.");
+                try
+                {
+                    logger.LogInformation("Notifying admins about startup.");
+                    await errorService.NotifyAdminsAboutStartAsync(stoppingToken);
+                    logger.LogInformation("Admins notified successfully.");
+                }
+                catch (Exception notifyEx)
+                {
+                    logger.LogWarning(notifyEx, "Admin startup notification failed; continuing initialization.");
+                }
 
                 if (botConfig.UseCertificate || botConfig.AutoGenerateCertificate)
                 {

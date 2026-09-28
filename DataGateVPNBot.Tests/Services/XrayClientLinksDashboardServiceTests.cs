@@ -36,7 +36,7 @@ public class XrayClientLinksDashboardServiceTests
                 Data = null,
             });
 
-        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new XrayClientLinksDashboardService(
             Mock.Of<ILogger<XrayClientLinksDashboardService>>(),
             httpRequest.Object,
@@ -78,7 +78,7 @@ public class XrayClientLinksDashboardServiceTests
                 Data = null,
             });
 
-        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new XrayClientLinksDashboardService(
             Mock.Of<ILogger<XrayClientLinksDashboardService>>(),
             httpRequest.Object,

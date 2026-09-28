@@ -17,7 +17,7 @@ public class ServerServiceTests
         var httpRequest = new Mock<IHttpRequestService>();
         httpRequest.Setup(h => h.PostAsync<ApiResponse<TokenResponse>>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<TokenResponse> { Success = false });
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new ServerService(Mock.Of<ILogger<ServerService>>(), httpRequest.Object, authService);
 
         await Assert.ThrowsAsync<System.Security.Authentication.AuthenticationException>(() =>
@@ -33,7 +33,7 @@ public class ServerServiceTests
         var expected = new VpnServersResponse();
         httpRequest.Setup(h => h.GetAsync<ApiResponse<VpnServersResponse>>(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<VpnServersResponse> { Success = true, Data = expected });
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new ServerService(Mock.Of<ILogger<ServerService>>(), httpRequest.Object, authService);
 
         var result = await sut.GetOpenVpnServersListAsync(CancellationToken.None);

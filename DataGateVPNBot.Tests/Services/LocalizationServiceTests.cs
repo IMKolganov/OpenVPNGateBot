@@ -17,7 +17,7 @@ public class LocalizationServiceTests
         var httpRequest = new Mock<IHttpRequestService>();
         httpRequest.Setup(h => h.PostAsync<ApiResponse<DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses.TokenResponse>>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses.TokenResponse> { Success = true, Data = new DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses.TokenResponse { Token = "t", Expiration = DateTimeOffset.UtcNow.AddHours(1) } });
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new LocalizationService(Mock.Of<ILogger<LocalizationService>>(), httpRequest.Object, authService);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -28,7 +28,7 @@ public class LocalizationServiceTests
     public async Task GetTelegramUserLanguageAsync_Throws_When_TelegramId_Zero()
     {
         var httpRequest = new Mock<IHttpRequestService>();
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new LocalizationService(Mock.Of<ILogger<LocalizationService>>(), httpRequest.Object, authService);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -39,7 +39,7 @@ public class LocalizationServiceTests
     public async Task GetTextForTelegramUser_Throws_When_Key_Empty()
     {
         var httpRequest = new Mock<IHttpRequestService>();
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new LocalizationService(Mock.Of<ILogger<LocalizationService>>(), httpRequest.Object, authService);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>

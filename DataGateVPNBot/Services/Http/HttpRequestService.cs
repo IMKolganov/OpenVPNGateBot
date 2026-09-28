@@ -129,12 +129,6 @@ public class HttpRequestService(
                     errorDetails.AppendLine($"Attempt {attempt}: {response.StatusCode} - {response.ReasonPhrase}");
                     errorDetails.AppendLine($"Response body: {responseContent}");
 
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        response.Dispose();
-                        return default;
-                    }
-
                     if (IsNonRetriableClientError(response.StatusCode))
                     {
                         if (typeof(T) == typeof(HttpResponseMessage))
@@ -154,6 +148,13 @@ public class HttpRequestService(
 
                         response.Dispose();
                         return errorResult;
+                    }
+
+                    if (IsAuthTokenEndpoint(url))
+                    {
+                        response.Dispose();
+                        throw new HttpRequestException(
+                            $"Dashboard auth token request failed: {response.StatusCode}. Body: {responseContent}");
                     }
 
                     response.Dispose();
@@ -180,14 +181,14 @@ public class HttpRequestService(
             }
             catch (HttpRequestException ex)
             {
-                await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                await MaybeNotifyAdminsAsync(errorService, url, ex, cancellationToken);
                 logger.LogError(ex, "Network error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
                 errorDetails.AppendLine($"Attempt {attempt}: HttpRequestException - {ex.Message}");
             }
             catch (Exception ex)
             {
-                await errorService.NotifyAdminsAboutExceptionAsync(ex, null, cancellationToken);
+                await MaybeNotifyAdminsAsync(errorService, url, ex, cancellationToken);
                 logger.LogError(ex, "Unexpected error while accessing {Url} (Attempt {Attempt}): {Message}", url, attempt,
                     ex.Message);
                 errorDetails.AppendLine($"Attempt {attempt}: Exception - {ex.GetType().Name}: {ex.Message}");
@@ -195,12 +196,27 @@ public class HttpRequestService(
         }
 
         var exception = new HttpRequestException(errorDetails.ToString());
-        await errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
+        await MaybeNotifyAdminsAsync(errorService, url, exception, cancellationToken);
         throw exception;
     }
 
+    private static Task MaybeNotifyAdminsAsync(
+        IErrorService errorService,
+        string url,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        if (IsAuthTokenEndpoint(url))
+            return Task.CompletedTask;
+
+        return errorService.NotifyAdminsAboutExceptionAsync(exception, null, cancellationToken);
+    }
+
+    private static bool IsAuthTokenEndpoint(string url) =>
+        url.Contains("api/auth/token", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
-    /// 4xx except timeouts/rate-limits: business/validation errors that must not be retried.
+    /// 4xx except timeouts: business/validation and rate-limit errors that must not be retried.
     /// </summary>
     private static bool IsNonRetriableClientError(HttpStatusCode statusCode)
     {
@@ -208,7 +224,6 @@ public class HttpRequestService(
         if (code is < 400 or >= 500)
             return false;
 
-        return statusCode is not HttpStatusCode.RequestTimeout
-            and not HttpStatusCode.TooManyRequests;
+        return statusCode is not HttpStatusCode.RequestTimeout;
     }
 }

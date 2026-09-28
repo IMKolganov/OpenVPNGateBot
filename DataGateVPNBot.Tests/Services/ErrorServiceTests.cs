@@ -1,4 +1,5 @@
 using DataGateVPNBot.Services;
+using DataGateVPNBot.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,16 +10,22 @@ namespace DataGateVPNBot.Tests.Services;
 
 public class ErrorServiceTests
 {
+    private static ErrorService CreateSut(IServiceProvider? serviceProvider = null)
+    {
+        serviceProvider ??= new ServiceCollection().AddLogging().BuildServiceProvider();
+        var env = new Mock<IHostEnvironment>();
+        env.Setup(e => e.EnvironmentName).Returns("Test");
+        return new ErrorService(
+            serviceProvider,
+            env.Object,
+            Mock.Of<IAdminRecipientService>(),
+            Mock.Of<ILogger<ErrorService>>());
+    }
+
     [Fact]
     public void LogErrorToDatabase_Does_Not_Throw_When_Exception_And_Null_Context()
     {
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging();
-        var serviceProvider = serviceCollection.BuildServiceProvider();
-        var env = new Mock<IHostEnvironment>();
-        env.Setup(e => e.EnvironmentName).Returns("Test");
-        var logger = Mock.Of<ILogger<ErrorService>>();
-        var sut = new ErrorService(serviceProvider, env.Object, logger);
+        var sut = CreateSut();
 
         var ex = new InvalidOperationException("Test error");
 
@@ -28,13 +35,7 @@ public class ErrorServiceTests
     [Fact]
     public void LogErrorToDatabase_Truncates_Long_Message()
     {
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging();
-        var serviceProvider = serviceCollection.BuildServiceProvider();
-        var env = new Mock<IHostEnvironment>();
-        env.Setup(e => e.EnvironmentName).Returns("Test");
-        var logger = Mock.Of<ILogger<ErrorService>>();
-        var sut = new ErrorService(serviceProvider, env.Object, logger);
+        var sut = CreateSut();
 
         var longMessage = new string('x', 5000);
         var ex = new InvalidOperationException(longMessage);

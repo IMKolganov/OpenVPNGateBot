@@ -22,7 +22,7 @@ public class OvpnFileServiceTests
     public async Task Dashboard_GetOvpnFileByTokenAsync_Throws_When_Token_Empty()
     {
         var httpRequest = new Mock<IHttpRequestService>();
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new DashboardOvpnFileService(
             Mock.Of<ILogger<DashboardOvpnFileService>>(), httpRequest.Object, authService);
 
@@ -34,7 +34,7 @@ public class OvpnFileServiceTests
     public async Task Dashboard_GetAllOvpnFilesByExternalIdAsync_Throws_When_VpnServerId_Zero()
     {
         var httpRequest = new Mock<IHttpRequestService>();
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new DashboardOvpnFileService(
             Mock.Of<ILogger<DashboardOvpnFileService>>(), httpRequest.Object, authService);
 
@@ -46,7 +46,7 @@ public class OvpnFileServiceTests
     public async Task Dashboard_GetAllOvpnFilesByExternalIdAsync_Throws_When_ExternalId_Empty()
     {
         var httpRequest = new Mock<IHttpRequestService>();
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new DashboardOvpnFileService(
             Mock.Of<ILogger<DashboardOvpnFileService>>(), httpRequest.Object, authService);
 
@@ -63,7 +63,7 @@ public class OvpnFileServiceTests
         httpRequest.Setup(h => h.GetAsync<ApiResponse<OvpnFileResponse>>(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<OvpnFileResponse> { Success = true, Data = new OvpnFileResponse { IssuedOvpnFile = null! } });
 
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var dashboardOvpn = new DashboardOvpnFileService(
             Mock.Of<ILogger<DashboardOvpnFileService>>(), httpRequest.Object, authService);
         var errorService = Mock.Of<IErrorService>();
@@ -85,7 +85,7 @@ public class OvpnFileServiceTests
         httpRequest.Setup(h => h.GetAsync<ApiResponse<OvpnFilesResponse>>(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResponse<OvpnFilesResponse> { Success = true, Data = filesResponse });
 
-        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var authService = new AuthService(httpRequest.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var dashboardOvpn = new DashboardOvpnFileService(
             Mock.Of<ILogger<DashboardOvpnFileService>>(), httpRequest.Object, authService);
         var errorService = Mock.Of<IErrorService>();

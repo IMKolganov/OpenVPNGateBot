@@ -17,7 +17,7 @@ public class FreeTierChannelSubscribeRemindBotServiceTests
     public async Task RemindAsync_WhenTargetEmpty_ReturnsUsage()
     {
         var sut = new FreeTierChannelSubscribeRemindBotService(
-            new AuthService(Mock.Of<IHttpRequestService>(), "c", "s", Mock.Of<ILogger<AuthService>>()),
+            new AuthService(Mock.Of<IHttpRequestService>(), "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>()),
             Mock.Of<IHttpRequestService>(MockBehavior.Strict),
             Mock.Of<ILogger<FreeTierChannelSubscribeRemindBotService>>());
 
@@ -55,7 +55,7 @@ public class FreeTierChannelSubscribeRemindBotServiceTests
                     telegramId: 22),
             });
 
-        var auth = new AuthService(http.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(http.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new FreeTierChannelSubscribeRemindBotService(
             auth, http.Object, Mock.Of<ILogger<FreeTierChannelSubscribeRemindBotService>>());
 
@@ -91,7 +91,7 @@ public class FreeTierChannelSubscribeRemindBotServiceTests
                     email: "a@b.c"),
             });
 
-        var auth = new AuthService(http.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(http.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new FreeTierChannelSubscribeRemindBotService(
             auth, http.Object, Mock.Of<ILogger<FreeTierChannelSubscribeRemindBotService>>());
 
@@ -123,7 +123,7 @@ public class FreeTierChannelSubscribeRemindBotServiceTests
                 Message = "User has no email",
             });
 
-        var auth = new AuthService(http.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(http.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new FreeTierChannelSubscribeRemindBotService(
             auth, http.Object, Mock.Of<ILogger<FreeTierChannelSubscribeRemindBotService>>());
 
@@ -144,7 +144,7 @@ public class FreeTierChannelSubscribeRemindBotServiceTests
                 Success = false,
             });
 
-        var auth = new AuthService(http.Object, "c", "s", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(http.Object, "c", "s", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new FreeTierChannelSubscribeRemindBotService(
             auth, http.Object, Mock.Of<ILogger<FreeTierChannelSubscribeRemindBotService>>());
 
