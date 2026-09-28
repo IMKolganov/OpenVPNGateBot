@@ -35,6 +35,7 @@ Part of the [DataGateMonitor](https://github.com/IMKolganov/DataGateMonitor) mon
 | `/install_client` | Download links for OpenVPN clients |
 | `/about_project` | About the project |
 | `/contacts` | Developer contacts |
+| `/donate` | Crypto donation via @CryptoBot |
 | `/change_language` | Language selection |
 | `/poll` | Anonymous poll |
 | `/inline_buttons` | Inline keyboard example |
@@ -80,7 +81,17 @@ docker compose -f docker-compose-local.yml --env-file .env.dev.x64 up -d --build
 
 Image: `imkolganov/datagate-monitor-telegrambot`.
 
-Env: `TELEGRAMBOT_BOT_TOKEN`, `DASHBOARDAPI_*`, `ELASTIC_*`, etc. (see monorepo compose).
+Env: `TELEGRAMBOT_BOT_TOKEN`, `DASHBOARDAPI_*`, `ELASTIC_*`, `STARS_ENABLED` / `STARS_AMOUNTS`, optional `CRYPTOPAY_API_TOKEN` (see monorepo compose).
+
+### Donations (`/donate`)
+
+Voluntary support. VPN quota does not change.
+
+**Telegram Stars (default):** user taps ⭐ in the bot and pays inside Telegram. No provider token. Bot answers `pre_checkout_query` within 10s and thanks after `successful_payment`.
+
+Amounts: `STARS_AMOUNTS` (default `50,100,250,500`). Disable with `STARS_ENABLED=false`.
+
+**Crypto Pay (optional):** shown only when `CRYPTOPAY_API_TOKEN` is set. Tapping a USDT amount first shows a P2P risk banner; the invoice is created only after the user confirms. Webhook: `https://<HOST_ADDRESS>/api/cryptopay/webhook`.
 
 ### Deployment behind nginx
 

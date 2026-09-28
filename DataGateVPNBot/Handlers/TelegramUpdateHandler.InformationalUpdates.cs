@@ -1,3 +1,4 @@
+using DataGateVPNBot.Services.Donations;
 using DataGateVPNBot.Services.Interfaces;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Payments;
@@ -175,6 +176,15 @@ public partial class TelegramUpdateHandler
 
     private async Task OnPreCheckoutQueryUpdateAsync(PreCheckoutQuery update, CancellationToken cancellationToken)
     {
+        if (StarsDonation.IsDonatePreCheckout(update.Currency, update.InvoicePayload))
+        {
+            _logger.LogInformation(
+                "Donate pre-checkout. QueryId={Id}; Who={Who}; Amount={Amount} {Currency}",
+                update.Id, DescribeUser(update.From), update.TotalAmount, update.Currency);
+            await AnswerDonatePreCheckoutAsync(update, cancellationToken);
+            return;
+        }
+
         var text =
             "ℹ️ Pre-checkout query\n" +
             $"User: {DescribeUser(update.From)}\n" +
@@ -187,6 +197,7 @@ public partial class TelegramUpdateHandler
             "PreCheckoutQuery update. QueryId={Id}; Who={Who}; Amount={Amount} {Currency}",
             update.Id, DescribeUser(update.From), update.TotalAmount, update.Currency);
 
+        await AnswerDonatePreCheckoutAsync(update, cancellationToken);
         await NotifyAdminsInformationalAsync(text, cancellationToken);
     }
 

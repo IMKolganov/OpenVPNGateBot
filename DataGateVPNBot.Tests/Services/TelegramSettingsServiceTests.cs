@@ -34,6 +34,7 @@ public class TelegramSettingsServiceTests
         Assert.Contains("/get_my_files", commandStrings);
         Assert.Contains("/make_new_file", commandStrings);
         Assert.Contains("/how_to_use", commandStrings);
+        Assert.Contains("/donate", commandStrings);
         Assert.DoesNotContain("/unsubscribed_vpn_users", commandStrings);
         Assert.DoesNotContain("/refresh_profile_photos", commandStrings);
         Assert.DoesNotContain("/remind_channel_subscribe", commandStrings);

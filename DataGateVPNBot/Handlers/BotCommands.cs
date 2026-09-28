@@ -21,6 +21,8 @@ public static class BotCommands
     public const string CommandInstallClient = "/install_client";
     public const string CommandAboutProject = "/about_project";
     public const string CommandContacts = "/contacts";
+    /// <summary>Voluntary /donate via Telegram Stars. Does not change VPN plan.</summary>
+    public const string CommandDonate = "/donate";
     public const string CommandChangeLanguage = "/change_language";
     public const string CommandRegisterCommands = "/register_commands";
     public const string CommandEnglish = "/english";
@@ -48,4 +50,10 @@ public static class BotCommands
 
     /// <summary>Admin only: email a channel-subscribe reminder to a dashboard userId.</summary>
     public const string CommandRemindChannelEmail = "/remind_channel_email";
+
+    /// <summary>
+    /// Argument for remind commands / digest keyboard: send to every actionable digest candidate
+    /// for that channel (not a user id).
+    /// </summary>
+    public const string RemindAllTarget = "all";
 }

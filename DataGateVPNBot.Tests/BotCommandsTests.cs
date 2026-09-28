@@ -14,6 +14,7 @@ public class BotCommandsTests
         Assert.StartsWith("/", BotCommands.CommandAboutBot);
         Assert.StartsWith("/", BotCommands.CommandHowToUse);
         Assert.StartsWith("/", BotCommands.CommandChangeLanguage);
+        Assert.StartsWith("/", BotCommands.CommandDonate);
     }
 
     [Fact]

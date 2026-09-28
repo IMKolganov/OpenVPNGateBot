@@ -1,5 +1,6 @@
 using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.BotServices.Interfaces;
+using DataGateVPNBot.Services.Donations;
 using DataGateVPNBot.Services.DashboardServices;
 using DataGateVPNBot.Services.DashboardServices.Interfaces;
 using DataGateVPNBot.Services.Interfaces;
@@ -90,6 +91,13 @@ public partial class TelegramUpdateHandler(
     private async Task OnMessage(Message msg, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Received message type: {MessageType}", msg.Type);
+        if (msg.SuccessfulPayment is { } successfulPayment)
+        {
+            await LogIncomingMessage(msg, cancellationToken);
+            await HandleSuccessfulDonationPaymentAsync(msg, successfulPayment, cancellationToken);
+            return;
+        }
+
         if (msg.Text is not { } messageText)
             return;
         await LogIncomingMessage(msg, cancellationToken);
@@ -145,7 +153,8 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandRefreshProfilePhotos,
             BotCommands.CommandUnsubscribedVpnUsers,
             BotCommands.CommandRemindChannelSubscribe,
-            BotCommands.CommandRemindChannelEmail
+            BotCommands.CommandRemindChannelEmail,
+            BotCommands.CommandDonate
         };
 
         if (!isPrivate && privateOnlyCommands.Contains(command))
@@ -176,6 +185,7 @@ public partial class TelegramUpdateHandler(
             BotCommands.CommandInstallClient => InstallClient(msg, cancellationToken),
             BotCommands.CommandAboutProject => AboutProject(msg, cancellationToken),
             BotCommands.CommandContacts => Contacts(msg, cancellationToken),
+            BotCommands.CommandDonate => Donate(msg, cancellationToken),
             BotCommands.CommandChangeLanguage => SelectLanguage(msg, cancellationToken),
             BotCommands.CommandRegisterCommands => RegisterCommandsAsync(msg, cancellationToken),
             BotCommands.CommandEnglish or BotCommands.CommandRussian or BotCommands.CommandGreek => ChangeLanguage(msg, 
@@ -296,6 +306,14 @@ public partial class TelegramUpdateHandler(
             var target = data.Substring(BotCommands.CommandRemindChannelSubscribe.Length + 1).Trim();
             _logger.LogInformation("Admin Telegram channel-subscribe remind for target: {Target}", target);
             await AdminRemindChannelSubscribeFromCallbackAsync(message, callbackQuery.From, target, cancellationToken);
+        }
+        else if (data.Equals(Services.CryptoPay.CryptoPayDonationService.CallbackMenu, StringComparison.OrdinalIgnoreCase)
+                 || data.StartsWith(Services.CryptoPay.CryptoPayDonationService.CallbackAmountPrefix, StringComparison.OrdinalIgnoreCase)
+                 || data.StartsWith(Services.CryptoPay.CryptoPayDonationService.CallbackConfirmPrefix, StringComparison.OrdinalIgnoreCase)
+                 || data.StartsWith(StarsDonation.CallbackPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("Donate callback from {TelegramId}: {Data}", callbackQuery.From.Id, data);
+            await HandleDonateCallbackAsync(callbackQuery, cancellationToken);
         }
         else if (data is BotCommands.CommandEnglish or BotCommands.CommandRussian or BotCommands.CommandGreek)
         {

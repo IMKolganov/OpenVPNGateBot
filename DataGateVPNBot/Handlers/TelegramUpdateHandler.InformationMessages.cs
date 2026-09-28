@@ -73,6 +73,9 @@ public partial class TelegramUpdateHandler
             [
                 InlineKeyboardButton.WithUrl("Telegram", "https://t.me/KolganovIvan"),
                 InlineKeyboardButton.WithUrl("GitHub", "https://github.com/IMKolganov")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData("💚 Donate", Services.CryptoPay.CryptoPayDonationService.CallbackMenu)
             ]
         ]);
         
