@@ -79,8 +79,12 @@ public partial class TelegramUpdateHandler
         if (string.IsNullOrWhiteSpace(argument))
         {
             var usage = channel == FreeTierChannelSubscribeRemindChannel.Email
-                ? "Usage: /remind_channel_email <userId|all>\nExample: /remind_channel_email 150"
-                : "Usage: /remind_channel_subscribe <userId|telegramId|all>\nExample: /remind_channel_subscribe 22";
+                ? "Usage: /remind_channel_email <userId|all>\n" +
+                  "Emails that dashboard user (or all): subscribe to the channel and link Google/password ↔ Telegram (deep link + code).\n" +
+                  "Example: /remind_channel_email 150"
+                : "Usage: /remind_channel_subscribe <userId|telegramId|all>\n" +
+                  "Sends a Telegram DM asking that user (or all) to subscribe to the required channel.\n" +
+                  "Example: /remind_channel_subscribe 22";
             return await _botClient.SendMessage(
                 msg.Chat.Id,
                 usage,

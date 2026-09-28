@@ -1,3 +1,4 @@
+using DataGateVPNBot.Helpers;
 using DataGateVPNBot.Models.Configurations;
 using DataGateVPNBot.Services.BotServices.Interfaces;
 using DataGateVPNBot.Services.Donations;
@@ -168,7 +169,7 @@ public partial class TelegramUpdateHandler(
 
         return await (command switch
         {
-            BotCommands.CommandStart => Start(msg, cancellationToken),
+            BotCommands.CommandStart => Start(msg, argument, cancellationToken),
             BotCommands.CommandAboutBot => AboutBot(msg, cancellationToken),
             BotCommands.CommandHowToUse => HowToUseVpn(msg, cancellationToken),
             BotCommands.CommandRegister => RegisterForVpn(msg, cancellationToken),
@@ -218,10 +219,13 @@ public partial class TelegramUpdateHandler(
             cancellationToken: cancellationToken);
     }
 
-    private async Task<Message> Start(Message msg, CancellationToken cancellationToken)
+    private async Task<Message> Start(Message msg, string? argument, CancellationToken cancellationToken)
     {
         // Register a new user if applicable
         await RegisterNewUserAsync(msg, cancellationToken);
+
+        if (AccountLinkCodeParser.TryParseStartPayload(argument, out var linkCode))
+            return await CompleteAccountLinkFromBotAsync(msg, linkCode, cancellationToken);
 
         return await SelectLanguage(msg, cancellationToken);
     }

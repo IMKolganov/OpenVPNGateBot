@@ -2,6 +2,8 @@ namespace DataGateVPNBot.Helpers;
 
 public static class AccountLinkCodeParser
 {
+    public const string StartPayloadPrefix = "link_";
+
     public static bool TryExtract(string messageText, out string code)
     {
         code = string.Empty;
@@ -11,6 +13,25 @@ public static class AccountLinkCodeParser
 
         return TryNormalizeToken(trimmed, out code);
     }
+
+    /// <summary>
+    /// Parses <c>/start link_ABCD2345</c> deep-link payloads from Telegram.
+    /// </summary>
+    public static bool TryParseStartPayload(string? argument, out string code)
+    {
+        code = string.Empty;
+        if (string.IsNullOrWhiteSpace(argument))
+            return false;
+
+        var token = argument.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+        if (!token.StartsWith(StartPayloadPrefix, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return TryNormalizeToken(token[StartPayloadPrefix.Length..], out code);
+    }
+
+    public static string BuildStartPayload(string code)
+        => StartPayloadPrefix + code.Trim().ToUpperInvariant();
 
     public static bool TryNormalizeToken(string? value, out string code)
     {
@@ -48,6 +69,13 @@ public static class AccountLinkCodeParser
             var parts = messageText.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length > 1 && TryNormalizeToken(parts[1], out _))
                 return "/link_account [redacted]";
+        }
+
+        if (messageText.StartsWith("/start", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = messageText.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 1 && TryParseStartPayload(parts[1], out _))
+                return "/start link_[redacted]";
         }
 
         return messageText;

@@ -159,9 +159,9 @@ public class TelegramSettingsService : ITelegramSettingsService
             Command = BotCommands.CommandRemindChannelSubscribe,
             Descriptions = new()
             {
-                ["en"] = "Admin: remind a user to subscribe to the required channel",
-                ["ru"] = "Админ: напомнить пользователю подписаться на канал",
-                ["el"] = "Διαχειριστής: υπενθύμιση εγγραφής στο κανάλι"
+                ["en"] = "Admin: TG DM remind — /remind_channel_subscribe <userId|tgId>",
+                ["ru"] = "Админ: TG-напоминание — /remind_channel_subscribe <userId|tgId>",
+                ["el"] = "Διαχειριστής: υπενθύμιση TG — /remind_channel_subscribe <userId|tgId>"
             }
         },
         new()
@@ -169,9 +169,9 @@ public class TelegramSettingsService : ITelegramSettingsService
             Command = BotCommands.CommandRemindChannelEmail,
             Descriptions = new()
             {
-                ["en"] = "Admin: email a user to subscribe to the required channel",
-                ["ru"] = "Админ: отправить email с просьбой подписаться на канал",
-                ["el"] = "Διαχειριστής: email υπενθύμισης εγγραφής στο κανάλι"
+                ["en"] = "Admin: email link+channel — /remind_channel_email <userId>",
+                ["ru"] = "Админ: email связка+канал — /remind_channel_email <userId>",
+                ["el"] = "Διαχειριστής: email σύνδεση+κανάλι — /remind_channel_email <userId>"
             }
         }
     ];

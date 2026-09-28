@@ -25,8 +25,8 @@ public sealed class FreeTierChannelSubscribeRemindBotService(
             return FreeTierChannelSubscribeRemindResponse.Fail(
                 channel,
                 channel == FreeTierChannelSubscribeRemindChannel.Email
-                    ? "Usage: /remind_channel_email <userId>"
-                    : "Usage: /remind_channel_subscribe <userId|telegramId>");
+                    ? "Usage: /remind_channel_email <userId>\nEmails: subscribe to channel + link Google/password ↔ Telegram."
+                    : "Usage: /remind_channel_subscribe <userId|telegramId>\nSends a Telegram DM to subscribe to the required channel.");
         }
 
         var token = await authService.GetTokenAsync();
