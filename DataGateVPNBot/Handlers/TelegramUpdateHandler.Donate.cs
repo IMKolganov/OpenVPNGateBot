@@ -216,7 +216,7 @@ public partial class TelegramUpdateHandler
         var crypto = scope.ServiceProvider.GetRequiredService<ICryptoPayDonationService>();
         var starAmounts = TelegramStarsConfigurationHelper.ParseAmounts(starsConfig.Amounts);
 
-        var starsOn = starsConfig.IsConfigured && starAmounts.Count > 0;
+        var starsOn = DonationFeatureFlags.IsStarsLive(starsConfig) && starAmounts.Count > 0;
         var cryptoOn = crypto.IsConfigured && crypto.AmountsUsd.Count > 0;
         if (!starsOn && !cryptoOn)
         {
@@ -326,7 +326,10 @@ public partial class TelegramUpdateHandler
 
     private async Task AnswerDonatePreCheckoutAsync(PreCheckoutQuery update, CancellationToken cancellationToken)
     {
-        var ok = StarsDonation.IsDonatePreCheckout(update.Currency, update.InvoicePayload);
+        using var scope = _serviceProvider.CreateScope();
+        var starsConfig = scope.ServiceProvider.GetRequiredService<IOptions<TelegramStarsConfiguration>>().Value;
+        var ok = DonationFeatureFlags.IsStarsLive(starsConfig) &&
+                 StarsDonation.IsDonatePreCheckout(update.Currency, update.InvoicePayload);
         try
         {
             await _botClient.SendRequest(

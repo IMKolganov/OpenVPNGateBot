@@ -63,6 +63,29 @@ public class CryptoPayDonationServiceTests
     }
 
     [Fact]
+    public async Task ProcessWebhookAsync_Rejects_When_Donations_Disabled_By_Default()
+    {
+        var sut = CreateSut(
+            Mock.Of<ICryptoPayApiClient>(),
+            Options.Create(new CryptoPayConfiguration { ApiToken = "token" }));
+
+        Assert.False(sut.IsConfigured);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            sut.ProcessWebhookAsync("{}", "deadbeef", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreateDonationInvoiceAsync_Throws_When_Disabled_By_Default()
+    {
+        var sut = CreateSut(
+            Mock.Of<ICryptoPayApiClient>(),
+            Options.Create(new CryptoPayConfiguration { ApiToken = "token" }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.CreateDonationInvoiceAsync(1, 5, "Bot", CancellationToken.None));
+    }
+
+    [Fact]
     public void TryParseAmountCallback_Reads_Usd_Amount()
     {
         Assert.True(CryptoPayDonationService.TryParseAmountCallback("donate:cb:10", out var amount));
