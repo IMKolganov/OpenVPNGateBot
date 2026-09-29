@@ -52,4 +52,34 @@ public class CryptoPayConfigurationHelperTests
         Assert.Equal(CryptoPayConfiguration.TestnetApiBaseUrl, new CryptoPayConfiguration { UseTestnet = true }.ApiBaseUrl);
         Assert.Equal(CryptoPayConfiguration.MainnetApiBaseUrl, new CryptoPayConfiguration().ApiBaseUrl);
     }
+
+    [Fact]
+    public void Default_Configuration_Is_Disabled()
+    {
+        var config = new CryptoPayConfiguration();
+        Assert.False(config.Enabled);
+        Assert.False(config.IsConfigured);
+        Assert.Equal(string.Empty, config.ApiToken);
+    }
+
+    [Fact]
+    public void ApplyEnv_Can_Enable_When_Token_Present()
+    {
+        var config = new CryptoPayConfiguration();
+        try
+        {
+            Environment.SetEnvironmentVariable("CRYPTOPAY_ENABLED", "true");
+            Environment.SetEnvironmentVariable("CRYPTOPAY_API_TOKEN", "live-token");
+            CryptoPayConfigurationHelper.ApplyEnv(config);
+            Assert.True(config.Enabled);
+            Assert.Equal("live-token", config.ApiToken);
+            Assert.True(config.IsConfigured);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CRYPTOPAY_ENABLED", null);
+            Environment.SetEnvironmentVariable("CRYPTOPAY_API_TOKEN", null);
+        }
+    }
 }
+

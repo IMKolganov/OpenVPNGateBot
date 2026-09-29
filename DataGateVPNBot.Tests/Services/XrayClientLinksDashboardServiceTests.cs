@@ -1,5 +1,6 @@
 using DataGateVPNBot.Localization;
 using DataGateVPNBot.Services.DashboardServices;
+using DataGateVPNBot.Services.Interfaces;
 using DataGateVPNBot.Services.Http;
 using DataGateMonitor.SharedModels.DataGateMonitor.Auth.Responses;
 using DataGateMonitor.SharedModels.DataGateMonitor.XrayClientLinks.Requests;
@@ -120,7 +121,7 @@ public class XrayClientLinksDashboardServiceTests
                 }
             });
 
-        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new XrayClientLinksDashboardService(
             Mock.Of<ILogger<XrayClientLinksDashboardService>>(),
             httpRequest.Object,
@@ -163,7 +164,7 @@ public class XrayClientLinksDashboardServiceTests
                 }
             });
 
-        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<ILogger<AuthService>>());
+        var auth = new AuthService(httpRequest.Object, "clientId", "secret", Mock.Of<IDashboardAuthAlertService>(), Mock.Of<ILogger<AuthService>>());
         var sut = new XrayClientLinksDashboardService(
             Mock.Of<ILogger<XrayClientLinksDashboardService>>(),
             httpRequest.Object,
