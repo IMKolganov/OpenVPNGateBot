@@ -431,3 +431,6 @@ dashboardapi.json
 
 
 wwwroot/
+
+# Local root-page startup history (dev)
+DataGateVPNBot/data/startup-history.json

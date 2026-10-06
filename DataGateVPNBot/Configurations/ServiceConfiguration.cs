@@ -1,4 +1,5 @@
-﻿using Certes;
+﻿using System.Reflection;
+using Certes;
 using Microsoft.Extensions.Configuration;
 using DataGateVPNBot.Handlers;
 using DataGateVPNBot.Services;
@@ -17,6 +18,15 @@ public static class ServiceConfiguration
 {
     public static void ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<ApplicationRuntimeInfo>();
+        services.AddSingleton<IApplicationStartupHistory>(sp =>
+        {
+            var env = sp.GetRequiredService<IWebHostEnvironment>();
+            var runtimeInfo = sp.GetRequiredService<ApplicationRuntimeInfo>();
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
+            return new ApplicationStartupHistory(env, runtimeInfo, version, env.EnvironmentName);
+        });
+
         services.Configure<DataGateVPNBot.Models.Configurations.ProfilePhotoRefreshOptions>(
             configuration.GetSection(DataGateVPNBot.Models.Configurations.ProfilePhotoRefreshOptions.SectionName));
         services.AddSingleton<IKey>(_ => LetsEncryptAccountStore.LoadOrCreateAccountKey());
