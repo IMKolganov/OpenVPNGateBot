@@ -47,10 +47,29 @@ public static class PipelineConfiguration
 
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown version";
         var environmentName = app.Environment.EnvironmentName;
-        
+
         app.MapGet("/",
-            (ILogger<Program> logger) => Results.Text(statusCode: 200,
-                content: $"DataGateVPNBot Application version: {version}; Environment: {environmentName};"));
+            (ApplicationRuntimeInfo runtimeInfo,
+                IApplicationStartupHistory startupHistory,
+                HttpContext context) =>
+            {
+                var accept = context.Request.Headers.Accept.ToString();
+                if (accept.Contains("text/plain", StringComparison.OrdinalIgnoreCase)
+                    && !accept.Contains("text/html", StringComparison.OrdinalIgnoreCase))
+                {
+                    var plain =
+                        $"DataGateVPNBot Application version: {version}; Environment: {environmentName};\nStarted: {runtimeInfo.StartedAtUtc:yyyy-MM-dd HH:mm:ss} UTC\nUptime: {RootPageHtml.FormatUptime(runtimeInfo.Uptime)}";
+                    return Results.Text(plain, "text/plain; charset=utf-8", statusCode: 200);
+                }
+
+                var html = RootPageHtml.Render(
+                    version,
+                    environmentName,
+                    runtimeInfo,
+                    startupHistory.GetRecords());
+                return Results.Content(html, "text/html; charset=utf-8", statusCode: 200);
+            })
+            .ExcludeFromDescription();
 
         app.Logger.LogInformation($"Application version: {version}; Environment: {environmentName};");
     }
